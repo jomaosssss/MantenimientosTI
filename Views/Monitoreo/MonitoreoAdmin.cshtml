@@ -342,26 +342,26 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Cajero:</span>
-                                        <span id="numCajero" class="ms-2">-</span>
+                                        <span id="numCajero" class="ms-2"></span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Serie:</span>
-                                        <span id="numSerie" class="ms-2">-</span>
+                                        <span id="numSerie" class="ms-2"></span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Dirección IP:</span>
-                                        <span id="ipCajero" class="ms-2">-</span>
+                                        <span id="ipCajero" class="ms-2"></span>
                                     </div>
                                 </div>
                                 <!-- Columna derecha -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Activo Fijo:</span>
-                                        <span id="numActFijo" class="ms-2">-</span>
+                                        <span id="numActFijo" class="ms-2"></span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Inventario:</span>
-                                        <span id="numInventario" class="ms-2">-</span>
+                                        <span id="numInventario" class="ms-2"></span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Versión:</span>
@@ -377,18 +377,18 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Zona:</span>
-                                        <span id="zona" class="ms-2">-</span>
+                                        <span id="zona" class="ms-2"></span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Centro:</span>
-                                        <span id="centro" class="ms-2">-</span>
+                                        <span id="centro" class="ms-2"></span>
                                     </div>
                                 </div>
                                 <!-- Columna derecha -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Agencia:</span>
-                                        <span id="agencia" class="ms-2">-</span>
+                                        <span id="agencia" class="ms-2"></span>
                                     </div>
                                 </div>
                             </div>
@@ -418,6 +418,26 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para mostrar eventos -->
+<div class="modal fade" id="eventosModal" tabindex="-1" aria-labelledby="eventosModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventosModalLabel">Eventos Detallados</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalEventosContent">
+                    <p>Cargando eventos...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -495,7 +515,7 @@
             });
         }
 
-                function cargarDetallesCfematico(numCajero) {
+        function cargarDetallesCfematico(numCajero) {
             $.get('@Url.Action("ObtenerDetallesCfematico", "Monitoreo")', { numCajero: numCajero })
                 .done(function(data) {
                     if (data.error) {
@@ -526,7 +546,7 @@
             // Restablece todos los demás campos a '-' también
         }
 
-                function actualizarGrafica(numCajero) {
+        function actualizarGrafica(numCajero) {
             var dias = $('#rangoTiempo').val();
 
             $.get('@Url.Action("ObtenerEstadisticasEventos", "Monitoreo")', {
@@ -542,19 +562,19 @@
                 basicBarChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: ['Críticos', 'Altos', 'Bajos'], // Solo 3 categorías principales
+                        labels: ['Críticos', 'Altos', 'Bajos'],
                         datasets: [
                             {
                                 label: 'Operativos',
                                 data: [data.criticosOperativos, data.altosOperativos, data.bajosOperativos],
-                                backgroundColor: 'rgba(231, 76, 60, 0.8)', // Rojo sólido
+                                backgroundColor: 'rgba(231, 76, 60, 0.8)',
                                 borderColor: 'rgba(231, 76, 60, 1)',
                                 borderWidth: 1
                             },
                             {
                                 label: 'Técnicos',
                                 data: [data.criticosTecnicos, data.altosTecnicos, data.bajosTecnicos],
-                                backgroundColor: 'rgba(52, 152, 219, 0.8)', // Azul sólido
+                                backgroundColor: 'rgba(52, 152, 219, 0.8)',
                                 borderColor: 'rgba(52, 152, 219, 1)',
                                 borderWidth: 1
                             }
@@ -617,12 +637,77 @@
                                     }
                                 }
                             }
+                        },
+                        onClick: function(evt, elements) {
+                            if (elements.length > 0) {
+                                var clickedElement = elements[0];
+                                var datasetIndex = clickedElement.datasetIndex;
+                                var labelIndex = clickedElement.index;
+
+                                // Determinar qué tipo de eventos se ha clickeado
+                                var severidad = labelIndex === 0 ? 100 :
+                                              labelIndex === 1 ? 50 : 0;
+                                var tipo = datasetIndex === 0 ? 'O' : 'T';
+
+                                // Obtener el CFEmático seleccionado
+                                var selectedCfematico = $('.cfematico-btn.selected').data('num-cajero');
+
+                                // Cargar eventos filtrados en el modal
+                                cargarEventosParaModal(selectedCfematico, severidad, tipo, dias);
+                            }
                         }
                     }
                 });
             });
         }
 
+        // Función para cargar eventos en el modal
+        function cargarEventosParaModal(numCajero, severidad, tipo, dias) {
+            $.get('@Url.Action("ObtenerEventosFiltrados", "Monitoreo")', {
+                numCajero: numCajero,
+                severidad: severidad,
+                tipo: tipo,
+                dias: dias
+            }, function(data) {
+                var $content = $('#modalEventosContent');
+                $content.empty();
+
+                if (data.length === 0) {
+                    $content.html('<p class="text-muted">No hay eventos para estos criterios</p>');
+                    return;
+                }
+
+                var titulo = `Eventos ${getSeveridadText(severidad)} (${tipo === 'O' ? 'Operativos' : 'Técnicos'})`;
+                $('#eventosModalLabel').text(titulo);
+
+                var eventosHtml = data.map(function(evento) {
+                    var badgeClass = evento.severidad == 100 ? 'bg-danger' :
+                                   evento.severidad == 50 ? 'bg-warning' : 'bg-success';
+
+                    return `
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">${evento.fuente}</span>
+                                <span class="badge ${badgeClass}">${evento.severidad}</span>
+                            </div>
+                            <div>${evento.descripcion}</div>
+                            <div class="text-end small text-muted">${evento.fecha}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                $content.html(eventosHtml);
+
+                // Mostrar el modal
+                var modal = new bootstrap.Modal(document.getElementById('eventosModal'));
+                modal.show();
+            });
+        }
+
+        function getSeveridadText(severidad) {
+            return severidad === 100 ? 'Críticos' :
+                   severidad === 50 ? 'Altos' : 'Bajos';
+        }
 
         function cargarEstadosEnLote() {
             $.get('@Url.Action("ObtenerEstadosCfematicos", "Monitoreo")', function(estados) {
@@ -652,6 +737,7 @@
         $(document).ready(function() {
             cargarEstadosEnLote();
         });
+
         // Función para cargar los eventos recientes
         function cargarEventos(numCajero) {
             var dias = $('#rangoTiempo').val();

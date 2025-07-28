@@ -280,5 +280,36 @@ namespace ProyectoMantenimientos.Controllers
                 totalEventos = eventos.Count
             });
         }
+
+        [HttpGet]
+        public IActionResult ObtenerEventosFiltrados(string numCajero, int severidad, string tipo, int dias = 7)
+        {
+            var fechaLimite = DateTime.Now.AddDays(-dias);
+
+            var eventos = _dbocontext.RegistroEventos
+                .Where(re => re.NumCajero == numCajero &&
+                             re.FechaEvento >= fechaLimite)
+                .Join(_dbocontext.CatEventos,
+                    registro => registro.ClaveEvento,
+                    evento => evento.ClaveEvento,
+                    (registro, evento) => new {
+                        registro.FechaEvento,
+                        evento.Fuente,
+                        evento.Descripcion,
+                        evento.Severidad,
+                        evento.ClaveFalla
+                    })
+                .Where(x => x.Severidad == severidad && x.ClaveFalla == tipo)
+                .OrderByDescending(x => x.FechaEvento)
+                .Select(x => new {
+                    fuente = x.Fuente,
+                    descripcion = x.Descripcion,
+                    severidad = x.Severidad,
+                    fecha = x.FechaEvento.ToString("g")
+                })
+                .ToList();
+
+            return Json(eventos);
+        }
     }
 }
