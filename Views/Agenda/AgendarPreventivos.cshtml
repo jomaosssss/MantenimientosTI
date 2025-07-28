@@ -1,0 +1,119 @@
+﻿@{
+    ViewData["Title"] = "Agendar Preventivos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h1 class="mb-0">Mantenimientos Preventivos</h1>
+            <div class="alert alert-secondary mt-3">
+                <i class="fas fa-info-circle"></i> Seleccione su archivo .csv con sus mantenimientos preventivos.
+                <div class="mt-2 small">
+                    <strong>Requisitos del archivo:</strong>
+                    <ul class="mb-0">
+                        <li>Formato CSV con codificación ISO-8859-1 (soporta acentos/ñ).</li>
+                        <li>En la primera línea va el encabezado (se ignora).</li>
+                        <li>Columnas requeridas: numeroActivoFijo,fechaProgramada (DD/MM/YYYY).</li>
+                        <li>Máximo 1000 registros por archivo.</li>
+                    </ul>
+                </div>
+            </div>
+            <img src="~/images/EjemploCSV.png" style="height: 250px;">
+        </div>
+
+        <div class="card-body">
+            <div class="row mb-4 align-items-end">
+                <div class="col-md-4">
+                    <label for="inputExcel" class="form-label fw-bold">Seleccione su archivo .csv:</label>
+                    <input class="form-control" type="file" id="ArchivoCsv" name="ArchivoCsv" accept=".csv" />
+                </div>
+
+                <div class="col-md-4 mt-3 mt-md-0">
+                    <button class="btn btn-success btn-md" onclick="enviarDatos()">
+                        <i class="bi bi-calendar-check"></i> Agendar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contenedor para resultados detallados -->
+            <div id="resultadoDetallado" class="mt-4 d-none">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <h5 class="mb-0">Resumen de Procesamiento</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <th>Registros Procesados del Archivo:</th>
+                                        <td id="totalLineas">0</td>
+                                    </tr>
+                                    <tr class="table-success">
+                                        <th>Registros Exitosos:</th>
+                                        <td id="exitosos">0</td>
+                                    </tr>
+                                    <tr class="table-danger">
+                                        <th>Errores:</th>
+                                        <td id="errores">0</td>
+                                    </tr>
+                                    <tr class="table-warning">
+                                        <th>Registros Duplicados (Total):</th>
+                                        <td id="duplicados">0</td>
+                                    </tr>
+                                    <tr class="table-warning">
+                                        <th>Detalles:</th>
+                                        <td>
+                                            <ul class="list-unstyled mb-0 small">
+                                                <li>En el Sistema: <span id="duplicadosBD">0</span></li>
+                                                <li>En el Archivo: <span id="duplicadosArchivo">0</span></li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-warning">
+                                        <th>Equipos No Existentes:</th>
+                                        <td id="activosNoExistentes">0</td>
+                                    </tr>
+                                    <tr class="table-warning">
+                                        <th>Mantenimientos Vencidos:</th>
+                                        <td id="fechasPasadas">0</td>
+                                    </tr>
+                                    <tr class="table-warning">
+                                        <th>Equipos de Otras Zonas:</th>
+                                        <td id="activosOtraZona">0</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <h5 class="mb-0">Detalle de Registros Procesados</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="detalleLineas" style="max-height: 400px; overflow-y: auto;" class="small">
+                                    <p class="text-muted mb-0">No hay información de líneas que mostrar</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (ViewBag.Mensaje != null)
+            {
+                <div class="alert alert-success mt-3">
+                    @ViewBag.Mensaje
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/js/agendar.js"></script>
+}

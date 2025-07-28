@@ -1,0 +1,20 @@
+﻿@model MantenimientosTI.Models.EquipoComputo
+
+<div class="row">
+    <div class="col-md-6">
+        <h5>Información General</h5>
+        <p><strong>Número de Activo Fijo:</strong> @Model.NumActFijo</p>
+        <p><strong>Tipo de Equipo:</strong> @Model.ClaveTipoEquipoNavigation?.NombreTipoEquipo</p>
+        <p><strong>Número de Serie PC:</strong> @Model.NumSeriePc</p>
+        <p><strong>Número de Serie Monitor:</strong> @Model.NumSerieMonitor</p>
+    </div>
+    <div class="col-md-6">
+        <h5>Ubicación</h5>
+        <p><strong>Zona:</strong> @Model.NumActFijoNavigation?.CatCentro?.CatAgencium?.CatZona?.NombreZona</p>
+        <p><strong>Agencia:</strong> @Model.NumActFijoNavigation?.CatCentro?.CatAgencium?.NombreAgencia</p>
+        <p><strong>Centro:</strong> @Model.NumActFijoNavigation?.CatCentro?.NombreCentro</p>
+        <h5>Usuario</h5>
+        <p><strong>RPE:</strong> @Model.Rpe</p>
+        <p><strong>Nombre:</strong> @Model.NombreRpe</p>
+    </div>
+</div>

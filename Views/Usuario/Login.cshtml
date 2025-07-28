@@ -1,0 +1,107 @@
+﻿@model MantenimientosTI.Models.ViewModels.VMLogin
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Iniciar Sesión</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .login-container {
+            max-width: 420px;
+            margin: 5% auto;
+        }
+
+        .card {
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        }
+
+        .logo {
+            display: block;
+            margin: 0 auto 1rem auto;
+            width: 140px;
+        }
+
+        .toggle-password {
+            cursor: pointer;
+        }
+
+        footer {
+            font-size: 0.85rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .validation-summary {
+            text-align: left;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container login-container">
+        <div class="card text-center">
+            <img src="~/images/LCFE.png" alt="CFE Logo" class="logo" />
+            <h3 class="mb-3 fw-bold">Iniciar Sesión</h3>
+
+            @if (ViewBag.Mensaje != null)
+            {
+                <div class="alert alert-danger validation-summary">@ViewBag.Mensaje</div>
+            }
+
+            <form asp-action="Login" method="post">
+
+                <div class="mb-3 text-start">
+                    <label class="form-label">Correo Electrónico</label>
+                    <input asp-for="Correo" class="form-control" placeholder="ejemplo@cfe.mx" />
+                </div>
+
+                <div class="mb-3 text-start">
+                    <label class="form-label">Contraseña</label>
+                    <div class="input-group">
+                        <input asp-for="Contrasenia" type="password" class="form-control" id="passwordInput" placeholder="Contraseña" />
+                        <span class="input-group-text toggle-password" onclick="togglePassword()">
+                            <i id="togglePasswordIcon" class="fas fa-eye-slash"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100">Iniciar Sesión</button>
+            </form>
+
+            <footer class="mt-4">
+                © 2025 - Comision Federal de Electricidad
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            var input = document.getElementById("passwordInput");
+            var icon = document.getElementById("togglePasswordIcon");
+
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,622 @@
+﻿@{
+    ViewData["Title"] = "Inicio";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@model MantenimientosTI.Models.ViewModels.VMAgendaInicio
+@using System.Globalization
+<style>
+    /* Estilos para las filas de la tabla */
+    tr.table-danger {
+        background-color: #ffcccc !important;
+    }
+
+        tr.table-danger td {
+            color: #721c24 !important;
+        }
+
+    /* Estilos para la leyenda */
+    .leyenda-mantenimientos {
+        font-size: 0.9rem;
+    }
+
+    .color-box {
+        border: 1px solid #dee2e6;
+        border-radius: 3px;
+    }
+
+    /* Para mantener la alineación en móviles */
+    @@media (max-width: 768px) {
+        .card-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+
+        .leyenda-mantenimientos {
+            margin-top: 10px;
+        }
+    }
+
+
+    .hover-scale {
+        transition: all 0.3s ease;
+    }
+
+    /* Efecto para tarjeta verde */
+    .card[style*="background-color: #28a745"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(40, 167, 69, 0.2) !important;
+    }
+
+    /* Efecto para tarjeta amarilla */
+    .card[style*="background-color: #ffc107"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(255, 193, 7, 0.2) !important;
+    }
+
+    /* Efecto para tarjeta azul */
+    .card[style*="background-color: #0d6efd"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(13, 110, 253, 0.2) !important;
+    }
+</style>
+
+<div class="container mt-5">
+
+    <div class="card mt-4 shadow-sm rounded">
+
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h1 class="mb-0">Bienvenid@@, @CultureInfo.CurrentCulture.TextInfo.ToTitleCase(Context.Session.GetString("NombreUsuario")?.ToLower() ?? "")</h1>
+            <div class="leyenda-mantenimientos d-flex gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="color-box bg-white border me-2" style="width: 20px; height: 20px;"></div>
+                    <span>PREVENTIVO</span>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="color-box bg-danger me-2" style="width: 20px; height: 20px;"></div>
+                    <span>CORRECTIVO</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-3">
+                <!-- Tarjeta Programados (Nueva) -->
+                <div class="col-xl-3 col-md-4 col-sm-6">
+                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #0d6efd; min-height: 100px;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-primary mb-1 fw-bold" style="font-size: 0.75rem;">PROGRAMADOS ESTE MES</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.ProgramadosCount</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-calendar-alt text-primary" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-4 col-sm-6">
+                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #28a745; min-height: 100px;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-success mb-1 fw-bold" style="font-size: 0.75rem;">TERMINADOS ESTE MES</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.TerminadosCount</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i> <!-- Reducido tamaño del icono -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-4 col-sm-6">
+                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #ffc107; min-height: 100px;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-warning mb-1 fw-bold" style="font-size: 0.75rem;">PENDIENTES ESTE MES</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.PendientesCount</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-spinner text-warning" style="font-size: 1.5rem;"></i> <!-- Reducido tamaño del icono -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+
+            <!-- CFEmáticos -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-table me-1"></i> CFEmáticos
+                </div>
+                <div class="card-body">
+                    <table id="tablaCFEmaticos" class="display">
+                        <thead>
+                            <tr>
+                                <th>Fecha Programada</th>
+                                <th>Zona</th>
+                                <th>Agencia</th>
+                                <th>Centro</th>
+                                <th>Tipo de Equipo</th>
+                                <th>Número de Cajero</th>
+                                <th>Estatus</th>
+                                <th>Ver Equipo</th>
+                                <th>Hoja de Servicio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Cfematicos)
+                            {
+                                <tr data-num-act-fijo="@item.NumActFijo" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
+                                    <td data-order="@item.FechaProgramada.ToDateTime(TimeOnly.MinValue).Ticks">
+                                        @item.FechaProgramada.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td>@item.Zona</td>
+                                    <td>@item.Agencia</td>
+                                    <td>@item.Centro</td>
+                                    <td>@item.Tipo</td>
+                                    <td>@item.NumCajero</td>
+                                    <td>@item.Estatus</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalPdf">
+                                            <i class="bi bi-file-earmark-pdf"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Equipos de Atención a Clientes -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-table me-1"></i> Equipos de Atención a Clientes
+                </div>
+                <div class="card-body">
+                    <table id="tablaAC" class="display">
+                        <thead>
+                            <tr>
+                                <th>Fecha Programada</th>
+                                <th>Zona</th>
+                                <th>Agencia</th>
+                                <th>Centro</th>
+                                <th>Tipo de Equipo</th>
+                                <th>Estatus</th>
+                                <th>Ver Equipo</th>
+                                <th>Hoja de Servicio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.AtencionClientes)
+                            {
+                                <tr data-num-act-fijo="@item.NumActFijo" data-tipo-equipo="@item.Tipo" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
+                                    <td data-order="@item.FechaProgramada.ToDateTime(TimeOnly.MinValue).Ticks">
+                                        @item.FechaProgramada.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td>@item.Zona</td>
+                                    <td>@item.Agencia</td>
+                                    <td>@item.Centro</td>
+                                    <td>@item.Tipo</td>
+                                    <td>@item.Estatus</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-dark btnGenerarPdf">
+                                            <i class="bi bi-file-earmark-pdf"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Equipos de Cómputo -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-table me-1"></i> Equipos de Cómputo
+                </div>
+                <div class="card-body">
+                    <table id="tablaEC" class="display">
+                        <thead>
+                            <tr>
+                                <th>Fecha Programada</th>
+                                <th>Zona</th>
+                                <th>Agencia</th>
+                                <th>Centro</th>
+                                <th>Tipo de Equipo</th>
+                                <th>Estatus</th>
+                                <th>Ver Equipo</th>
+                                <th>Hoja de Servicio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Computo)
+                            {
+                                <tr data-num-act-fijo="@item.NumActFijo" data-tipo-equipo="@item.Tipo" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
+                                    <td data-order="@item.FechaProgramada.ToDateTime(TimeOnly.MinValue).Ticks">
+                                        @item.FechaProgramada.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td>@item.Zona</td>
+                                    <td>@item.Agencia</td>
+                                    <td>@item.Centro</td>
+                                    <td>@item.Tipo</td>
+                                    <td>@item.Estatus</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-dark btnGenerarPdf">
+                                            <i class="bi bi-file-earmark-pdf"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ver Equipo -->
+    <div class="modal fade" id="modalInfo" tabindex="-1" aria-labelledby="modalInfoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content rounded">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalInfoLabel">Información del Equipo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="modalInfoBody">
+                    <!-- El contenido dinámico se cargará aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Hoja de Servicio para Equipos de Cómputo -->
+    <div class="modal fade" id="modalPdfComputo" tabindex="-1" aria-labelledby="modalPdfComputoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPdfComputoLabel">Hoja de Servicio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formHojaServicioComputo">
+                        <input type="hidden" id="numActFijoPdfComputo" name="numActFijo" />
+                        <input type="hidden" id="fechaProgramadaPdfComputo" name="fechaProgramada" />
+
+                        <!-- Sección de confirmación -->
+                        <div class="alert alert-info mb-3" id="seccionConfirmacion">
+                            ¿El Equipo de Cómputo está asignado a:
+                            <strong><span id="rpeAsignado"></span> - <span id="nombreAsignado"></span></strong>?
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4" id="botonesConfirmacion">
+                            <button type="button" id="btnModificarComputo" class="btn btn-warning">
+                                <i class="bi bi-pencil me-2"></i>No, Modificar
+                            </button>
+                            <button type="button" id="btnContinuarComputo" class="btn btn-success">
+                                <i class="bi bi-check-circle me-2"></i>Sí, Descargar PDF
+                            </button>
+                        </div>
+
+                        <!-- Sección de modificación (inicialmente oculta) -->
+                        <div id="camposModificacion" style="display: none;" class="mt-3">
+                            <div class="mb-3">
+                                <label for="rpeComputo" class="form-label">RPE:</label>
+                                <input type="text" class="form-control" id="rpeComputo" name="rpe" placeholder="Ingrese el nuevo RPE">
+                            </div>
+                            <div class="mb-3">
+                                <label for="nombreComputo" class="form-label">Nombre:</label>
+                                <input type="text" class="form-control" id="nombreComputo" name="nombre" placeholder="Ingrese el nuevo nombre">
+                            </div>
+                            <div class="d-grid">
+                                <button type="button" id="btnDescargarComputo" class="btn btn-success">
+                                    <i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Hoja de Servicio -->
+    <div class="modal fade" id="modalPdf" tabindex="-1" aria-labelledby="modalPdfLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPdfLabel">Hoja de Servicio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formHojaServicio">
+                        <input type="hidden" id="numActFijoPdf" name="numActFijo" />
+                        <input type="hidden" id="fechaProgramadaPdf" name="fechaProgramada" />
+                        <input type="hidden" id="numCajeroPdf" name="numCajero" />
+                        <div class="mb-3">
+                            <label for="responsable" class="form-label">Responsable del mantenimiento:</label>
+                            <select class="form-select" id="responsable" name="responsable" required>
+                                <option value="TECNICO_DE_ZONA" selected>TÉCNICO DE ZONA</option>
+                                <option value="TECNICO_EXTERNO">TÉCNICO EXTERNO</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="divTecnicoExterno" style="display: none;">
+                            <label for="nombreTecnico" class="form-label">Nombre del Técnico Externo:</label>
+                            <input type="text" class="form-control" id="nombreTecnico" name="nombreTecnico">
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" id="btnGenerarPdf" class="btn btn-success">
+                                <i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- CSS de DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- JS de DataTables -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Configuración para las tablas
+            $('#tablaCFEmaticos, #tablaAC, #tablaEC').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                }
+            });
+
+            // Manejar el click en los botones "Ver Equipo"
+            $('[data-bs-target="#modalInfo"]').on('click', function() {
+                var fila = $(this).closest('tr');
+                var numActFijo = fila.data('num-act-fijo');
+
+                $.get('/Home/ObtenerDetallesEquipo', { numActFijo: numActFijo }, function(data) {
+                    $('#modalInfoBody').html(data);
+                });
+            });
+
+            // Manejar el click en los botones "Hoja de Servicio" de CFEmáticos (abre modal)
+            $('#tablaCFEmaticos').on('click', '[data-bs-target="#modalPdf"]', function() {
+                var fila = $(this).closest('tr');
+                var numActFijo = fila.data('num-act-fijo');
+                var fechaProgramada = fila.find('td:first').text().trim();
+                var numCajero = fila.find('td:nth-child(6)').text().trim();
+
+                $('#numActFijoPdf').val(numActFijo);
+                $('#fechaProgramadaPdf').val(fechaProgramada);
+                $('#numCajeroPdf').val(numCajero);
+
+                // Resetear el formulario
+                $('#formHojaServicio')[0].reset();
+                $('#divTecnicoExterno').hide();
+                $('#nombreTecnico').prop('required', false);
+            });
+
+            // Manejar el click en los botones "Hoja de Servicio" de Equipos de Atención a Clientes (descarga directa)
+            $('#tablaAC').on('click', '.btnGenerarPdf', function() {
+                var fila = $(this).closest('tr');
+                var numActFijo = fila.data('num-act-fijo');
+                var tipoEquipo = fila.data('tipo-equipo');
+                var fechaProgramada = fila.find('td:first').text().trim();
+
+                // Mostrar carga
+                var $btn = $(this);
+                $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
+
+                $.ajax({
+                    url: '/Home/GenerarHojaServicio',
+                    type: 'POST',
+                    data: {
+                        numActFijo: numActFijo,
+                        fechaProgramada: fechaProgramada,
+                        responsable: "TECNICO_DE_ZONA",
+                        nombreTecnico: "@Context.Session.GetString("NombreUsuario")"
+                    },
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+                    success: function(data) {
+                        var url = URL.createObjectURL(data);
+                        var a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'HojaServicioEquipoAC_' + numActFijo + '.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(function() {
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        }, 100);
+                    },
+                    error: function(xhr) {
+                        alert('Error al generar el PDF: ' + xhr.responseText);
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf"></i>');
+                    }
+                });
+            });
+
+            // Manejar el click en los botones "Hoja de Servicio" de Equipos de Cómputo
+            $('#tablaEC').on('click', '.btnGenerarPdf', function() {
+                var fila = $(this).closest('tr');
+                var numActFijo = fila.data('num-act-fijo');
+                var fechaProgramada = fila.find('td:first').text().trim();
+
+                // Obtener los datos del equipo de cómputo
+                $.get('/Home/ObtenerDatosComputo', { numActFijo: numActFijo }, function(data) {
+                    $('#numActFijoPdfComputo').val(numActFijo);
+                    $('#fechaProgramadaPdfComputo').val(fechaProgramada);
+                    $('#rpeAsignado').text(data.rpe);
+                    $('#nombreAsignado').text(data.nombre);
+
+                    // Limpiar los campos de modificación (aparecerán vacíos)
+                    $('#rpeComputo').val('');
+                    $('#nombreComputo').val('');
+
+                    // Ocultar sección de modificación inicialmente
+                    $('#camposModificacion').hide();
+
+                    // Mostrar el modal
+                    $('#modalPdfComputo').modal('show');
+                });
+            });
+
+            // Mostrar/ocultar campo de técnico externo en el modal de CFEmáticos
+            $('#responsable').change(function() {
+                if ($(this).val() === 'TECNICO_EXTERNO') {
+                    $('#divTecnicoExterno').show();
+                    $('#nombreTecnico').prop('required', true);
+                } else {
+                    $('#divTecnicoExterno').hide();
+                    $('#nombreTecnico').prop('required', false);
+                }
+            });
+
+            // Manejar el botón "Generar PDF" dentro del modal de CFEmáticos
+            $('#btnGenerarPdf').click(function() {
+                if ($('#formHojaServicio')[0].checkValidity()) {
+                    var formData = $('#formHojaServicio').serialize();
+                    var $btn = $(this);
+                    var numCajero = $('#numCajeroPdf').val();
+                    var fileName = numCajero ?
+                        'HojaServicioCFEMATICO_' + numCajero + '.pdf' :
+                        'HojaServicioCFEMATICO_' + $('#numActFijoPdf').val() + '.pdf';
+
+                    $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
+
+                    $.ajax({
+                        url: '/Home/GenerarHojaServicio',
+                        type: 'POST',
+                        data: formData,
+                        xhrFields: {
+                            responseType: 'blob'
+                        },
+                        success: function(data) {
+                            var url = URL.createObjectURL(data);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = fileName;
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(function() {
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                $('#modalPdf').modal('hide');
+                            }, 100);
+                        },
+                        error: function(xhr) {
+                            alert('Error al generar el PDF: ' + xhr.responseText);
+                        },
+                        complete: function() {
+                            $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF');
+                        }
+                    });
+                } else {
+                    $('#formHojaServicio')[0].reportValidity();
+                }
+            });
+
+            // Manejar el botón Continuar en modal de cómputo (descarga directa con datos originales)
+            $('#btnContinuarComputo').click(function() {
+                descargarPdfComputo(false);
+            });
+
+            // Manejar el botón Modificar en modal de cómputo (mostrar campos para edición)
+            $('#btnModificarComputo').click(function() {
+                $('#camposModificacion').show();
+            });
+
+            // Manejar el botón Descargar en modal de cómputo (con datos modificados)
+            $('#btnDescargarComputo').click(function() {
+                descargarPdfComputo(true);
+            });
+
+            // Función para descargar el PDF de computo
+            function descargarPdfComputo(usarDatosModificados) {
+                var formData = {
+                    numActFijo: $('#numActFijoPdfComputo').val(),
+                    fechaProgramada: $('#fechaProgramadaPdfComputo').val(),
+                    responsable: "TECNICO_DE_ZONA",
+                    nombreTecnico: "@Context.Session.GetString("NombreUsuario")"
+                };
+
+                if (usarDatosModificados) {
+                    // Validar campos modificados
+                    if (!$('#rpeComputo').val() || !$('#nombreComputo').val()) {
+                        alert('Por favor complete ambos campos (RPE y Nombre)');
+                        return;
+                    }
+                    formData.rpe = $('#rpeComputo').val();
+                    formData.nombre = $('#nombreComputo').val();
+                }
+
+                var $btn = $('#btnDescargarComputo, #btnContinuarComputo').filter(':visible');
+                $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
+
+                $.ajax({
+                    url: '/Home/GenerarHojaServicioComputo',
+                    type: 'POST',
+                    data: formData,
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+                    success: function(data) {
+                        var url = URL.createObjectURL(data);
+                        var a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'HojaServicioEquipoComputo_' + formData.numActFijo + '.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(function() {
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            $('#modalPdfComputo').modal('hide');
+                        }, 100);
+                    },
+                    error: function(xhr) {
+                        alert('Error al generar el PDF: ' + xhr.responseText);
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).html(usarDatosModificados ?
+                            '<i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF' :
+                            '<i class="bi bi-check-circle me-2"></i>Sí, Descargar PDF');
+                    }
+                });
+            }
+        });
+    </script>
+}

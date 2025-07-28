@@ -1,0 +1,17 @@
+﻿@{
+    ViewData["Title"] = "Acceso Denegado";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="text-center">
+        <!-- Logo CFE 404 STOP -->
+        <div class="mb-4">
+            <img src="/images/LOGO404.png" alt="CFE 404 Logo" class="img-fluid" style="max-height: 300px;">
+        </div>
+        <p class="fs-3"> <span class="text-danger">Upps!</span> Acceso Denegado</p>
+        <p class="lead">No tienes permisos para acceder a esta sección.</p>
+        <p class="lead">Por favor, contacta al administrador si necesitas acceso.</p>
+        <a href="@Url.Action("Inicio", "Home")" class="btn btn-success">Volver al Inicio</a>
+    </div>
+</div>

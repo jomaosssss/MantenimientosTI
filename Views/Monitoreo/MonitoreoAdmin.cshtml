@@ -1,0 +1,752 @@
+﻿@model List<MantenimientosTI.Models.VMMonitoreoAdmin>
+@{
+    ViewData["Title"] = "Monitoreo Administrador";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* ESTILOS OPTIMIZADOS PARA LOS BOTONES CIRCULARES (CFEMÁTICOS) */
+    .cfematico-btn {
+        width: 19px;
+        height: 19px;
+        padding: 0;
+        margin: 1px;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 50%;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        transition: transform 0.1s ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+        .cfematico-btn:hover {
+            opacity: 0.9;
+        }
+
+        .cfematico-btn.selected {
+            box-shadow: 0 0 0 2px #0d6efd;
+            transform: scale(1.1);
+            z-index: 1;
+        }
+
+    /* ESTILOS PARA LAS TARJETAS DE ZONA */
+    .zona-card {
+        transition: all 0.3s ease;
+        margin-bottom: 6px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        background-color: white;
+        height: 150px !important;
+    }
+
+    .zona-header {
+        padding: 3px 5px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .zona-body {
+        padding: 4px;
+        height: calc(100% - 28px);
+    }
+
+    .cfematicos-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1px;
+        justify-content: flex-start;
+    }
+
+    .zona-title {
+        font-weight: 600;
+        margin: 0;
+        font-size: 0.8rem;
+        display: inline-block;
+    }
+
+    .zona-count {
+        font-size: 0.65rem;
+        float: right;
+    }
+
+    /* GRID PRINCIPAL: ZONAS + INFO */
+    .main-grid {
+        display: grid;
+        grid-template-columns: 3fr 2fr;
+        gap: 6px;
+    }
+
+    /* Contenedor de zonas y eventos */
+    .zones-events-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* GRID DE ZONAS */
+    .zones-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+    }
+
+    /* Contenedor de la info del lado derecho */
+    .info-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .info-card {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 8px;
+        background-color: white;
+    }
+
+    /* Tarjeta de eventos */
+    .events-card {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 8px;
+        background-color: white;
+    }
+
+    .compact-container {
+        padding: 8px;
+    }
+
+    /* Botones de estado */
+    .status-btn {
+        display: inline-block;
+        width: 19px;
+        height: 19px;
+        border-radius: 50%;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .card-header {
+        background-color: #f8f9fa !important;
+    }
+
+    /* Selector de rango de tiempo */
+    #rangoTiempo {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 0.85rem;
+        background-color: white;
+        cursor: pointer;
+    }
+
+        #rangoTiempo:hover {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.1);
+        }
+
+    /* Responsividad */
+    @@media (max-width: 1400px) {
+        .zones-container {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .zones-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .main-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Estilos para la lista de eventos */
+    .event-item {
+        border-bottom: 1px solid #eee;
+        padding: 5px 0;
+    }
+
+    .event-severity {
+        font-size: 0.7rem;
+        padding: 2px 5px;
+        border-radius: 3px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 200px;
+    }
+</style>
+
+<div class="container mt-2 compact-container">
+    <div class="card shadow-sm">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Monitoreo de CFEmáticos</h5>
+            @* <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-1">
+                    <span class="status-btn bg-success" title="Normal"></span>
+                    <span class="small">Normal</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <span class="status-btn bg-warning" title="Mantenimiento"></span>
+                    <span class="small">Mantenimiento</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <span class="status-btn bg-danger" title="Fuera"></span>
+                    <span class="small">Fuera</span>
+                </div>
+            </div> *@
+        </div>
+
+        <div class="card-body p-2">
+            <div class="main-grid">
+                <!-- Sección de Zonas y Eventos (columna izquierda) -->
+                <div class="zones-events-container">
+                    <!-- Grid de Zonas -->
+                    <div class="zones-container">
+                        <!-- Columnas 1 a 4 -->
+                        <!-- Columna 1 -->
+                        <div>
+                            @for (int i = 0; i < Model.Count; i += 4)
+                            {
+                                var zonaItem = Model[i];
+                                <div class="zona-card">
+                                    <div class="zona-header">
+                                        <span class="zona-title">@zonaItem.Zona.NombreZona</span>
+                                        <span class="badge bg-success zona-count">@zonaItem.Cfematicos.Count</span>
+                                    </div>
+                                    <div class="zona-body">
+                                        <div class="cfematicos-container">
+                                            @foreach (var cfematico in zonaItem.Cfematicos)
+                                            {
+                                                <button class="btn cfematico-btn"
+                                                        data-num-cajero="@cfematico.NumCajero"
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="@cfematico.NumCajero">
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Columna 2 -->
+                        <div>
+                            @for (int i = 1; i < Model.Count; i += 4)
+                            {
+                                var zonaItem = Model[i];
+                                <div class="zona-card">
+                                    <div class="zona-header">
+                                        <span class="zona-title">@zonaItem.Zona.NombreZona</span>
+                                        <span class="badge bg-success zona-count">@zonaItem.Cfematicos.Count</span>
+                                    </div>
+                                    <div class="zona-body">
+                                        <div class="cfematicos-container">
+                                            @foreach (var cfematico in zonaItem.Cfematicos)
+                                            {
+                                                <button class="btn cfematico-btn"
+                                                        data-num-cajero="@cfematico.NumCajero"
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="@cfematico.NumCajero">
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Columna 3 -->
+                        <div>
+                            @for (int i = 2; i < Model.Count; i += 4)
+                            {
+                                var zonaItem = Model[i];
+                                <div class="zona-card">
+                                    <div class="zona-header">
+                                        <span class="zona-title">@zonaItem.Zona.NombreZona</span>
+                                        <span class="badge bg-success zona-count">@zonaItem.Cfematicos.Count</span>
+                                    </div>
+                                    <div class="zona-body">
+                                        <div class="cfematicos-container">
+                                            @foreach (var cfematico in zonaItem.Cfematicos)
+                                            {
+                                                <button class="btn cfematico-btn"
+                                                        data-num-cajero="@cfematico.NumCajero"
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="@cfematico.NumCajero">
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Columna 4 -->
+                        <div>
+                            @for (int i = 3; i < Model.Count; i += 4)
+                            {
+                                var zonaItem = Model[i];
+                                <div class="zona-card">
+                                    <div class="zona-header">
+                                        <span class="zona-title">@zonaItem.Zona.NombreZona</span>
+                                        <span class="badge bg-success zona-count">@zonaItem.Cfematicos.Count</span>
+                                    </div>
+                                    <div class="zona-body">
+                                        <div class="cfematicos-container">
+                                            @foreach (var cfematico in zonaItem.Cfematicos)
+                                            {
+                                                <button class="btn cfematico-btn"
+                                                        data-num-cajero="@cfematico.NumCajero"
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="@cfematico.NumCajero">
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta de Eventos (debajo de las zonas) -->
+                    <div class="events-card">
+                        <h6 class="border-bottom pb-1 mb-2">Eventos Recientes</h6>
+                        <div id="listaEventos" class="small">
+                            <div class="text-center py-2">
+                                <p class="text-muted">Seleccione un CFEmático para ver sus eventos</p>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="badge bg-danger">Críticos (100)</span>
+                            <span class="badge bg-warning">Altos (50)</span>
+                            <span class="badge bg-success">Bajos (0)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de Información (columna derecha) -->
+                <div class="info-container">
+                    <!-- Tarjeta de Información -->
+                    <div class="info-card">
+                        <div class="small">
+                            <h6 class="border-bottom pb-1 mb-2">Información del CFEmático</h6>
+                            <div class="row">
+                                <!-- Columna izquierda -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <span class="fw-bold">Número de Cajero:</span>
+                                        <span id="numCajero" class="ms-2">-</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="fw-bold">Número de Serie:</span>
+                                        <span id="numSerie" class="ms-2">-</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="fw-bold">Dirección IP:</span>
+                                        <span id="ipCajero" class="ms-2">-</span>
+                                    </div>
+                                </div>
+                                <!-- Columna derecha -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <span class="fw-bold">Número de Activo Fijo:</span>
+                                        <span id="numActFijo" class="ms-2">-</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="fw-bold">Número de Inventario:</span>
+                                        <span id="numInventario" class="ms-2">-</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="fw-bold">Versión:</span>
+                                        <span class="ms-2">No disponible</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="border-bottom pb-2 mb-3 mt-3">Ubicación</h6>
+
+                            <div class="row">
+                                <!-- Columna izquierda -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <span class="fw-bold">Zona:</span>
+                                        <span id="zona" class="ms-2">-</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="fw-bold">Centro:</span>
+                                        <span id="centro" class="ms-2">-</span>
+                                    </div>
+                                </div>
+                                <!-- Columna derecha -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <span class="fw-bold">Agencia:</span>
+                                        <span id="agencia" class="ms-2">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-card mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Estadísticas de Eventos</h6>
+                            <select id="rangoTiempo" class="form-select form-select-sm" style="width: auto;">
+                                <option value="1">Últimas 24 horas</option>
+                                <option value="7" selected>Últimos 7 días</option>
+                                <option value="30">Últimos 30 días</option>
+                                <option value="90">Últimos 3 meses</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="basicBarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas avanzadas -->
+                    <div class="info-card mt-3">
+                        <h6 class="border-bottom pb-2 mb-3">Análisis de Eventos</h6>
+                        <div id="estadisticasAvanzadas">
+                            <p class="text-muted small">Seleccione un CFEmático para ver análisis detallado</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Variable global para el gráfico
+        var basicBarChart = null;
+
+        $(document).ready(function() {
+            // Inicializar tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip({
+                trigger: 'hover'
+            });
+
+            // Inicializar colores de los botones
+            inicializarEstados();
+
+            // Delegación de eventos para los botones de CFEmáticos
+            $(document).on('click', '.cfematico-btn', function() {
+                var $clickedButton = $(this);
+                var wasSelected = $clickedButton.hasClass('selected');
+                var numCajero = $clickedButton.data('num-cajero');
+
+                $('.cfematico-btn').removeClass('selected');
+
+                if (!wasSelected) {
+                    $clickedButton.addClass('selected');
+
+                    // Cargar detalles del CFEmático
+                    cargarDetallesCfematico(numCajero);
+
+                    // Actualizar gráfica y eventos
+                    actualizarGrafica(numCajero);
+                    cargarEventos(numCajero);
+                    mostrarEstadisticasAvanzadas(numCajero);
+                } else {
+                    limpiarDatos();
+                }
+            });
+
+            // Event listener para el selector de rango de tiempo
+            $('#rangoTiempo').change(function() {
+                var selectedCfematico = $('.cfematico-btn.selected');
+                if (selectedCfematico.length) {
+                    var numCajero = selectedCfematico.data('num-cajero');
+                    actualizarGrafica(numCajero);
+                    cargarEventos(numCajero);
+                    mostrarEstadisticasAvanzadas(numCajero);
+                }
+            });
+        });
+
+        // Función para inicializar los estados de los CFEmáticos
+        function inicializarEstados() {
+            $('.cfematico-btn').each(function() {
+                var $btn = $(this);
+                var numCajero = $btn.data('num-cajero');
+
+                $.get('@Url.Action("ObtenerEstadoCfematico", "Monitoreo")', { numCajero: numCajero }, function(estado) {
+                    $btn.removeClass('btn-light bg-success bg-warning bg-danger');
+
+                    if (estado === 'N') {
+                        $btn.addClass('bg-success');
+                    } else if (estado === 'M') {
+                        $btn.addClass('bg-warning');
+                    } else {
+                        $btn.addClass('bg-danger');
+                    }
+                }).fail(function() {
+                    $btn.addClass('bg-danger');
+                });
+            });
+        }
+
+                function cargarDetallesCfematico(numCajero) {
+            $.get('@Url.Action("ObtenerDetallesCfematico", "Monitoreo")', { numCajero: numCajero })
+                .done(function(data) {
+                    if (data.error) {
+                        console.error(data.error);
+                        mostrarErrorEnUI("No se pudieron cargar los detalles");
+                        return;
+                    }
+
+                    // Actualiza la UI solo si hay datos válidos
+                    $('#numCajero').text(data.numCajero);
+                    $('#numActFijo').text(data.numActFijo);
+                    $('#numSerie').text(data.numSerie);
+                    $('#numInventario').text(data.numInventario);
+                    $('#ipCajero').text(data.ipCajero);
+                    $('#zona').text(data.zona);
+                    $('#agencia').text(data.agencia);
+                    $('#centro').text(data.centro);
+                })
+                .fail(function() {
+                    mostrarErrorEnUI("Error de conexión");
+                });
+        }
+
+        function mostrarErrorEnUI(mensaje) {
+            // Puedes implementar un toast, alerta o actualizar un div de errores
+            console.error(mensaje);
+            $('#numCajero').text('-');
+            // Restablece todos los demás campos a '-' también
+        }
+
+                function actualizarGrafica(numCajero) {
+            var dias = $('#rangoTiempo').val();
+
+            $.get('@Url.Action("ObtenerEstadisticasEventos", "Monitoreo")', {
+                numCajero: numCajero,
+                dias: dias
+            }, function(data) {
+                var ctx = document.getElementById('basicBarChart').getContext('2d');
+
+                if (basicBarChart !== null) {
+                    basicBarChart.destroy();
+                }
+
+                basicBarChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Críticos', 'Altos', 'Bajos'], // Solo 3 categorías principales
+                        datasets: [
+                            {
+                                label: 'Operativos',
+                                data: [data.criticosOperativos, data.altosOperativos, data.bajosOperativos],
+                                backgroundColor: 'rgba(231, 76, 60, 0.8)', // Rojo sólido
+                                borderColor: 'rgba(231, 76, 60, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Técnicos',
+                                data: [data.criticosTecnicos, data.altosTecnicos, data.bajosTecnicos],
+                                backgroundColor: 'rgba(52, 152, 219, 0.8)', // Azul sólido
+                                borderColor: 'rgba(52, 152, 219, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Cantidad de Eventos',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Nivel de Severidad',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 20,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                titleFont: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                bodyFont: {
+                                    size: 12
+                                },
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y} eventos`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+
+        function cargarEstadosEnLote() {
+            $.get('@Url.Action("ObtenerEstadosCfematicos", "Monitoreo")', function(estados) {
+                $('.cfematico-btn').each(function() {
+                    var $btn = $(this);
+                    var numCajero = $btn.data('num-cajero');
+                    var estado = estados[numCajero] || 'N'; // Default a "N" si no existe
+
+                    // Remover todas las clases de color primero
+                    $btn.removeClass('bg-success bg-warning bg-danger');
+
+                    // Aplicar la clase correcta
+                    if (estado === 'N') {
+                        $btn.addClass('bg-success');
+                    } else if (estado === 'M') {
+                        $btn.addClass('bg-warning');
+                    } else {
+                        $btn.addClass('bg-danger');
+                    }
+                });
+            }).fail(function() {
+                console.error("Error al cargar estados de CFEmáticos");
+            });
+        }
+
+        // Llamar esta función al cargar la página
+        $(document).ready(function() {
+            cargarEstadosEnLote();
+        });
+        // Función para cargar los eventos recientes
+        function cargarEventos(numCajero) {
+            var dias = $('#rangoTiempo').val();
+
+            $.get('@Url.Action("ObtenerEventosRecientes", "Monitoreo")', {
+                numCajero: numCajero,
+                dias: dias
+            }, function(data) {
+                var $lista = $('#listaEventos');
+                $lista.empty();
+
+                if (data.length === 0) {
+                    $lista.html('<div class="text-center py-2"><p class="text-muted">No hay eventos recientes</p></div>');
+                    return;
+                }
+
+                var eventosHtml = data.map(function(evento) {
+                    var badgeClass = evento.severidad == 100 ? 'bg-danger' :
+                                   evento.severidad == 50 ? 'bg-warning' : 'bg-success';
+
+                    return `
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">${evento.fuente}</span>
+                                <span class="badge ${badgeClass}">${evento.severidad}</span>
+                            </div>
+                            <div>${evento.descripcion}</div>
+                            <div class="text-end small text-muted">${evento.fecha}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                $lista.html(eventosHtml);
+            });
+        }
+
+        // Función para mostrar estadísticas avanzadas
+        function mostrarEstadisticasAvanzadas(numCajero) {
+            var dias = $('#rangoTiempo').val();
+
+            $.get('@Url.Action("ObtenerEstadisticasAvanzadas", "Monitoreo")', {
+                numCajero: numCajero,
+                dias: dias
+            }, function(data) {
+                var $container = $('#estadisticasAvanzadas');
+                $container.empty();
+
+                if (data.mensaje) {
+                    $container.html(`<p class="text-muted small">${data.mensaje}</p>`);
+                    return;
+                }
+
+                // Crear HTML para las estadísticas
+                var html = `
+                    <div class="mb-3">
+                        <h6 class="small fw-bold">Total de eventos: <span class="badge bg-secondary">${data.totalEventos}</span></h6>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="small fw-bold">Eventos más comunes:</h6>
+                        ${data.comunes.map(evento => `
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>${evento.descripcion}</span>
+                                <span class="badge bg-secondary">${evento.cantidad}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                if (data.tiempoPromedio) {
+                    html += `
+                        <div class="mb-3">
+                            <h6 class="small fw-bold">Tiempo promedio entre fallos:</h6>
+                            <div class="small">${data.tiempoPromedio.toFixed(1)} horas</div>
+                        </div>
+                    `;
+                }
+
+                $container.html(html);
+            });
+        }
+
+        // Función para limpiar los datos cuando se deselecciona un CFEmático
+        function limpiarDatos() {
+            $('#numCajero, #numActFijo, #numSerie, #numInventario, #ipCajero, #zona, #agencia, #centro').text('-');
+            $('#listaEventos').html('<div class="text-center py-2"><p class="text-muted">Seleccione un CFEmático para ver sus eventos</p></div>');
+            $('#estadisticasAvanzadas').html('<p class="text-muted small">Seleccione un CFEmático para ver análisis detallado</p>');
+
+            if (basicBarChart !== null) {
+                basicBarChart.destroy();
+                basicBarChart = null;
+
+                // Recrear el canvas vacío
+                $('#basicBarChart').replaceWith('<canvas id="basicBarChart"></canvas>');
+            }
+        }
+    </script>
+}

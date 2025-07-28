@@ -1,0 +1,286 @@
+﻿@{
+    ViewData["Title"] = "Terminar Mantenimiento";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h1 class="mb-0">Terminar Mantenimiento</h1>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Buscar por Número de Orden:</label>
+                        <div class="input-group">
+                            <input type="text" id="numeroOrden" class="form-control" placeholder="Ingrese el número de orden">
+                            <button class="btn btn-success" type="button" id="btnBuscarOrden">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultados de la búsqueda -->
+            <div id="resultadoBusqueda" class="mt-4" style="display: none;">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Información del Mantenimiento</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p><strong>Número de Orden:</strong> <span id="infoNumOrden">-</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Número de Activo Fijo:</strong> <span id="infoNumActFijo">-</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Fecha Programada:</strong> <span id="infoFechaProgramada">-</span></p>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                <p><strong>Tipo de Mantenimiento:</strong> <span id="infoTipoMantenimiento">-</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Tipo de Equipo:</strong> <span id="infoTipoEquipo">-</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Estatus:</strong> <span id="infoEstatus">-</span></p>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                <p><strong>Zona:</strong> <span id="infoZona">-</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Agencia:</strong> <span id="infoAgencia">-</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Centro:</strong> <span id="infoCentro">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campos editables -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label class="form-label">Problemas:</label>
+                        <textarea id="problemas" class="form-control" rows="3" placeholder="Describa los problemas encontrados" disabled></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label class="form-label">Diagnóstico:</label>
+                        <textarea id="diagnostico" class="form-control" rows="3" placeholder="Describa el diagnóstico técnico" disabled></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label class="form-label">Observaciones:</label>
+                        <textarea id="observaciones" class="form-control" rows="2" placeholder="Agregue cualquier observación adicional" disabled></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label class="form-label">Hoja de Servicio (PDF):</label>
+                        <div class="input-group">
+                            <input type="file" id="archivoPdf" class="form-control" accept=".pdf" disabled>
+                            <button class="btn btn-outline-secondary" type="button" id="btnLimpiarPdf">
+                                <i class="bi bi-x-circle"></i> Limpiar
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">Tamaño máximo: 5MB</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grupo de fotos (oculto por defecto) -->
+            <div id="fotoAntesGroup" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label">Foto antes del mantenimiento:</label>
+                            <div class="input-group">
+                                <input type="file" id="fotoAntes" class="form-control" accept="image/*" disabled>
+                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoAntes">
+                                    <i class="bi bi-x-circle"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label">Foto durante el mantenimiento:</label>
+                            <div class="input-group">
+                                <input type="file" id="fotoDurante" class="form-control" accept="image/*" disabled>
+                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDurante">
+                                    <i class="bi bi-x-circle"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label">Foto después del mantenimiento:</label>
+                            <div class="input-group">
+                                <input type="file" id="fotoDespues" class="form-control" accept="image/*" disabled>
+                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDespues">
+                                    <i class="bi bi-x-circle"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer text-end">
+            <button type="button" id="btnTerminar" class="btn btn-success" disabled>
+                <i class="bi bi-check-circle"></i> Terminar
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Configuración inicial
+            bloquearCampos(true);
+
+            // Eventos de búsqueda
+            $('#btnBuscarOrden').click(buscarMantenimiento);
+            $('#numeroOrden').keypress(function(e) {
+                if (e.which === 13) buscarMantenimiento();
+            });
+
+            // Limpiar campos
+            $('#btnLimpiarPdf').click(() => $('#archivoPdf').val(''));
+            $('#btnLimpiarFotoAntes').click(() => $('#fotoAntes').val(''));
+            $('#btnLimpiarFotoDurante').click(() => $('#fotoDurante').val(''));
+            $('#btnLimpiarFotoDespues').click(() => $('#fotoDespues').val(''));
+
+            // Terminar mantenimiento
+            $('#btnTerminar').click(terminarMantenimiento);
+        });
+
+        function bloquearCampos(bloquear) {
+            $('#problemas, #diagnostico, #observaciones, #archivoPdf, #fotoAntes, #fotoDurante, #fotoDespues, #btnTerminar')
+                .prop('disabled', bloquear);
+        }
+
+        function buscarMantenimiento() {
+            const claveAgenda = $('#numeroOrden').val().trim();
+
+            if (!claveAgenda) {
+                alert('Por favor ingrese un número de orden válido');
+                return;
+            }
+
+            $('#btnBuscarOrden').prop('disabled', true).html('<i class="bi bi-hourglass"></i> Buscando...');
+
+            $.get('/Repositorio/BuscarPorNumeroOrden', { claveAgenda: claveAgenda })
+                .done(function(response) {
+                    console.log("Respuesta del servidor:", response); // Debug
+
+                    if (response.success) {
+                        // Llenar datos
+                        $('#infoNumOrden').text(response.data.numOrden);
+                        $('#infoNumActFijo').text(response.data.numActFijo);
+                        $('#infoFechaProgramada').text(response.data.fechaProgramada);
+                        $('#infoTipoMantenimiento').text(response.data.tipoMantenimiento);
+                        $('#infoTipoEquipo').text(response.data.tipoEquipo);
+                        $('#infoEstatus').text(response.data.estatus);
+                        $('#infoZona').text(response.data.zona);
+                        $('#infoAgencia').text(response.data.agencia);
+                        $('#infoCentro').text(response.data.centro);
+
+                        // Mostrar/ocultar fotos
+                        if (response.esCorrectivo) {
+                            $('#fotoAntesGroup').show();
+                        } else {
+                            $('#fotoAntesGroup').hide();
+                        }
+
+                        // Habilitar campos
+                        bloquearCampos(false);
+                        $('#resultadoBusqueda').show();
+                    } else {
+                        alert(response.message);
+                        $('#resultadoBusqueda').hide();
+                    }
+                })
+                .fail(function() {
+                    alert('Error al conectar con el servidor');
+                })
+                .always(function() {
+                    $('#btnBuscarOrden').prop('disabled', false).html('<i class="bi bi-search"></i> Buscar');
+                });
+        }
+
+        function terminarMantenimiento() {
+            if (!confirm('¿Está seguro de terminar este mantenimiento?')) return;
+
+            const formData = new FormData();
+            formData.append('numOrden', $('#numeroOrden').val());
+            formData.append('problemas', $('#problemas').val());
+            formData.append('diagnostico', $('#diagnostico').val());
+            formData.append('observaciones', $('#observaciones').val());
+
+            // Archivos
+            const pdf = $('#archivoPdf')[0].files[0];
+            if (pdf) formData.append('archivoPdf', pdf);
+
+            const fotoAntes = $('#fotoAntes')[0].files[0];
+            if (fotoAntes) formData.append('fotoAntes', fotoAntes);
+
+            const fotoDurante = $('#fotoDurante')[0].files[0];
+            if (fotoDurante) formData.append('fotoDurante', fotoDurante);
+
+            const fotoDespues = $('#fotoDespues')[0].files[0];
+            if (fotoDespues) formData.append('fotoDespues', fotoDespues);
+
+            $('#btnTerminar').prop('disabled', true).html('<i class="bi bi-hourglass"></i> Procesando...');
+
+            $.ajax({
+                url: '/Repositorio/TerminarMantenimiento',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    alert(response.message);
+                    if (response.success) location.reload();
+                },
+                error: function() {
+                    alert('Error al terminar el mantenimiento');
+                },
+                complete: function() {
+                    $('#btnTerminar').prop('disabled', false).html('<i class="bi bi-check-circle"></i> Terminar');
+                }
+            });
+        }
+    </script>
+}

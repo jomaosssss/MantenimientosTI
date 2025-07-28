@@ -1,0 +1,226 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+
+    <title>Control de Mantenimiento</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link href="~/css/styles.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+
+    <style>
+
+        .sb-topnav {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .user-dropdown-container {
+            display: flex;
+            align-items: center;
+            padding: 0.25rem 0;
+        }
+
+        .user-avatar {
+            margin-right: 12px;
+            font-size: 1.5rem;
+            color: #2c3e50;
+        }
+
+        .user-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.3;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .user-details {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            white-space: nowrap;
+        }
+
+        .dropdown-toggle::after {
+            margin-left: 0.5em;
+            vertical-align: 0.15em;
+        }
+
+        .navbar-dark .navbar-nav .nav-link {
+            color: rgba(0, 0, 0, 0.85);
+            padding: 0.5rem 0.75rem;
+        }
+
+        navbar-dark .navbar-nav .nav-link:hover {
+            color: rgba(0, 0, 0, 1);
+        }
+    </style>
+</head>
+
+<body class="sb-nav-fixed">
+
+    <nav class="sb-topnav navbar navbar-expand navbar-dark" style="background-color: #d7d8dc;">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+
+            <div class="d-flex align-items-center">
+
+                <button class="btn btn-sm me-2" id="sidebarToggle" style="background-color: #d7d8dc; color: black;">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <a class="navbar-brand ps-1" href="@Url.Action("Inicio", "Home")">
+                    <img src="~/images/LCFE.png" style="height: 30px;">
+                </a>
+            </div>
+
+            <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+                <li class="nav-item dropdown">
+
+                    <a class="nav-link dropdown-toggle user-dropdown-container" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle user-avatar"></i>
+                        <div class="user-text">
+
+                            <span class="user-name">@Context.Session.GetString("NombreUsuario")</span>
+
+                            <span class="user-details">
+                                @Context.Session.GetString("NombreRol")
+                                @{
+                                    var zona = Context.Session.GetString("NombreZona");
+                                    if (!string.IsNullOrEmpty(zona))
+                                    {
+                                        <text> @zona</text>
+                                    }
+                                }
+                            </span>
+                        </div>
+                    </a>
+
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Opciones</a></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li><a class="dropdown-item" href="@Url.Action("CerrarSesion", "Usuario")"><i class="fas fa-sign-out-alt me-2"></i>Salir</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div id="layoutSidenav">
+
+        <div id="layoutSidenav_nav">
+            <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion" style="background-color: #008e60;">
+                <div class="sb-sidenav-menu">
+                    <div class="nav">
+
+                        <a href="/Home/Inicio" class="nav-link ajax-link text-white">
+                            <div class="sb-nav-link-icon"><i class="fas fa-home"></i></div>
+                            Inicio
+                        </a>
+
+                        @if (User.IsInRole("ADMINISTRADOR")) // Asume que el nombre del rol es "ADMINISTRADOR"
+                        {
+                            <a href="/Usuario/Administrar" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-user"></i></div>
+                                Administrar Usuarios
+                            </a>
+                        }
+
+                        @if (User.IsInRole("ADMINISTRADOR"))
+                        {
+                            <a href="/Monitoreo/MonitoreoAdmin" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-eye"></i></div>
+                                Monitoreo de CFEmáticos
+                            </a>
+                        }
+                        else if (User.IsInRole("TÉCNICO DE ZONA"))
+                        {
+                            <a href="/Monitoreo/Monitoreo" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-eye"></i></div>
+                                Monitoreo de CFEmáticos
+                            </a>
+                        }
+
+                        <a class="nav-link collapsed text-white" href="#" data-bs-toggle="collapse" data-bs-target="#collapseMantenimientos" aria-expanded="false" aria-controls="collapseMantenimientos">
+                            <div class="sb-nav-link-icon"><i class="fas fa-calendar"></i></div>
+                            Agendar
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+
+                        <div class="collapse" id="collapseMantenimientos" data-bs-parent="#sidenavAccordion">
+                            <nav class="sb-sidenav-menu-nested nav flex-column">
+
+                                <a class="nav-link text-white ajax-link" href="/Agenda/AgendarPreventivos">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
+                                    Mantenimientos Preventivos
+                                </a>
+
+                                <a class="nav-link collapsed text-white" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCorrectivo" aria-expanded="false" aria-controls="collapseCorrectivo">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-triangle-exclamation"></i></div>
+                                    Mantenimiento Correctivo
+                                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                                </a>
+
+                                <div class="collapse" id="collapseCorrectivo" data-bs-parent="#collapseMantenimientos">
+                                    <nav class="sb-sidenav-menu-nested nav flex-column ps-3">
+
+                                        <a class="nav-link text-white ajax-link" href="/Agenda/AgendarCorrectivos">
+                                            CFEmatico
+                                        </a>
+                                    </nav>
+                                </div>
+                            </nav>
+                        </div>
+
+                        <a href="/Repositorio/TerminarMantenimiento" class="nav-link ajax-link text-white">
+                            <div class="sb-nav-link-icon"><i class="fas fa-upload"></i></div>
+                            Terminar Mantenimiento
+                        </a>
+
+                        <a href="/Repositorio/Repositorio" class="nav-link ajax-link text-white">
+                            <div class="sb-nav-link-icon"><i class="fas fa-history"></i></div>
+                            Historial de Mantenimientos
+                        </a>
+                    </div>
+                </div>
+                @* <div class="sb-sidenav-footer" style="background-color: #008e60;">
+                    <img src="~/images/LOGOSALUDO.png" style="height: 200px;">
+                </div> *@
+            </nav>
+        </div>
+
+        <!-- CONTENIDO PRINCIPAL DE LAS PÁGINAS -->
+        <div id="layoutSidenav_content">
+            <main>
+                <!-- CONTENEDOR DONDE SE CARGARÁN LAS VISTAS -->
+                <div id="contenido-principal">
+                    @RenderBody() <!-- Aquí se inserta el contenido específico de cada página -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script> <!-- Bootstrap JS completo -->
+    <script src="~/js/scripts.js"></script> <!-- Scripts personalizados de la aplicación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script> <!-- Librería para gráficos -->
+    <script src="~/assets/demo/chart-area-demo.js"></script> <!-- Demo de gráficos de área -->
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script> <!-- Para tablas interactivas -->
+    <script src="~/js/datatables-simple-demo.js"></script> <!-- Configuración de tablas -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- jQuery para AJAX y manipulacion DOM -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SECCIÓN PARA SCRIPTS ESPECÍFICOS DE PÁGINAS -->
+    @RenderSection("Scripts", required: false)
+
+</body>
+</html>

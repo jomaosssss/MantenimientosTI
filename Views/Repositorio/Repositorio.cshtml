@@ -1,0 +1,314 @@
+﻿@{
+    ViewData["Title"] = "Repositorio";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="card mt-4 shadow-sm rounded">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h1 class="mb-0">Historial de Mantenimientos</h1>
+            </div>
+            <div class="card-body">
+                <!-- CFEmáticos -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-table me-1"></i>
+                        CFEmáticos
+                    </div>
+                    <div class="card-body">
+                        <table id="tablaCFEmaticos" class="display" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>N° Orden</th>
+                                    <th>Zona</th>
+                                    <th>Agencia</th>
+                                    <th>Centro</th>
+                                    <th>Cajero</th>
+                                    <th>Fecha Programada</th>
+                                    <th>Fecha Terminada</th>
+                                    <th>Foto Antes</th>
+                                    <th>Foto Durante</th>
+                                    <th>Foto Despues</th>
+                                    <th>Hoja de Servicio</th>
+                                    <th>Ver Equipo</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Atención a Clientes -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-table me-1"></i>
+                        Atención a Clientes
+                    </div>
+                    <div class="card-body">
+                        <table id="tablaAtencionClientes" class="display" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>N° Orden</th>
+                                    <th>Zona</th>
+                                    <th>Agencia</th>
+                                    <th>Centro</th>
+                                    <th>Tipo de Equipo</th>
+                                    <th>Fecha Programada</th>
+                                    <th>Fecha Terminada</th>
+                                    <th>Hoja de Servicio</th>
+                                    <th>Ver Equipo</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Equipos de Cómputo -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-table me-1"></i>
+                        Equipos de Cómputo
+                    </div>
+                    <div class="card-body">
+                        <table id="tablaEquiposComputo" class="display" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>N° Orden</th>
+                                    <th>Zona</th>
+                                    <th>Agencia</th>
+                                    <th>Centro</th>
+                                    <th>Tipo de Equipo</th>
+                                    <th>Fecha Programada</th>
+                                    <th>Fecha Terminada</th>
+                                    <th>Hoja de Servicio</th>
+                                    <th>Ver Equipo</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para visualizar imágenes -->
+<div class="modal fade" id="imagenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imagenModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="imagenModalContent" src="" class="img-fluid" alt="Imagen de mantenimiento">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para información del equipo -->
+<div class="modal fade" id="modalInfo" tabindex="-1" aria-labelledby="modalInfoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content rounded">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalInfoLabel">Información del equipo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalInfoBody">
+                <!-- Contenido dinámico se cargará aquí -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- CSS de DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    <!-- JS de DataTables -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Configuración común para DataTables
+            const dataTablesOptions = {
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                },
+                ajax: {
+                    url: '/Repositorio/ObtenerMantenimientos',
+                    dataSrc: ''
+                },
+                order: [[5, 'desc']] // Ordenar por fecha terminada descendente
+            };
+
+            // Tabla CFEmáticos
+            const tablaCFEmaticos = $('#tablaCFEmaticos').DataTable({
+                ...dataTablesOptions,
+                columns: [
+                    { data: 'numOrden' },
+                    { data: 'zona' },
+                    { data: 'agencia' },
+                    { data: 'centro' },
+                    { data: 'numCajero' },
+                    { data: 'fechaProgramada' }, // Ya viene formateada desde el servidor
+                    { data: 'fechaTerminada' },  // Ya viene formateada desde el servidor
+                    {
+                        data: 'tieneFotos',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="antes">Ver</button>' :
+                                'N/A';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'tieneFotos',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="durante">Ver</button>' :
+                                'N/A';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'tieneFotos',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="despues">Ver</button>' :
+                                'N/A';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'evidenciaHojaServicio',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
+                                'No disponible';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'numOrden',
+                        render: function(data, type, row) {
+                            return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
+                        },
+                        orderable: false
+                    }
+                ],
+                ajax: {
+                    ...dataTablesOptions.ajax,
+                    dataSrc: 'cfematicos'
+                }
+            });
+
+            // Tabla Atención a Clientes
+            const tablaAtencionClientes = $('#tablaAtencionClientes').DataTable({
+                ...dataTablesOptions,
+                columns: [
+                    { data: 'numOrden' },
+                    { data: 'zona' },
+                    { data: 'agencia' },
+                    { data: 'centro' },
+                    { data: 'tipoEquipo' },
+                    { data: 'fechaProgramada' }, // Ya viene formateada desde el servidor
+                    { data: 'fechaTerminada' },  // Ya viene formateada desde el servidor
+                    {
+                        data: 'evidenciaHojaServicio',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
+                                'No disponible';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'numOrden',
+                        render: function(data, type, row) {
+                            return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
+                        },
+                        orderable: false
+                    }
+                ],
+                ajax: {
+                    ...dataTablesOptions.ajax,
+                    dataSrc: 'atencionClientes'
+                }
+            });
+
+            // Tabla Equipos de Cómputo
+            const tablaEquiposComputo = $('#tablaEquiposComputo').DataTable({
+                ...dataTablesOptions,
+                columns: [
+                    { data: 'numOrden' },
+                    { data: 'zona' },
+                    { data: 'agencia' },
+                    { data: 'centro' },
+                    { data: 'tipoEquipo' },
+                    { data: 'fechaProgramada' }, // Ya viene formateada desde el servidor
+                    { data: 'fechaTerminada' },  // Ya viene formateada desde el servidor
+                    {
+                        data: 'evidenciaHojaServicio',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
+                                'No disponible';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'numOrden',
+                        render: function(data, type, row) {
+                            return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
+                        },
+                        orderable: false
+                    }
+                ],
+                ajax: {
+                    ...dataTablesOptions.ajax,
+                    dataSrc: 'equiposComputo'
+                }
+            });
+
+            // Manejar clic en botones de imágenes
+            $(document).on('click', '.ver-imagen', function() {
+                var numOrden = $(this).data('num-orden');
+                var tipo = $(this).data('tipo');
+                var titulo = '';
+
+                switch(tipo) {
+                    case 'antes': titulo = 'Foto Antes - Orden #' + numOrden; break;
+                    case 'durante': titulo = 'Foto Durante - Orden #' + numOrden; break;
+                    case 'despues': titulo = 'Foto Después - Orden #' + numOrden; break;
+                }
+
+                $('#imagenModalLabel').text(titulo);
+
+                // Añadir timestamp para evitar caché
+                var url = '/Repositorio/ObtenerImagen?numOrden=' + numOrden +
+                          '&tipo=' + tipo +
+                          '&t=' + new Date().getTime();
+
+                $('#imagenModalContent').attr('src', url);
+                $('#imagenModal').modal('show');
+            });
+
+            // Manejar clic en botones "Ver Equipo"
+            $(document).on('click', '.ver-equipo', function() {
+                var numOrden = $(this).data('num-orden');
+
+                $.get('/Repositorio/ObtenerDetallesEquipo', { numOrden: numOrden }, function(data) {
+                    $('#modalInfoBody').html(data);
+                    $('#modalInfo').modal('show');
+                }).fail(function() {
+                    alert('Error al cargar los detalles del equipo');
+                });
+            });
+        });
+    </script>
+}
