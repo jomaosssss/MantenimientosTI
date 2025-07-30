@@ -17,6 +17,7 @@
         transition: transform 0.1s ease;
         cursor: pointer;
         position: relative;
+        background-color: #28a745 !important; /* Verde por defecto */
     }
 
         .cfematico-btn:hover {
@@ -177,26 +178,73 @@
         position: relative;
         height: 200px;
     }
+
+    /* Estilos para la tabla de eventos */
+    .events-card {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 8px;
+        background-color: white;
+    }
+
+    #tablaEventos {
+        font-size: 0.75rem;
+        margin-bottom: 0;
+    }
+
+        #tablaEventos th {
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 10;
+        }
+
+        #tablaEventos td, #tablaEventos th {
+            padding: 0.3rem 0.5rem;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        #tablaEventos tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        #tablaEventos td.clickable-cell {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+            #tablaEventos td.clickable-cell:hover {
+                background-color: rgba(13, 110, 253, 0.1);
+            }
+
+    #selectFalla {
+        max-width: 200px;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Estilos para los selectores */
+    .filters-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .filter-select {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #ced4da;
+    }
 </style>
 
 <div class="container mt-2 compact-container">
     <div class="card shadow-sm">
         <div class="card-header py-2 d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Monitoreo de CFEmáticos</h5>
-            @* <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center gap-1">
-                    <span class="status-btn bg-success" title="Normal"></span>
-                    <span class="small">Normal</span>
-                </div>
-                <div class="d-flex align-items-center gap-1">
-                    <span class="status-btn bg-warning" title="Mantenimiento"></span>
-                    <span class="small">Mantenimiento</span>
-                </div>
-                <div class="d-flex align-items-center gap-1">
-                    <span class="status-btn bg-danger" title="Fuera"></span>
-                    <span class="small">Fuera</span>
-                </div>
-            </div> *@
         </div>
 
         <div class="card-body p-2">
@@ -317,16 +365,44 @@
 
                     <!-- Tarjeta de Eventos (debajo de las zonas) -->
                     <div class="events-card">
-                        <h6 class="border-bottom pb-1 mb-2">Eventos Recientes</h6>
-                        <div id="listaEventos" class="small">
-                            <div class="text-center py-2">
-                                <p class="text-muted">Seleccione un CFEmático para ver sus eventos</p>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Estadísticas de Eventos Técnicos</h6>
+                            <div class="filters-container">
+                                <select id="selectFalla" class="filter-select">
+                                    <option value="">Cargando tipos de falla...</option>
+                                </select>
+                                <select id="selectYear" class="filter-select">
+                                    <option value="2025">2025</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2023">2023</option>
+                                </select>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-between mt-2">
-                            <span class="badge bg-danger">Críticos (100)</span>
-                            <span class="badge bg-warning">Altos (50)</span>
-                            <span class="badge bg-success">Bajos (0)</span>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm table-striped table-hover" id="tablaEventos">
+                                <thead class="sticky-top bg-light">
+                                    <tr>
+                                        <th>Descripción</th>
+                                        <th>Ene</th>
+                                        <th>Feb</th>
+                                        <th>Mar</th>
+                                        <th>Abr</th>
+                                        <th>May</th>
+                                        <th>Jun</th>
+                                        <th>Jul</th>
+                                        <th>Ago</th>
+                                        <th>Sep</th>
+                                        <th>Oct</th>
+                                        <th>Nov</th>
+                                        <th>Dic</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="13" class="text-center text-muted py-3">Seleccione un CFEmático y un tipo de falla</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -342,26 +418,26 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Cajero:</span>
-                                        <span id="numCajero" class="ms-2"></span>
+                                        <span id="numCajero" class="ms-2">-</span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Serie:</span>
-                                        <span id="numSerie" class="ms-2"></span>
+                                        <span id="numSerie" class="ms-2">-</span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Dirección IP:</span>
-                                        <span id="ipCajero" class="ms-2"></span>
+                                        <span id="ipCajero" class="ms-2">-</span>
                                     </div>
                                 </div>
                                 <!-- Columna derecha -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Activo Fijo:</span>
-                                        <span id="numActFijo" class="ms-2"></span>
+                                        <span id="numActFijo" class="ms-2">-</span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Inventario:</span>
-                                        <span id="numInventario" class="ms-2"></span>
+                                        <span id="numInventario" class="ms-2">-</span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Versión:</span>
@@ -377,18 +453,18 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Zona:</span>
-                                        <span id="zona" class="ms-2"></span>
+                                        <span id="zona" class="ms-2">-</span>
                                     </div>
                                     <div class="mb-3">
                                         <span class="fw-bold">Centro:</span>
-                                        <span id="centro" class="ms-2"></span>
+                                        <span id="centro" class="ms-2">-</span>
                                     </div>
                                 </div>
                                 <!-- Columna derecha -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Agencia:</span>
-                                        <span id="agencia" class="ms-2"></span>
+                                        <span id="agencia" class="ms-2">-</span>
                                     </div>
                                 </div>
                             </div>
@@ -398,11 +474,11 @@
                     <div class="info-card mt-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0">Estadísticas de Eventos</h6>
-                            <select id="rangoTiempo" class="form-select form-select-sm" style="width: auto;">
-                                <option value="1">Últimas 24 horas</option>
-                                <option value="7" selected>Últimos 7 días</option>
-                                <option value="30">Últimos 30 días</option>
-                                <option value="90">Últimos 3 meses</option>
+                            <select id="rangoTiempo" class="form-select form-select-sm" style="width: 145px;">
+                                <option value="1">Últimas 24 Horas</option>
+                                <option value="7" selected>Últimos 7 Días</option>
+                                <option value="30">Últimos 30 Días</option>
+                                <option value="90">Últimos 3 Meses</option>
                             </select>
                         </div>
                         <div class="chart-container">
@@ -443,11 +519,32 @@
     </div>
 </div>
 
+<!-- Modal para eventos mensuales -->
+<div class="modal fade" id="eventosMensualesModal" tabindex="-1" aria-labelledby="eventosMensualesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventosMensualesModalLabel">Eventos Mensuales</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalEventosMensualesContent">
+                    <p>Cargando eventos...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Variable global para el gráfico
         var basicBarChart = null;
+        var selectedCfematico = null;
 
         $(document).ready(function() {
             // Inicializar tooltips
@@ -455,8 +552,8 @@
                 trigger: 'hover'
             });
 
-            // Inicializar colores de los botones
-            inicializarEstados();
+                // Establecer todos los CFEmáticos en verde
+        $('.cfematico-btn').addClass('bg-success');
 
             // Delegación de eventos para los botones de CFEmáticos
             $(document).on('click', '.cfematico-btn', function() {
@@ -468,6 +565,7 @@
 
                 if (!wasSelected) {
                     $clickedButton.addClass('selected');
+                    selectedCfematico = numCajero;
 
                     // Cargar detalles del CFEmático
                     cargarDetallesCfematico(numCajero);
@@ -476,44 +574,58 @@
                     actualizarGrafica(numCajero);
                     cargarEventos(numCajero);
                     mostrarEstadisticasAvanzadas(numCajero);
+                    actualizarTablaEventos();
                 } else {
+                    selectedCfematico = null;
                     limpiarDatos();
                 }
             });
 
             // Event listener para el selector de rango de tiempo
             $('#rangoTiempo').change(function() {
-                var selectedCfematico = $('.cfematico-btn.selected');
-                if (selectedCfematico.length) {
-                    var numCajero = selectedCfematico.data('num-cajero');
-                    actualizarGrafica(numCajero);
-                    cargarEventos(numCajero);
-                    mostrarEstadisticasAvanzadas(numCajero);
+                if (selectedCfematico) {
+                    actualizarGrafica(selectedCfematico);
+                    cargarEventos(selectedCfematico);
+                    mostrarEstadisticasAvanzadas(selectedCfematico);
+                }
+            });
+
+            // Event listener para el selector de año
+            $('#selectYear').change(function() {
+                if (selectedCfematico) {
+                    actualizarTablaEventos();
+                }
+            });
+
+            // Event listener para el selector de falla
+            $('#selectFalla').change(function() {
+                if (selectedCfematico) {
+                    actualizarTablaEventos();
                 }
             });
         });
 
         // Función para inicializar los estados de los CFEmáticos
-        function inicializarEstados() {
-            $('.cfematico-btn').each(function() {
-                var $btn = $(this);
-                var numCajero = $btn.data('num-cajero');
+        // function inicializarEstados() {
+        //     $('.cfematico-btn').each(function() {
+        //         var $btn = $(this);
+        //         var numCajero = $btn.data('num-cajero');
 
-                $.get('@Url.Action("ObtenerEstadoCfematico", "Monitoreo")', { numCajero: numCajero }, function(estado) {
-                    $btn.removeClass('btn-light bg-success bg-warning bg-danger');
+        //         $.get('@Url.Action("ObtenerEstadoCfematico", "Monitoreo")', { numCajero: numCajero }, function(estado) {
+        //             $btn.removeClass('btn-light bg-success bg-warning bg-danger');
 
-                    if (estado === 'N') {
-                        $btn.addClass('bg-success');
-                    } else if (estado === 'M') {
-                        $btn.addClass('bg-warning');
-                    } else {
-                        $btn.addClass('bg-danger');
-                    }
-                }).fail(function() {
-                    $btn.addClass('bg-danger');
-                });
-            });
-        }
+        //             if (estado === 'N') {
+        //                 $btn.addClass('bg-success');
+        //             } else if (estado === 'M') {
+        //                 $btn.addClass('bg-warning');
+        //             } else {
+        //                 $btn.addClass('bg-danger');
+        //             }
+        //         }).fail(function() {
+        //             $btn.addClass('bg-danger');
+        //         });
+        //     });
+        // }
 
         function cargarDetallesCfematico(numCajero) {
             $.get('@Url.Action("ObtenerDetallesCfematico", "Monitoreo")', { numCajero: numCajero })
@@ -540,10 +652,15 @@
         }
 
         function mostrarErrorEnUI(mensaje) {
-            // Puedes implementar un toast, alerta o actualizar un div de errores
             console.error(mensaje);
             $('#numCajero').text('-');
-            // Restablece todos los demás campos a '-' también
+            $('#numActFijo').text('-');
+            $('#numSerie').text('-');
+            $('#numInventario').text('-');
+            $('#ipCajero').text('-');
+            $('#zona').text('-');
+            $('#agencia').text('-');
+            $('#centro').text('-');
         }
 
         function actualizarGrafica(numCajero) {
@@ -709,34 +826,29 @@
                    severidad === 50 ? 'Altos' : 'Bajos';
         }
 
-        function cargarEstadosEnLote() {
-            $.get('@Url.Action("ObtenerEstadosCfematicos", "Monitoreo")', function(estados) {
-                $('.cfematico-btn').each(function() {
-                    var $btn = $(this);
-                    var numCajero = $btn.data('num-cajero');
-                    var estado = estados[numCajero] || 'N'; // Default a "N" si no existe
+        // function cargarEstadosEnLote() {
+        //     $.get('@Url.Action("ObtenerEstadosCfematicos", "Monitoreo")', function(estados) {
+        //         $('.cfematico-btn').each(function() {
+        //             var $btn = $(this);
+        //             var numCajero = $btn.data('num-cajero');
+        //             var estado = estados[numCajero] || 'N'; // Default a "N" si no existe
 
-                    // Remover todas las clases de color primero
-                    $btn.removeClass('bg-success bg-warning bg-danger');
+        //             // Remover todas las clases de color primero
+        //             $btn.removeClass('bg-success bg-warning bg-danger');
 
-                    // Aplicar la clase correcta
-                    if (estado === 'N') {
-                        $btn.addClass('bg-success');
-                    } else if (estado === 'M') {
-                        $btn.addClass('bg-warning');
-                    } else {
-                        $btn.addClass('bg-danger');
-                    }
-                });
-            }).fail(function() {
-                console.error("Error al cargar estados de CFEmáticos");
-            });
-        }
-
-        // Llamar esta función al cargar la página
-        $(document).ready(function() {
-            cargarEstadosEnLote();
-        });
+        //             // Aplicar la clase correcta
+        //             if (estado === 'N') {
+        //                 $btn.addClass('bg-success');
+        //             } else if (estado === 'M') {
+        //                 $btn.addClass('bg-warning');
+        //             } else {
+        //                 $btn.addClass('bg-danger');
+        //             }
+        //         });
+        //     }).fail(function() {
+        //         console.error("Error al cargar estados de CFEmáticos");
+        //     });
+        // }
 
         // Función para cargar los eventos recientes
         function cargarEventos(numCajero) {
@@ -829,10 +941,140 @@
             if (basicBarChart !== null) {
                 basicBarChart.destroy();
                 basicBarChart = null;
-
-                // Recrear el canvas vacío
                 $('#basicBarChart').replaceWith('<canvas id="basicBarChart"></canvas>');
             }
+
+            // Limpiar tabla de eventos
+            var $tbody = $('#tablaEventos tbody');
+            $tbody.empty();
+            $tbody.append('<tr><td colspan="13" class="text-center text-muted py-3">Seleccione un CFEmático</td></tr>');
         }
+
+        // Función para cargar los tipos de falla en el select
+        function cargarTiposFalla() {
+            $.get('@Url.Action("ObtenerTiposFalla", "Monitoreo")', function(data) {
+                var $select = $('#selectFalla');
+                $select.empty();
+
+                $select.append($('<option>', {
+                    value: '',
+                    text: 'TODAS LAS FALLAS'
+                }));
+
+                $.each(data, function(index, item) {
+                    $select.append($('<option>', {
+                        value: item.claveFalla,
+                        text: item.descripcion
+                    }));
+                });
+            });
+        }
+
+        // Función para actualizar la tabla de eventos
+        function actualizarTablaEventos() {
+            if (!selectedCfematico) {
+                return;
+            }
+
+            var claveFalla = $('#selectFalla').val();
+            var year = $('#selectYear').val();
+
+            $.get('@Url.Action("ObtenerEstadisticasEventosPorMes", "Monitoreo")', {
+                claveFalla: claveFalla,
+                year: year,
+                numCajero: selectedCfematico
+            }, function(data) {
+                var $tbody = $('#tablaEventos tbody');
+                $tbody.empty();
+
+                if (data.length === 0) {
+                    $tbody.append('<tr><td colspan="13" class="text-center text-muted py-3">No hay datos para mostrar</td></tr>');
+                    return;
+                }
+
+                $.each(data, function(index, item) {
+                    var row = '<tr>';
+                    row += '<td class="text-start">' + item.descripcion + '</td>';
+
+                    // Agregar celdas para cada mes con clase clickable
+                    for (var i = 1; i <= 12; i++) {
+                        var monthKey = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][i-1];
+                        var count = item[monthKey] || 0;
+
+                        row += `<td class="clickable-cell"
+                                  data-descripcion="${item.descripcion}"
+                                  data-mes="${i}"
+                                  data-year="${year}"
+                                  data-clave-falla="${claveFalla}">${count}</td>`;
+                    }
+
+                    row += '</tr>';
+                    $tbody.append(row);
+                });
+
+                // Agregar evento click a las celdas
+                $('.clickable-cell').click(function() {
+                    var descripcion = $(this).data('descripcion');
+                    var mes = $(this).data('mes');
+                    var year = $(this).data('year');
+                    var claveFalla = $(this).data('clave-falla');
+
+                    cargarEventosMensuales(selectedCfematico, descripcion, mes, year, claveFalla);
+                });
+            });
+        }
+
+        // Función para cargar eventos mensuales en el modal
+        function cargarEventosMensuales(numCajero, descripcion, mes, year, claveFalla) {
+            $.get('@Url.Action("ObtenerEventosMensuales", "Monitoreo")', {
+                numCajero: numCajero,
+                descripcion: descripcion,
+                mes: mes,
+                year: year,
+                claveFalla: claveFalla
+            }, function(data) {
+                var $content = $('#modalEventosMensualesContent');
+                $content.empty();
+
+                if (data.length === 0) {
+                    $content.html('<p class="text-muted">No hay eventos para estos criterios</p>');
+                    return;
+                }
+
+                var nombreMes = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][mes-1];
+
+                var titulo = `Eventos de ${descripcion} - ${nombreMes} ${year}`;
+                $('#eventosMensualesModalLabel').text(titulo);
+
+                var eventosHtml = data.map(function(evento) {
+                    var badgeClass = evento.severidad == 100 ? 'bg-danger' :
+                                   evento.severidad == 50 ? 'bg-warning' : 'bg-success';
+
+                    return `
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">${evento.fuente}</span>
+                                <span class="badge ${badgeClass}">${evento.severidad}</span>
+                            </div>
+                            <div>${evento.descripcion}</div>
+                            <div class="text-end small text-muted">${evento.fecha}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                $content.html(eventosHtml);
+
+                // Mostrar el modal
+                var modal = new bootstrap.Modal(document.getElementById('eventosMensualesModal'));
+                modal.show();
+            });
+        }
+
+        // Llamar esta función al cargar la página
+        $(document).ready(function() {
+            cargarTiposFalla();
+            cargarEstadosEnLote();
+        });
     </script>
 }
