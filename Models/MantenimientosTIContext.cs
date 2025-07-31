@@ -525,15 +525,18 @@ public partial class MantenimientosTIContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("numCajero");
 
-            entity.HasOne(d => d.ClaveEventoNavigation).WithMany()
+            entity.HasOne(d => d.ClaveEventoNavigation)
+                .WithMany()
                 .HasForeignKey(d => d.ClaveEvento)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__RegistroE__clave__4222D4EF");
 
-            entity.HasOne(d => d.NumCajeroNavigation).WithMany()
+            // CAMBIO PRINCIPAL: Actualizar el comportamiento de eliminación
+            entity.HasOne(d => d.NumCajeroNavigation)
+                .WithMany()
                 .HasForeignKey(d => d.NumCajero)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__RegistroE__numCa__412EB0B6");
+                .OnDelete(DeleteBehavior.Cascade)  // Cambiado de ClientSetNull a Cascade
+                .HasConstraintName("FK_RegistroEventos_CFEmatico");
         });
 
         modelBuilder.Entity<Usuario>(entity =>
