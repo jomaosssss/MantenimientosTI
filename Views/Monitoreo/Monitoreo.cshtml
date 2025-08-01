@@ -40,18 +40,73 @@
             background-color: #218838;
         }
 
-    /* Botones de estado */
-    .status-btn {
-        display: inline-block;
-        width: 19px;
-        height: 19px;
-        border-radius: 50%;
-        border: 1px solid rgba(0,0,0,0.1);
+    /* Estilos adicionales copiados de MonitoreoAdmin */
+    .info-card, .events-card {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 8px;
+        background-color: white;
+        margin-bottom: 10px;
     }
 
-    /* Estilo para la tarjeta de eventos */
-    .eventos-card {
-        margin-top: 20px;
+    .chart-container {
+        position: relative;
+        height: 200px;
+    }
+
+    #tablaEventos, #tablaMantenimientos {
+        font-size: 0.75rem;
+        margin-bottom: 0;
+    }
+
+        #tablaEventos th, #tablaMantenimientos th {
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 10;
+        }
+
+        #tablaEventos td, #tablaEventos th,
+        #tablaMantenimientos td, #tablaMantenimientos th {
+            padding: 0.3rem 0.5rem;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+    .clickable-cell {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+        .clickable-cell:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+
+    .filter-select {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #ced4da;
+    }
+
+    /* Estilos para el modal de detalles */
+    #problemasDetalle, #diagnosticoDetalle, #observacionesDetalle {
+        min-height: 50px;
+        white-space: pre-wrap;
+    }
+
+    /* Estilos para las fotos en el modal */
+    .img-thumbnail {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 2px;
+        background-color: #f8f9fa;
+    }
+
+    #fotosMantenimientoContainer {
+        border-top: 1px solid #eee;
+        padding-top: 15px;
     }
 </style>
 
@@ -77,7 +132,7 @@
 
         <div class="card-body">
             <div class="row">
-                <!-- Columna izquierda - Botones circulares y Eventos -->
+                <!-- Columna izquierda - Botones circulares y secciones -->
                 <div class="col-md-6">
                     <!-- Contenedor de botones circulares -->
                     <div class="border p-2 rounded cfematicos-container">
@@ -92,44 +147,101 @@
                         </div>
                     </div>
 
-                    <!-- Tarjeta de Eventos -->
-                    <div class="border p-4 rounded eventos-card">
-                        <h5 class="border-bottom pb-2 mb-3">Eventos</h5>
-                        <div class="text-center py-4">
-                            <p class="text-muted">Lista de eventos aparecerá aquí</p>
+                    <!-- Tarjeta de Mantenimientos Programados -->
+                    <div class="events-card mt-3">
+                        <h6 class="mb-2">Mantenimientos Programados</h6>
+                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                            <table class="table table-sm table-striped" id="tablaMantenimientos">
+                                <thead class="sticky-top bg-light">
+                                    <tr>
+                                        <th>Fecha Programada</th>
+                                        <th>Fecha Terminada</th>
+                                        <th>Estatus</th>
+                                        <th>Hoja de Servicio</th>
+                                        <th>Datos de Terminación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">Seleccione un CFEmático</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta de Estadísticas de Eventos -->
+                    <div class="events-card mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Estadísticas de Eventos</h6>
+                            <div class="filters-container">
+                                <select id="selectFalla" class="filter-select">
+                                    <option value="">Cargando tipos de falla...</option>
+                                </select>
+                                <select id="selectYear" class="filter-select">
+                                    <option value="2025">2025</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2023">2023</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm table-striped table-hover" id="tablaEventos">
+                                <thead class="sticky-top bg-light">
+                                    <tr>
+                                        <th>Descripción</th>
+                                        <th>Ene</th>
+                                        <th>Feb</th>
+                                        <th>Mar</th>
+                                        <th>Abr</th>
+                                        <th>May</th>
+                                        <th>Jun</th>
+                                        <th>Jul</th>
+                                        <th>Ago</th>
+                                        <th>Sep</th>
+                                        <th>Oct</th>
+                                        <th>Nov</th>
+                                        <th>Dic</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="13" class="text-center text-muted py-3">Seleccione un CFEmático y un tipo de falla</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
 
-                <!-- Columna derecha - Solo información del CFEmático -->
+                <!-- Columna derecha - Información del CFEmático y gráficas -->
                 <div class="col-md-6">
-                    <div class="border p-4 rounded">
-                        <h5 class="border-bottom pb-2 mb-3">Información del CFEmático</h5>
+                    <!-- Información del CFEmático -->
+                    <div class="info-card">
+                        <h6 class="border-bottom pb-1 mb-2">Información del CFEmático</h6>
                         <div class="row">
-                            <!-- Columna izquierda -->
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <span class="fw-bold">Número de Cajero:</span>
-                                    <span id="numCajero" class="ms-2"></span>
+                                    <span id="numCajero" class="ms-2">-</span>
                                 </div>
                                 <div class="mb-3">
                                     <span class="fw-bold">Número de Serie:</span>
-                                    <span id="numSerie" class="ms-2"></span>
+                                    <span id="numSerie" class="ms-2">-</span>
                                 </div>
                                 <div class="mb-3">
                                     <span class="fw-bold">Dirección IP:</span>
-                                    <span class="ms-2">No disponible</span>
+                                    <span id="ipCajero" class="ms-2">-</span>
                                 </div>
                             </div>
-                            <!-- Columna derecha -->
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <span class="fw-bold">Número de Activo Fijo:</span>
-                                    <span id="numActFijo" class="ms-2"></span>
+                                    <span id="numActFijo" class="ms-2">-</span>
                                 </div>
                                 <div class="mb-3">
                                     <span class="fw-bold">Número de Inventario:</span>
-                                    <span id="numInventario" class="ms-2"></span>
+                                    <span id="numInventario" class="ms-2">-</span>
                                 </div>
                                 <div class="mb-3">
                                     <span class="fw-bold">Versión:</span>
@@ -137,37 +249,139 @@
                                 </div>
                             </div>
                         </div>
-                        <h5 class="border-bottom pb-2 mb-3">Ubicación</h5>
+                        <h6 class="border-bottom pb-2 mb-3 mt-3">Ubicación</h6>
                         <div class="row">
-                            <!-- Columna izquierda -->
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <span class="fw-bold">Zona:</span>
-                                    <span id="zona" class="ms-2"></span>
+                                    <span id="zona" class="ms-2">-</span>
                                 </div>
                                 <div class="mb-3">
                                     <span class="fw-bold">Centro:</span>
-                                    <span id="centro" class="ms-2"></span>
+                                    <span id="centro" class="ms-2">-</span>
                                 </div>
                             </div>
-                            <!-- Columna derecha -->
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <span class="fw-bold">Agencia:</span>
-                                    <span id="agencia" class="ms-2"></span>
+                                    <span id="agencia" class="ms-2">-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Gráfica de Eventos -->
                     <div class="info-card mt-3">
-                        <h6 class="border-bottom pb-2 mb-3">Gráfica de Eventos</h6>
-                        <div class="chart-container" style="position: relative; height:200px;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Estadísticas de Eventos</h6>
+                            <select id="rangoTiempo" class="form-select form-select-sm" style="width: 145px;">
+                                <option value="1">Últimas 24 Horas</option>
+                                <option value="7" selected>Últimos 7 Días</option>
+                                <option value="30">Últimos 30 Días</option>
+                                <option value="90">Últimos 3 Meses</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
                             <canvas id="basicBarChart"></canvas>
                         </div>
                     </div>
 
+                    <!-- Análisis de Eventos -->
+                    <div class="info-card mt-3">
+                        <h6 class="border-bottom pb-2 mb-3">Análisis de Eventos</h6>
+                        <div id="estadisticasAvanzadas">
+                            <p class="text-muted small">Seleccione un CFEmático para ver análisis detallado</p>
+                        </div>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="eventosModal" tabindex="-1" aria-labelledby="eventosModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventosModalLabel">Eventos Detallados</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalEventosContent">
+                    <p>Cargando eventos...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="eventosMensualesModal" tabindex="-1" aria-labelledby="eventosMensualesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventosMensualesModalLabel">Eventos Mensuales</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalEventosMensualesContent">
+                    <p>Cargando eventos...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detallesMantenimientoModal" tabindex="-1" aria-labelledby="detallesMantenimientoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detallesMantenimientoModalLabel">Detalles de Mantenimiento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 class="d-inline">RPE del Responsable del Mantenimiento: </h6>
+                    <span id="rpeDetalle" class="p-2 bg-light rounded font-monospace"></span>
+                </div>
+                <div class="mb-3">
+                    <h6>Problemas reportados:</h6>
+                    <div id="problemasDetalle" class="p-2 bg-light rounded"></div>
+                </div>
+                <div class="mb-3">
+                    <h6>Diagnóstico:</h6>
+                    <div id="diagnosticoDetalle" class="p-2 bg-light rounded"></div>
+                </div>
+                <div class="mb-3">
+                    <h6>Observaciones:</h6>
+                    <div id="observacionesDetalle" class="p-2 bg-light rounded"></div>
+                </div>
+
+                <div id="fotosMantenimientoContainer" class="mt-4 d-none">
+                    <h6 class="border-bottom pb-2">Fotos del Mantenimiento</h6>
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <p class="small mb-1">Foto Antes</p>
+                            <img id="fotoAntes" src="" class="img-fluid img-thumbnail mb-2" style="max-height: 200px;">
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <p class="small mb-1">Foto Durante</p>
+                            <img id="fotoDurante" src="" class="img-fluid img-thumbnail mb-2" style="max-height: 200px;">
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <p class="small mb-1">Foto Después</p>
+                            <img id="fotoDespues" src="" class="img-fluid img-thumbnail mb-2" style="max-height: 200px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -176,93 +390,621 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Variable global para el gráfico
+        var basicBarChart = null;
+        var selectedCfematico = null;
+
         $(document).ready(function() {
-            // Manejar clic en los botones de CFEmático
-            $('.cfematico-btn').click(function() {
+            // Inicializar tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip({
+                trigger: 'hover'
+            });
+
+            // Delegación de eventos para los botones de CFEmáticos
+            $(document).on('click', '.cfematico-btn', function() {
                 var $clickedButton = $(this);
                 var wasSelected = $clickedButton.hasClass('selected');
+                var numCajero = $clickedButton.data('num-cajero');
 
                 $('.cfematico-btn').removeClass('selected');
 
-                if (wasSelected) {
+                if (!wasSelected) {
+                    $clickedButton.addClass('selected');
+                    selectedCfematico = numCajero;
+
+                    // Cargar detalles del CFEmático
+                    cargarDetallesCfematico(numCajero);
+
+                    // Actualizar gráfica y eventos
+                    actualizarGrafica(numCajero);
+                    cargarEventos(numCajero);
+                    mostrarEstadisticasAvanzadas(numCajero);
+                    actualizarTablaEventos();
+
+                    // Cargar mantenimientos
+                    cargarMantenimientosCfematico(numCajero);
+                } else {
+                    selectedCfematico = null;
                     limpiarDatos();
-                    return;
                 }
+            });
 
-                $clickedButton.addClass('selected');
-                var numCajero = $clickedButton.data('num-cajero');
+            // Event listener para el selector de rango de tiempo
+            $('#rangoTiempo').change(function() {
+                if (selectedCfematico) {
+                    actualizarGrafica(selectedCfematico);
+                    cargarEventos(selectedCfematico);
+                    mostrarEstadisticasAvanzadas(selectedCfematico);
+                }
+            });
 
-                $.get('@Url.Action("ObtenerDetallesCfematico", "Monitoreo")', { numCajero: numCajero }, function(data) {
+            // Event listener para el selector de año
+            $('#selectYear').change(function() {
+                if (selectedCfematico) {
+                    actualizarTablaEventos();
+                }
+            });
+
+            // Event listener para el selector de falla
+            $('#selectFalla').change(function() {
+                if (selectedCfematico) {
+                    actualizarTablaEventos();
+                }
+            });
+
+            // Cargar tipos de falla al iniciar
+            cargarTiposFalla();
+        });
+
+        function cargarDetallesCfematico(numCajero) {
+            $.get('@Url.Action("ObtenerDetallesCfematico", "Monitoreo")', { numCajero: numCajero })
+                .done(function(data) {
+                    if (data.error) {
+                        console.error(data.error);
+                        mostrarErrorEnUI("No se pudieron cargar los detalles");
+                        return;
+                    }
+
+                    // Actualiza la UI solo si hay datos válidos
                     $('#numCajero').text(data.numCajero);
                     $('#numActFijo').text(data.numActFijo);
                     $('#numSerie').text(data.numSerie);
                     $('#numInventario').text(data.numInventario);
-                    $('#zona').text(data.zona || '-');
-                    $('#agencia').text(data.agencia || '-');
-                    $('#centro').text(data.centro || '-');
-                }).fail(function() {
-                    alert('Error al cargar los detalles del CFEmático.');
-                    limpiarDatos();
-                    $clickedButton.removeClass('selected');
+                    $('#ipCajero').text(data.ipCajero);
+                    $('#zona').text(data.zona);
+                    $('#agencia').text(data.agencia);
+                    $('#centro').text(data.centro);
+                })
+                .fail(function() {
+                    mostrarErrorEnUI("Error de conexión");
                 });
-            });
+        }
 
-            function limpiarDatos() {
-                $('#numCajero').text('');
-                $('#numActFijo').text('');
-                $('#numSerie').text('');
-                $('#numInventario').text('');
-                $('#zona').text('');
-                $('#agencia').text('');
-                $('#centro').text('');
-            }
+        function mostrarErrorEnUI(mensaje) {
+            console.error(mensaje);
+            $('#numCajero').text('-');
+            $('#numActFijo').text('-');
+            $('#numSerie').text('-');
+            $('#numInventario').text('-');
+            $('#ipCajero').text('-');
+            $('#zona').text('-');
+            $('#agencia').text('-');
+            $('#centro').text('-');
+        }
 
-            // Configuración del gráfico de barras básico
+        function actualizarGrafica(numCajero) {
+            var dias = $('#rangoTiempo').val();
+
+            $.get('@Url.Action("ObtenerEstadisticasEventos", "Monitoreo")', {
+                numCajero: numCajero,
+                dias: dias
+            }, function(data) {
                 var ctx = document.getElementById('basicBarChart').getContext('2d');
-                var basicBarChart = new Chart(ctx, {
+
+                if (basicBarChart !== null) {
+                    basicBarChart.destroy();
+                }
+
+                basicBarChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'],
-                        datasets: [{
-                            label: 'Eventos',
-                            data: [12, 19, 3, 5, 2, 3, 15],
-                            backgroundColor: [
-                                'rgba(75, 192, 192, 0.6)',
-                                'rgba(54, 162, 235, 0.6)',
-                                'rgba(255, 206, 86, 0.6)',
-                                'rgba(75, 192, 192, 0.6)',
-                                'rgba(153, 102, 255, 0.6)',
-                                'rgba(255, 159, 64, 0.6)',
-                                'rgba(153, 102, 255, 0.6)',
-                            ],
-                            borderColor: [
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(255, 159, 64, 1)',
-                                'rgba(153, 102, 255, 1)',
-                            ],
-                            borderWidth: 1
-                        }]
+                        labels: ['Críticos', 'Altos', 'Bajos'],
+                        datasets: [
+                            {
+                                label: 'Operativos',
+                                data: [data.criticosOperativos, data.altosOperativos, data.bajosOperativos],
+                                backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                                borderColor: 'rgba(231, 76, 60, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Técnicos',
+                                data: [data.criticosTecnicos, data.altosTecnicos, data.bajosTecnicos],
+                                backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                                borderColor: 'rgba(52, 152, 219, 1)',
+                                borderWidth: 1
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
                             y: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Cantidad de Eventos',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Nivel de Severidad',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: false
+                                }
                             }
                         },
                         plugins: {
                             legend: {
-                                display: false
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 20,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                titleFont: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                bodyFont: {
+                                    size: 12
+                                },
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y} eventos`;
+                                    }
+                                }
+                            }
+                        },
+                        onClick: function(evt, elements) {
+                            if (elements.length > 0) {
+                                var clickedElement = elements[0];
+                                var datasetIndex = clickedElement.datasetIndex;
+                                var labelIndex = clickedElement.index;
+
+                                // Determinar qué tipo de eventos se ha clickeado
+                                var severidad = labelIndex === 0 ? 100 :
+                                              labelIndex === 1 ? 50 : 0;
+                                var tipo = datasetIndex === 0 ? 'O' : 'T';
+
+                                // Obtener el CFEmático seleccionado
+                                var selectedCfematico = $('.cfematico-btn.selected').data('num-cajero');
+
+                                // Cargar eventos filtrados en el modal
+                                cargarEventosParaModal(selectedCfematico, severidad, tipo, dias);
                             }
                         }
                     }
                 });
+            });
+        }
 
+        // Función para cargar eventos en el modal
+        function cargarEventosParaModal(numCajero, severidad, tipo, dias) {
+            $.get('@Url.Action("ObtenerEventosFiltrados", "Monitoreo")', {
+                numCajero: numCajero,
+                severidad: severidad,
+                tipo: tipo,
+                dias: dias
+            }, function(data) {
+                var $content = $('#modalEventosContent');
+                $content.empty();
+
+                if (data.length === 0) {
+                    $content.html('<p class="text-muted">No hay eventos para estos criterios</p>');
+                    return;
+                }
+
+                var titulo = `Eventos ${getSeveridadText(severidad)} (${tipo === 'O' ? 'Operativos' : 'Técnicos'})`;
+                $('#eventosModalLabel').text(titulo);
+
+                var eventosHtml = data.map(function(evento) {
+                    var badgeClass = evento.severidad == 100 ? 'bg-danger' :
+                                   evento.severidad == 50 ? 'bg-warning' : 'bg-success';
+
+                    return `
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">${evento.fuente}</span>
+                                <span class="badge ${badgeClass}">${evento.severidad}</span>
+                            </div>
+                            <div>${evento.descripcion}</div>
+                            <div class="text-end small text-muted">${evento.fecha}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                $content.html(eventosHtml);
+
+                // Mostrar el modal
+                var modal = new bootstrap.Modal(document.getElementById('eventosModal'));
+                modal.show();
+            });
+        }
+
+        function getSeveridadText(severidad) {
+            return severidad === 100 ? 'Críticos' :
+                   severidad === 50 ? 'Altos' : 'Bajos';
+        }
+
+        // Función para cargar los eventos recientes
+        function cargarEventos(numCajero) {
+            var dias = $('#rangoTiempo').val();
+
+            $.get('@Url.Action("ObtenerEventosRecientes", "Monitoreo")', {
+                numCajero: numCajero,
+                dias: dias
+            }, function(data) {
+                var $lista = $('#listaEventos');
+                $lista.empty();
+
+                if (data.length === 0) {
+                    $lista.html('<div class="text-center py-2"><p class="text-muted">No hay eventos recientes</p></div>');
+                    return;
+                }
+
+                var eventosHtml = data.map(function(evento) {
+                    var badgeClass = evento.severidad == 100 ? 'bg-danger' :
+                                   evento.severidad == 50 ? 'bg-warning' : 'bg-success';
+
+                    return `
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">${evento.fuente}</span>
+                                <span class="badge ${badgeClass}">${evento.severidad}</span>
+                            </div>
+                            <div>${evento.descripcion}</div>
+                            <div class="text-end small text-muted">${evento.fecha}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                $lista.html(eventosHtml);
+            });
+        }
+
+        // Función para mostrar estadísticas avanzadas
+        function mostrarEstadisticasAvanzadas(numCajero) {
+            var dias = $('#rangoTiempo').val();
+
+            $.get('@Url.Action("ObtenerEstadisticasAvanzadas", "Monitoreo")', {
+                numCajero: numCajero,
+                dias: dias
+            }, function(data) {
+                var $container = $('#estadisticasAvanzadas');
+                $container.empty();
+
+                if (data.mensaje) {
+                    $container.html(`<p class="text-muted small">${data.mensaje}</p>`);
+                    return;
+                }
+
+                // Crear HTML para las estadísticas
+                var html = `
+                    <div class="mb-3">
+                        <h6 class="small fw-bold">Total de eventos: <span class="badge bg-secondary">${data.totalEventos}</span></h6>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="small fw-bold">Eventos más comunes:</h6>
+                        ${data.comunes.map(evento => `
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>${evento.descripcion}</span>
+                                <span class="badge bg-secondary">${evento.cantidad}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                if (data.tiempoPromedio) {
+                    html += `
+                        <div class="mb-3">
+                            <h6 class="small fw-bold">Tiempo promedio entre fallos:</h6>
+                            <div class="small">${data.tiempoPromedio.toFixed(1)} horas</div>
+                        </div>
+                    `;
+                }
+
+                $container.html(html);
+            });
+        }
+
+        // Función para limpiar los datos cuando se deselecciona un CFEmático
+        function limpiarDatos() {
+            $('#numCajero, #numActFijo, #numSerie, #numInventario, #ipCajero, #zona, #agencia, #centro').text('-');
+            $('#listaEventos').html('<div class="text-center py-2"><p class="text-muted">Seleccione un CFEmático para ver sus eventos</p></div>');
+            $('#estadisticasAvanzadas').html('<p class="text-muted small">Seleccione un CFEmático para ver análisis detallado</p>');
+            $('#tablaMantenimientos tbody').html('<tr><td colspan="5" class="text-center text-muted py-3">Seleccione un CFEmático</td></tr>');
+
+            if (basicBarChart !== null) {
+                basicBarChart.destroy();
+                basicBarChart = null;
+                $('#basicBarChart').replaceWith('<canvas id="basicBarChart"></canvas>');
+            }
+
+            // Limpiar tabla de eventos
+            var $tbody = $('#tablaEventos tbody');
+            $tbody.empty();
+            $tbody.append('<tr><td colspan="13" class="text-center text-muted py-3">Seleccione un CFEmático</td></tr>');
+        }
+
+        // Función para cargar los tipos de falla en el select
+        function cargarTiposFalla() {
+            $.get('@Url.Action("ObtenerTiposFalla", "Monitoreo")', function(data) {
+                var $select = $('#selectFalla');
+                $select.empty();
+
+                $select.append($('<option>', {
+                    value: '',
+                    text: 'TODAS LAS FALLAS'
+                }));
+
+                $.each(data, function(index, item) {
+                    $select.append($('<option>', {
+                        value: item.claveFalla,
+                        text: item.descripcion
+                    }));
+                });
+            });
+        }
+
+        // Función para actualizar la tabla de eventos
+        function actualizarTablaEventos() {
+            if (!selectedCfematico) {
+                return;
+            }
+
+            var claveFalla = $('#selectFalla').val();
+            var year = $('#selectYear').val();
+
+            $.get('@Url.Action("ObtenerEstadisticasEventosPorMes", "Monitoreo")', {
+                claveFalla: claveFalla,
+                year: year,
+                numCajero: selectedCfematico
+            }, function(data) {
+                var $tbody = $('#tablaEventos tbody');
+                $tbody.empty();
+
+                if (data.length === 0) {
+                    $tbody.append('<tr><td colspan="13" class="text-center text-muted py-3">No hay datos para mostrar</td></tr>');
+                    return;
+                }
+
+                $.each(data, function(index, item) {
+                    var row = '<tr>';
+                    row += '<td class="text-start">' + item.descripcion + '</td>';
+
+                    // Agregar celdas para cada mes con clase clickable
+                    for (var i = 1; i <= 12; i++) {
+                        var monthKey = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][i-1];
+                        var count = item[monthKey] || 0;
+
+                        row += `<td class="clickable-cell"
+                                  data-descripcion="${item.descripcion}"
+                                  data-mes="${i}"
+                                  data-year="${year}"
+                                  data-clave-falla="${claveFalla}">${count}</td>`;
+                    }
+
+                    row += '</tr>';
+                    $tbody.append(row);
+                });
+
+                // Agregar evento click a las celdas
+                $('.clickable-cell').click(function() {
+                    var descripcion = $(this).data('descripcion');
+                    var mes = $(this).data('mes');
+                    var year = $(this).data('year');
+                    var claveFalla = $(this).data('clave-falla');
+
+                    cargarEventosMensuales(selectedCfematico, descripcion, mes, year, claveFalla);
+                });
+            });
+        }
+
+        // Función para cargar eventos mensuales en el modal
+        function cargarEventosMensuales(numCajero, descripcion, mes, year, claveFalla) {
+            $.get('@Url.Action("ObtenerEventosMensuales", "Monitoreo")', {
+                numCajero: numCajero,
+                descripcion: descripcion,
+                mes: mes,
+                year: year,
+                claveFalla: claveFalla
+            }, function(data) {
+                var $content = $('#modalEventosMensualesContent');
+                $content.empty();
+
+                if (data.length === 0) {
+                    $content.html('<p class="text-muted">No hay eventos para estos criterios</p>');
+                    return;
+                }
+
+                var nombreMes = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][mes-1];
+
+                var titulo = `Eventos de ${descripcion} - ${nombreMes} ${year}`;
+                $('#eventosMensualesModalLabel').text(titulo);
+
+                var eventosHtml = data.map(function(evento) {
+                    var badgeClass = evento.severidad == 100 ? 'bg-danger' :
+                                   evento.severidad == 50 ? 'bg-warning' : 'bg-success';
+
+                    return `
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">${evento.fuente}</span>
+                                <span class="badge ${badgeClass}">${evento.severidad}</span>
+                            </div>
+                            <div>${evento.descripcion}</div>
+                            <div class="text-end small text-muted">${evento.fecha}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                $content.html(eventosHtml);
+
+                // Mostrar el modal
+                var modal = new bootstrap.Modal(document.getElementById('eventosMensualesModal'));
+                modal.show();
+            });
+        }
+
+        // Llamar esta función al cargar la página
+        $(document).ready(function() {
+            cargarTiposFalla();
+            cargarEstadosEnLote();
         });
+
+        // Función para cargar los mantenimientos del CFEmático seleccionado
+        function cargarMantenimientosCfematico(numCajero) {
+            $.get('@Url.Action("ObtenerMantenimientosCfematico", "Monitoreo")', { numCajero: numCajero }, function(data) {
+                var $tbody = $('#tablaMantenimientos tbody');
+                $tbody.empty();
+
+                if (data.error) {
+                    $tbody.append('<tr><td colspan="5" class="text-center text-danger py-3">Error al cargar los mantenimientos</td></tr>');
+                    return;
+                }
+
+                if (data.length === 0) {
+                    $tbody.append('<tr><td colspan="5" class="text-center text-muted py-3">No hay mantenimientos registrados</td></tr>');
+                    return;
+                }
+
+                data.sort((a, b) => {
+            const fechaA = new Date(a.fechaProgramada.split('/').reverse().join('-'));
+            const fechaB = new Date(b.fechaProgramada.split('/').reverse().join('-'));
+            return fechaA - fechaB;  // Cambia a `fechaA - fechaB` para orden ascendente
+        });
+
+        var $tbody = $('#tablaMantenimientos tbody');
+        $tbody.empty();
+
+                $.each(data, function(index, item) {
+                        var hojaServicioHtml = item.tieneHojaServicio
+                ? `<button class="btn btn-sm btn-outline-primary btn-descarga"
+                     data-num-cajero="${numCajero}"
+                     data-fecha="${item.fechaProgramada}">
+                    <i class="fas fa-file-pdf"></i> Descargar
+                   </button>`
+                : 'N/A';
+
+                    var detallesHtml = item.estatus === 'TERMINADO'
+                    ? `<button class="btn btn-sm btn-outline-info btn-detalles"
+                         data-rpe="${item.rpe || 'No registrado'}"
+                         data-tipo-mtto="${item.tipoMantenimiento}"
+                         data-problemas="${escapeHtml(item.problemas || '')}"
+                         data-diagnostico="${escapeHtml(item.diagnostico || '')}"
+                         data-observaciones="${escapeHtml(item.observaciones || '')}"
+                         data-fotos='${JSON.stringify(item.fotos || null)}'>
+                        <i class="fas fa-eye"></i> Ver
+                       </button>`
+                    : 'N/A';
+
+                    var row = `<tr>
+                        <td>${item.fechaProgramada}</td>
+                        <td>${item.fechaTerminacion}</td>
+                        <td><span class="badge ${item.estatus === 'PENDIENTE' ? 'bg-warning' : 'bg-success'}">${item.estatus}</span></td>
+                        <td>${hojaServicioHtml}</td>
+                        <td>${detallesHtml}</td>
+                    </tr>`;
+
+                    $tbody.append(row);
+                });
+
+                // Inicializar eventos para los botones de descarga
+                $('.btn-descarga').click(function() {
+                    var numCajero = $(this).data('num-cajero');
+                    var fecha = $(this).data('fecha');
+                    descargarHojaServicio(numCajero, fecha);
+                });
+
+                // Inicializar eventos para los botones de detalles
+                $('.btn-detalles').click(function() {
+                    mostrarDetallesMantenimiento($(this));
+                });
+            });
+        }
+
+        function descargarHojaServicio(numCajero, fechaProgramada) {
+            var fechaCodificada = encodeURIComponent(fechaProgramada);
+            var url = '@Url.Action("DescargarHojaServicioCfematico", "Monitoreo")?numCajero=' + numCajero + '&fechaProgramada=' + fechaCodificada;
+
+            console.log("URL de descarga:", url);
+
+            window.open(url, '_blank');
+        }
+
+        function mostrarDetallesMantenimiento($btn) {
+            // Mostrar datos básicos
+            $('#rpeDetalle').text($btn.data('rpe') || 'No registrado');
+            $('#problemasDetalle').text($btn.data('problemas') || 'No especificado');
+            $('#diagnosticoDetalle').text($btn.data('diagnostico') || 'No especificado');
+            $('#observacionesDetalle').text($btn.data('observaciones') || 'No especificado');
+
+            // Manejar fotos
+            const fotosContainer = $('#fotosMantenimientoContainer');
+            const esCorrectivo = $btn.data('tipo-mtto') === 'C';
+            const fotos = $btn.data('fotos');
+
+            if (esCorrectivo && fotos) {
+                fotosContainer.removeClass('d-none');
+
+                // Función para cargar una foto
+                const cargarFoto = (elementId, fotoBase64) => {
+                    if (fotoBase64) {
+                        $(elementId).attr('src', `data:image/jpeg;base64,${fotoBase64}`);
+                    } else {
+                        $(elementId).attr('src', 'https://via.placeholder.com/200x150?text=No+disponible');
+                    }
+                };
+
+                cargarFoto('#fotoAntes', fotos.fotoAntes);
+                cargarFoto('#fotoDurante', fotos.fotoDurante);
+                cargarFoto('#fotoDespues', fotos.fotoDespues);
+            } else {
+                fotosContainer.addClass('d-none');
+            }
+
+            var modal = new bootstrap.Modal(document.getElementById('detallesMantenimientoModal'));
+            modal.show();
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
     </script>
 }
