@@ -407,6 +407,7 @@ namespace ProyectoMantenimientos.Controllers
                             FechaTerminacion = mantenimiento != null ? mantenimiento.Fecha : (DateTime?)null,
                             x.agenda.Estatus,
                             HojaServicio = mantenimiento != null ? mantenimiento.EvidenciaHojaServicio : null,
+                            Rpe = mantenimiento != null ? mantenimiento.Rpe : null,
                             Problemas = mantenimiento != null ? mantenimiento.Problemas : null,
                             Diagnostico = mantenimiento != null ? mantenimiento.Diagnostico : null,
                             Observaciones = mantenimiento != null ? mantenimiento.Observaciones : null
@@ -420,6 +421,7 @@ namespace ProyectoMantenimientos.Controllers
                     estatus = m.Estatus,
                     hojaServicio = !string.IsNullOrEmpty(m.HojaServicio) ? "PDF" : "N/A",
                     tieneHojaServicio = !string.IsNullOrEmpty(m.HojaServicio),
+                    rpe = m.Rpe,
                     problemas = m.Problemas,
                     diagnostico = m.Diagnostico,
                     observaciones = m.Observaciones
@@ -471,7 +473,7 @@ namespace ProyectoMantenimientos.Controllers
                 }
 
                 var fileStream = System.IO.File.OpenRead(filePath);
-                return File(fileStream, "application/pdf", $"HojaServicio_{numCajero}_{fechaProgramada}.pdf");
+                return File(fileStream, "application/pdf", $"HojaServicioCFEmatico_{numCajero}_{fechaProgramada}.pdf");
             }
             catch (Exception ex)
             {

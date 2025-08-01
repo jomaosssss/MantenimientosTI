@@ -608,6 +608,10 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
+                    <h6>RPE del responsable:</h6>
+                    <div id="rpeDetalle" class="p-2 bg-light rounded font-monospace"></div>
+                </div>
+                <div class="mb-3">
                     <h6>Problemas reportados:</h6>
                     <div id="problemasDetalle" class="p-2 bg-light rounded"></div>
                 </div>
@@ -1139,17 +1143,27 @@
                     return;
                 }
 
+                data.sort((a, b) => {
+            const fechaA = new Date(a.fechaProgramada.split('/').reverse().join('-'));
+            const fechaB = new Date(b.fechaProgramada.split('/').reverse().join('-'));
+            return fechaA - fechaB;  // Cambia a `fechaA - fechaB` para orden ascendente
+        });
+
+        var $tbody = $('#tablaMantenimientos tbody');
+        $tbody.empty();
+
                 $.each(data, function(index, item) {
                         var hojaServicioHtml = item.tieneHojaServicio
-        ? `<button class="btn btn-sm btn-outline-primary btn-descarga"
-             data-num-cajero="${numCajero}"
-             data-fecha="${item.fechaProgramada}">
-            <i class="fas fa-file-pdf"></i> Descargar
-           </button>`
-        : 'N/A';
+                ? `<button class="btn btn-sm btn-outline-primary btn-descarga"
+                     data-num-cajero="${numCajero}"
+                     data-fecha="${item.fechaProgramada}">
+                    <i class="fas fa-file-pdf"></i> Descargar
+                   </button>`
+                : 'N/A';
 
                     var detallesHtml = item.estatus === 'TERMINADO'
                         ? `<button class="btn btn-sm btn-outline-info btn-detalles"
+                             data-rpe="${item.rpe || 'No registrado'}"
                              data-problemas="${escapeHtml(item.problemas || '')}"
                              data-diagnostico="${escapeHtml(item.diagnostico || '')}"
                              data-observaciones="${escapeHtml(item.observaciones || '')}">
@@ -1192,6 +1206,7 @@
         }
 
         function mostrarDetallesMantenimiento($btn) {
+            $('#rpeDetalle').text($btn.data('rpe') || 'No registrado');
             $('#problemasDetalle').text($btn.data('problemas') || 'No especificado');
             $('#diagnosticoDetalle').text($btn.data('diagnostico') || 'No especificado');
             $('#observacionesDetalle').text($btn.data('observaciones') || 'No especificado');
