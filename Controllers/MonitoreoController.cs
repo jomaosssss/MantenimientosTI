@@ -2,9 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MantenimientosTI.Models;
-using MantenimientosTI.Models.ViewModels;
-using System.Linq;
-using System;
 
 namespace ProyectoMantenimientos.Controllers
 {
@@ -80,7 +77,7 @@ namespace ProyectoMantenimientos.Controllers
 
             return View(cfematicos);
         }
-
+        
         [HttpGet]
         public IActionResult ObtenerDetallesCfematico(string numCajero)
         {
@@ -382,6 +379,104 @@ namespace ProyectoMantenimientos.Controllers
                 .ToList();
 
             return Json(eventos);
+        }
+
+        [HttpGet]
+        public IActionResult ObtenerMantenimientosCfematico(string numCajero)
+        {
+            try
+            {
+                var mantenimientos = _dbocontext.EquipoCfematicos
+                    .Where(c => c.NumCajero == numCajero)
+                    .Join(_dbocontext.Equipos,
+                        cfematico => cfematico.NumActFijo,
+                        equipo => equipo.NumActFijo,
+                        (cfematico, equipo) => new { cfematico, equipo })
+                    .Join(_dbocontext.Agenda,
+                        x => x.equipo.NumActFijo,
+                        agenda => agenda.NumActFijo,
+                        (x, agenda) => new { x.cfematico, agenda })
+                    .GroupJoin(_dbocontext.Mantenimientos,
+                        x => x.agenda.ClaveAgenda,
+                        mantenimiento => mantenimiento.ClaveAgenda,
+                        (x, mantenimientos) => new { x.agenda, x.cfematico, mantenimientos })
+                    .SelectMany(
+                        x => x.mantenimientos.DefaultIfEmpty(),
+                        (x, mantenimiento) => new {
+                            x.agenda.FechaProgramada,
+                            FechaTerminacion = mantenimiento != null ? mantenimiento.Fecha : (DateTime?)null,
+                            x.agenda.Estatus,
+                            HojaServicio = mantenimiento != null ? mantenimiento.EvidenciaHojaServicio : null,
+                            Problemas = mantenimiento != null ? mantenimiento.Problemas : null,
+                            Diagnostico = mantenimiento != null ? mantenimiento.Diagnostico : null,
+                            Observaciones = mantenimiento != null ? mantenimiento.Observaciones : null
+                        })
+                    .OrderByDescending(x => x.FechaProgramada)
+                    .ToList();
+
+                var resultado = mantenimientos.Select(m => new {
+                    fechaProgramada = m.FechaProgramada.ToString("dd/MM/yyyy"),
+                    fechaTerminacion = m.FechaTerminacion?.ToString("dd/MM/yyyy") ?? "N/A",
+                    estatus = m.Estatus,
+                    hojaServicio = !string.IsNullOrEmpty(m.HojaServicio) ? "PDF" : "N/A",
+                    tieneHojaServicio = !string.IsNullOrEmpty(m.HojaServicio),
+                    problemas = m.Problemas,
+                    diagnostico = m.Diagnostico,
+                    observaciones = m.Observaciones
+                }).ToList();
+
+                return Json(resultado);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult DescargarHojaServicioCfematico(string numCajero, string fechaProgramada)
+        {
+            try
+            {
+                var fecha = DateOnly.ParseExact(fechaProgramada, "dd/MM/yyyy");
+
+                var mantenimiento = _dbocontext.EquipoCfematicos
+                    .Where(c => c.NumCajero == numCajero)
+                    .Join(_dbocontext.Equipos,
+                        cfematico => cfematico.NumActFijo,
+                        equipo => equipo.NumActFijo,
+                        (cfematico, equipo) => new { cfematico, equipo })
+                    .Join(_dbocontext.Agenda,
+                        x => x.equipo.NumActFijo,
+                        agenda => agenda.NumActFijo,
+                        (x, agenda) => new { agenda })
+                    .Join(_dbocontext.Mantenimientos,
+                        x => x.agenda.ClaveAgenda,
+                        mantenimiento => mantenimiento.ClaveAgenda,
+                        (x, mantenimiento) => new { mantenimiento })
+                    .Where(x => x.mantenimiento.Agendum.FechaProgramada == fecha)
+                    .Select(x => x.mantenimiento)
+                    .FirstOrDefault();
+
+                if (mantenimiento == null || string.IsNullOrEmpty(mantenimiento.EvidenciaHojaServicio))
+                {
+                    return NotFound("No se encontró el mantenimiento o no tiene hoja de servicio");
+                }
+
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", mantenimiento.EvidenciaHojaServicio);
+
+                if (!System.IO.File.Exists(filePath))
+                {
+                    return NotFound("El archivo no existe en el servidor");
+                }
+
+                var fileStream = System.IO.File.OpenRead(filePath);
+                return File(fileStream, "application/pdf", $"HojaServicio_{numCajero}_{fechaProgramada}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
         }
     }
 }
