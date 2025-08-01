@@ -275,6 +275,24 @@
         font-size: 0.7rem;
         padding: 0.2rem 0.4rem;
     }
+
+    /* Estilos para las fotos en el modal */
+    .img-thumbnail {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 2px;
+        background-color: #f8f9fa;
+    }
+
+    #fotosMantenimientoContainer {
+        border-top: 1px solid #eee;
+        padding-top: 15px;
+    }
+
+    /* Placeholder para fotos faltantes */
+    img[src*="placeholder.com"] {
+        opacity: 0.6;
+    }
 </style>
 
 <div class="container mt-2 compact-container">
@@ -285,12 +303,8 @@
 
         <div class="card-body p-2">
             <div class="main-grid">
-                <!-- Sección de Zonas y Eventos (columna izquierda) -->
                 <div class="zones-events-container">
-                    <!-- Grid de Zonas -->
                     <div class="zones-container">
-                        <!-- Columnas 1 a 4 -->
-                        <!-- Columna 1 -->
                         <div>
                             @for (int i = 0; i < Model.Count; i += 4)
                             {
@@ -317,7 +331,6 @@
                             }
                         </div>
 
-                        <!-- Columna 2 -->
                         <div>
                             @for (int i = 1; i < Model.Count; i += 4)
                             {
@@ -344,7 +357,6 @@
                             }
                         </div>
 
-                        <!-- Columna 3 -->
                         <div>
                             @for (int i = 2; i < Model.Count; i += 4)
                             {
@@ -371,7 +383,6 @@
                             }
                         </div>
 
-                        <!-- Columna 4 -->
                         <div>
                             @for (int i = 3; i < Model.Count; i += 4)
                             {
@@ -399,7 +410,6 @@
                         </div>
                     </div>
 
-                    <!-- Tarjeta de Mantenimientos Programados -->
                     <div class="events-card mb-3">
                         <h6 class="mb-2">Mantenimientos Programados</h6>
                         <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
@@ -422,7 +432,6 @@
                         </div>
                     </div>
 
-                    <!-- Tarjeta de Eventos -->
                     <div class="events-card">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="mb-0">Estadísticas de Eventos</h6>
@@ -466,14 +475,11 @@
                     </div>
                 </div>
 
-                <!-- Sección de Información (columna derecha) -->
                 <div class="info-container">
-                    <!-- Tarjeta de Información -->
                     <div class="info-card">
                         <div class="small">
                             <h6 class="border-bottom pb-1 mb-2">Información del CFEmático</h6>
                             <div class="row">
-                                <!-- Columna izquierda -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Cajero:</span>
@@ -488,7 +494,6 @@
                                         <span id="ipCajero" class="ms-2">-</span>
                                     </div>
                                 </div>
-                                <!-- Columna derecha -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Número de Activo Fijo:</span>
@@ -508,7 +513,6 @@
                             <h6 class="border-bottom pb-2 mb-3 mt-3">Ubicación</h6>
 
                             <div class="row">
-                                <!-- Columna izquierda -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Zona:</span>
@@ -519,7 +523,6 @@
                                         <span id="centro" class="ms-2">-</span>
                                     </div>
                                 </div>
-                                <!-- Columna derecha -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <span class="fw-bold">Agencia:</span>
@@ -558,7 +561,6 @@
     </div>
 </div>
 
-<!-- Modal para mostrar eventos -->
 <div class="modal fade" id="eventosModal" tabindex="-1" aria-labelledby="eventosModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -578,7 +580,6 @@
     </div>
 </div>
 
-<!-- Modal para eventos mensuales -->
 <div class="modal fade" id="eventosMensualesModal" tabindex="-1" aria-labelledby="eventosMensualesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -598,9 +599,8 @@
     </div>
 </div>
 
-<!-- Modal para detalles de mantenimiento -->
 <div class="modal fade" id="detallesMantenimientoModal" tabindex="-1" aria-labelledby="detallesMantenimientoModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="detallesMantenimientoModalLabel">Detalles de Mantenimiento</h5>
@@ -608,8 +608,8 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <h6>RPE del responsable:</h6>
-                    <div id="rpeDetalle" class="p-2 bg-light rounded font-monospace"></div>
+                    <h6 class="d-inline">RPE del Responsable del Mantenimiento: </h6>
+                    <span id="rpeDetalle" class="p-2 bg-light rounded font-monospace"></span>
                 </div>
                 <div class="mb-3">
                     <h6>Problemas reportados:</h6>
@@ -622,6 +622,24 @@
                 <div class="mb-3">
                     <h6>Observaciones:</h6>
                     <div id="observacionesDetalle" class="p-2 bg-light rounded"></div>
+                </div>
+
+                <div id="fotosMantenimientoContainer" class="mt-4 d-none">
+                    <h6 class="border-bottom pb-2">Fotos del Mantenimiento</h6>
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <p class="small mb-1">Foto Antes</p>
+                            <img id="fotoAntes" src="" class="img-fluid img-thumbnail mb-2" style="max-height: 200px;">
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <p class="small mb-1">Foto Durante</p>
+                            <img id="fotoDurante" src="" class="img-fluid img-thumbnail mb-2" style="max-height: 200px;">
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <p class="small mb-1">Foto Después</p>
+                            <img id="fotoDespues" src="" class="img-fluid img-thumbnail mb-2" style="max-height: 200px;">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1162,14 +1180,16 @@
                 : 'N/A';
 
                     var detallesHtml = item.estatus === 'TERMINADO'
-                        ? `<button class="btn btn-sm btn-outline-info btn-detalles"
-                             data-rpe="${item.rpe || 'No registrado'}"
-                             data-problemas="${escapeHtml(item.problemas || '')}"
-                             data-diagnostico="${escapeHtml(item.diagnostico || '')}"
-                             data-observaciones="${escapeHtml(item.observaciones || '')}">
-                            <i class="fas fa-eye"></i> Ver
-                           </button>`
-                        : 'N/A';
+                    ? `<button class="btn btn-sm btn-outline-info btn-detalles"
+                         data-rpe="${item.rpe || 'No registrado'}"
+                         data-tipo-mtto="${item.tipoMantenimiento}"
+                         data-problemas="${escapeHtml(item.problemas || '')}"
+                         data-diagnostico="${escapeHtml(item.diagnostico || '')}"
+                         data-observaciones="${escapeHtml(item.observaciones || '')}"
+                         data-fotos='${JSON.stringify(item.fotos || null)}'>
+                        <i class="fas fa-eye"></i> Ver
+                       </button>`
+                    : 'N/A';
 
                     var row = `<tr>
                         <td>${item.fechaProgramada}</td>
@@ -1206,10 +1226,35 @@
         }
 
         function mostrarDetallesMantenimiento($btn) {
+            // Mostrar datos básicos
             $('#rpeDetalle').text($btn.data('rpe') || 'No registrado');
             $('#problemasDetalle').text($btn.data('problemas') || 'No especificado');
             $('#diagnosticoDetalle').text($btn.data('diagnostico') || 'No especificado');
             $('#observacionesDetalle').text($btn.data('observaciones') || 'No especificado');
+
+            // Manejar fotos
+            const fotosContainer = $('#fotosMantenimientoContainer');
+            const esCorrectivo = $btn.data('tipo-mtto') === 'C';
+            const fotos = $btn.data('fotos');
+
+            if (esCorrectivo && fotos) {
+                fotosContainer.removeClass('d-none');
+
+                // Función para cargar una foto
+                const cargarFoto = (elementId, fotoBase64) => {
+                    if (fotoBase64) {
+                        $(elementId).attr('src', `data:image/jpeg;base64,${fotoBase64}`);
+                    } else {
+                        $(elementId).attr('src', 'https://via.placeholder.com/200x150?text=No+disponible');
+                    }
+                };
+
+                cargarFoto('#fotoAntes', fotos.fotoAntes);
+                cargarFoto('#fotoDurante', fotos.fotoDurante);
+                cargarFoto('#fotoDespues', fotos.fotoDespues);
+            } else {
+                fotosContainer.addClass('d-none');
+            }
 
             var modal = new bootstrap.Modal(document.getElementById('detallesMantenimientoModal'));
             modal.show();

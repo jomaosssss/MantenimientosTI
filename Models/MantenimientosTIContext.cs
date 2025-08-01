@@ -434,79 +434,101 @@ public partial class MantenimientosTIContext : DbContext
 
         modelBuilder.Entity<Foto>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("Foto");
+            entity.ToTable("Foto"); // Esto es lo más importante
+
+            entity.HasKey(e => new { e.NumOrden, e.FechaHora }); // Clave compuesta (opcional)
+
+            entity.Property(e => e.NumOrden)
+                .HasColumnName("numOrden");
+
+            entity.Property(e => e.FotoAntes)
+                .HasColumnName("fotoAntes");
+
+            entity.Property(e => e.FotoDurante)
+                .HasColumnName("fotoDurante");
+
+            entity.Property(e => e.FotoDespues)
+                .HasColumnName("fotoDespues");
 
             entity.Property(e => e.FechaHora)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("fechaHora");
-            entity.Property(e => e.FotoAntes).HasColumnName("fotoAntes");
-            entity.Property(e => e.FotoDespues).HasColumnName("fotoDespues");
-            entity.Property(e => e.FotoDurante).HasColumnName("fotoDurante");
-            entity.Property(e => e.NumOrden).HasColumnName("numOrden");
-
-            entity.HasOne(d => d.NumOrdenNavigation).WithMany()
-                .HasForeignKey(d => d.NumOrden)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Foto__numOrden__5629CD9C");
+                .HasColumnName("fechaHora")
+                .HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<Mantenimiento>(entity =>
         {
-            entity.HasKey(e => e.NumOrden).HasName("PK__Mantenim__03BED0815603D045");
+            entity.ToTable("Mantenimiento"); // Esto es lo más importante
+            // Clave primaria
+            entity.HasKey(e => e.NumOrden).HasName("PK__Mantenimiento__numOrden");
 
-            entity.ToTable("Mantenimiento");
-
+            // Configuración de columnas
             entity.Property(e => e.NumOrden)
-                .ValueGeneratedNever()
-                .HasColumnName("numOrden");
-            entity.Property(e => e.ClaveAgenda).HasColumnName("claveAgenda");
+                .HasColumnName("numOrden")
+                .ValueGeneratedNever(); // Asumes que se asigna manualmente
+
+            entity.Property(e => e.ClaveAgenda)
+                .HasColumnName("claveAgenda");
+
+            entity.Property(e => e.NumActFijo)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("numActFijo");
+
+            entity.Property(e => e.FechaProgramada)
+                .HasColumnName("fechaProgramada");
+
             entity.Property(e => e.ClaveTipoMtto)
                 .HasMaxLength(1)
                 .IsUnicode(false)
                 .IsFixedLength()
                 .HasColumnName("claveTipoMtto");
-            entity.Property(e => e.Diagnostico)
-                .HasMaxLength(300)
-                .IsUnicode(false)
-                .HasColumnName("diagnostico");
-            entity.Property(e => e.EvidenciaHojaServicio)
-                .HasMaxLength(100)
-                .IsUnicode(false)
-                .HasColumnName("evidenciaHojaServicio");
-            entity.Property(e => e.Fecha)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("fecha");
-            entity.Property(e => e.FechaProgramada).HasColumnName("fechaProgramada");
-            entity.Property(e => e.NumActFijo)
-                .HasMaxLength(20)
-                .IsUnicode(false)
-                .HasColumnName("numActFijo");
-            entity.Property(e => e.Observaciones)
-                .HasMaxLength(300)
-                .IsUnicode(false)
-                .HasColumnName("observaciones");
-            entity.Property(e => e.Problemas)
-                .HasMaxLength(300)
-                .IsUnicode(false)
-                .HasColumnName("problemas");
+
             entity.Property(e => e.Rpe)
                 .HasMaxLength(5)
                 .IsUnicode(false)
                 .HasColumnName("RPE");
 
-            entity.HasOne(d => d.RpeNavigation).WithMany(p => p.Mantenimientos)
-                .HasForeignKey(d => d.Rpe)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Mantenimien__RPE__534D60F1");
+            entity.Property(e => e.EvidenciaHojaServicio)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("evidenciaHojaServicio");
 
-            entity.HasOne(d => d.Agendum).WithMany(p => p.Mantenimientos)
+            entity.Property(e => e.Problemas)
+                .HasMaxLength(300)
+                .IsUnicode(false)
+                .HasColumnName("problemas");
+
+            entity.Property(e => e.Diagnostico)
+                .HasMaxLength(300)
+                .IsUnicode(false)
+                .HasColumnName("diagnostico");
+
+            entity.Property(e => e.Observaciones)
+                .HasMaxLength(300)
+                .IsUnicode(false)
+                .HasColumnName("observaciones");
+
+            entity.Property(e => e.Fecha)
+                .HasColumnName("fecha")
+                .HasDefaultValueSql("(getdate())");
+
+            // Relación con Agenda (clave compuesta)
+            entity.HasOne(d => d.Agendum)
+                .WithMany(p => p.Mantenimientos)
                 .HasForeignKey(d => new { d.ClaveAgenda, d.NumActFijo, d.FechaProgramada })
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Mantenimiento__52593CB8");
+                .HasConstraintName("FK_Mantenimiento_Agenda");
+
+            // Relación con Usuario
+            entity.HasOne(d => d.RpeNavigation)
+                .WithMany(p => p.Mantenimientos)
+                .HasForeignKey(d => d.Rpe)
+                .HasConstraintName("FK_Mantenimiento_Usuario");
+
+            // Relación 1 a muchos con Foto (una orden de mantenimiento puede tener múltiples fotos)
+            entity.HasMany(d => d.Fotos)
+                .WithOne(p => p.Mantenimiento)
+                .HasForeignKey(d => d.NumOrden)
+                .HasConstraintName("FK_Foto_Mantenimiento");
         });
 
         modelBuilder.Entity<RegistroEvento>(entity =>

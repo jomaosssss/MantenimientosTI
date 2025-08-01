@@ -404,13 +404,15 @@ namespace ProyectoMantenimientos.Controllers
                         x => x.mantenimientos.DefaultIfEmpty(),
                         (x, mantenimiento) => new {
                             x.agenda.FechaProgramada,
+                            x.agenda.ClaveTipoMtto,
                             FechaTerminacion = mantenimiento != null ? mantenimiento.Fecha : (DateTime?)null,
                             x.agenda.Estatus,
                             HojaServicio = mantenimiento != null ? mantenimiento.EvidenciaHojaServicio : null,
                             Rpe = mantenimiento != null ? mantenimiento.Rpe : null,
                             Problemas = mantenimiento != null ? mantenimiento.Problemas : null,
                             Diagnostico = mantenimiento != null ? mantenimiento.Diagnostico : null,
-                            Observaciones = mantenimiento != null ? mantenimiento.Observaciones : null
+                            Observaciones = mantenimiento != null ? mantenimiento.Observaciones : null,
+                            Fotos = mantenimiento != null ? _dbocontext.Fotos.FirstOrDefault(f => f.NumOrden == mantenimiento.NumOrden) : null
                         })
                     .OrderByDescending(x => x.FechaProgramada)
                     .ToList();
@@ -419,12 +421,19 @@ namespace ProyectoMantenimientos.Controllers
                     fechaProgramada = m.FechaProgramada.ToString("dd/MM/yyyy"),
                     fechaTerminacion = m.FechaTerminacion?.ToString("dd/MM/yyyy") ?? "N/A",
                     estatus = m.Estatus,
+                    tipoMantenimiento = m.ClaveTipoMtto,
                     hojaServicio = !string.IsNullOrEmpty(m.HojaServicio) ? "PDF" : "N/A",
                     tieneHojaServicio = !string.IsNullOrEmpty(m.HojaServicio),
                     rpe = m.Rpe,
                     problemas = m.Problemas,
                     diagnostico = m.Diagnostico,
-                    observaciones = m.Observaciones
+                    observaciones = m.Observaciones,
+                    fotos = m.Fotos != null ? new
+                    {
+                        fotoAntes = m.Fotos.FotoAntes,
+                        fotoDurante = m.Fotos.FotoDurante,
+                        fotoDespues = m.Fotos.FotoDespues
+                    } : null
                 }).ToList();
 
                 return Json(resultado);
@@ -432,6 +441,29 @@ namespace ProyectoMantenimientos.Controllers
             catch (Exception ex)
             {
                 return Json(new { error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult ObtenerFoto(string fotoBase64)
+        {
+            if (string.IsNullOrEmpty(fotoBase64))
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                var cleanBase64 = fotoBase64.StartsWith("data:image")
+                    ? fotoBase64.Split(',')[1]
+                    : fotoBase64;
+
+                byte[] imageBytes = Convert.FromBase64String(cleanBase64);
+                return File(imageBytes, "image/jpeg");
+            }
+            catch
+            {
+                return NotFound();
             }
         }
 

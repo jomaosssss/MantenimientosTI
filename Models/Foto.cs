@@ -13,7 +13,7 @@ public partial class Foto
 
     public string? FotoDespues { get; set; }
 
-    public DateTime FechaHora { get; set; }
+    public DateTime FechaHora { get; set; } = DateTime.Now;
 
-    public virtual Mantenimiento NumOrdenNavigation { get; set; } = null!;
+    public virtual Mantenimiento Mantenimiento { get; set; } = null!;
 }

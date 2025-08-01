@@ -25,9 +25,11 @@ public partial class Mantenimiento
 
     public string? Observaciones { get; set; }
 
-    public DateTime Fecha { get; set; }
+    public DateTime Fecha { get; set; } = DateTime.Now;
 
     public virtual Agendum Agendum { get; set; } = null!;
 
     public virtual Usuario RpeNavigation { get; set; } = null!;
+
+    public virtual ICollection<Foto> Fotos { get; set; } = new List<Foto>();
 }
