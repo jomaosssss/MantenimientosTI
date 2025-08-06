@@ -263,7 +263,8 @@ namespace ProyectoMantenimientos.Controllers
             string numActFijo,
             string fechaProgramada,
             string responsable = "TECNICO_DE_ZONA",
-            string nombreTecnico = null)
+            string nombreTecnico = null,
+            string tipoEquipo = null)
         {
             try
             {
@@ -332,6 +333,7 @@ namespace ProyectoMantenimientos.Controllers
                 if (acData != null)
                 {
                     byte[] pdf;
+                    string fileNamePrefix;
 
                     // Determinar qué plantilla usar según el tipo de equipo
                     if (acData.TipoEquipo.ToUpper() == "CFETURNO")
@@ -345,6 +347,7 @@ namespace ProyectoMantenimientos.Controllers
                             acData.ClaveAgenda,
                             fecha,
                             nombreUsuario);
+                        fileNamePrefix = "HojaServicioCFETURNO";
                     }
                     else if (acData.TipoEquipo.ToUpper() == "CFECAM")
                     {
@@ -357,6 +360,7 @@ namespace ProyectoMantenimientos.Controllers
                             acData.ClaveAgenda,
                             fecha,
                             nombreUsuario);
+                        fileNamePrefix = "HojaServicioCFECAM";
                     }
                     else
                     {
@@ -370,9 +374,10 @@ namespace ProyectoMantenimientos.Controllers
                             acData.ClaveAgenda,
                             fecha,
                             nombreUsuario);
+                        fileNamePrefix = "HojaServicioMONIVENT";
                     }
 
-                    return File(pdf, "application/pdf", $"AC_HojaServicio_{numActFijo}.pdf");
+                    return File(pdf, "application/pdf", $"{fileNamePrefix}_{numActFijo}.pdf");
                 }
 
                 // 3) Buscar en Equipos de Cómputo

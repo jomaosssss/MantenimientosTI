@@ -427,48 +427,60 @@
             });
 
             // Manejar el click en los botones "Hoja de Servicio" de Equipos de Atención a Clientes (descarga directa)
-            $('#tablaAC').on('click', '.btnGenerarPdf', function() {
-                var fila = $(this).closest('tr');
-                var numActFijo = fila.data('num-act-fijo');
-                var tipoEquipo = fila.data('tipo-equipo');
-                var fechaProgramada = fila.find('td:first').text().trim();
+        // En el evento click de los botones de Equipos de Atención a Clientes
+        $('#tablaAC').on('click', '.btnGenerarPdf', function() {
+            var fila = $(this).closest('tr');
+            var numActFijo = fila.data('num-act-fijo');
+            var tipoEquipo = fila.data('tipo-equipo'); // Asegúrate de que este dato esté disponible
+            var fechaProgramada = fila.find('td:first').text().trim();
 
-                // Mostrar carga
-                var $btn = $(this);
-                $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
+            // Determinar el prefijo según el tipo de equipo
+            var prefix = 'HojaServicio';
+            if (tipoEquipo.toUpperCase().includes('CFECAM')) {
+                prefix += 'CFECAM';
+            } else if (tipoEquipo.toUpperCase().includes('CFETURNO')) {
+                prefix += 'CFETURNO';
+            } else {
+                prefix += 'EquipoAC'; // Por defecto
+            }
 
-                $.ajax({
-                    url: '/Home/GenerarHojaServicio',
-                    type: 'POST',
-                    data: {
-                        numActFijo: numActFijo,
-                        fechaProgramada: fechaProgramada,
-                        responsable: "TECNICO_DE_ZONA",
-                        nombreTecnico: "@Context.Session.GetString("NombreUsuario")"
-                    },
-                    xhrFields: {
-                        responseType: 'blob'
-                    },
-                    success: function(data) {
-                        var url = URL.createObjectURL(data);
-                        var a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'HojaServicioEquipoAC_' + numActFijo + '.pdf';
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(function() {
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                        }, 100);
-                    },
-                    error: function(xhr) {
-                        alert('Error al generar el PDF: ' + xhr.responseText);
-                    },
-                    complete: function() {
-                        $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf"></i>');
-                    }
-                });
+            // Mostrar carga
+            var $btn = $(this);
+            $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
+
+            $.ajax({
+                url: '/Home/GenerarHojaServicio',
+                type: 'POST',
+                data: {
+                    numActFijo: numActFijo,
+                    fechaProgramada: fechaProgramada,
+                    responsable: "TECNICO_DE_ZONA",
+                    nombreTecnico: "@Context.Session.GetString("NombreUsuario")",
+                    tipoEquipo: tipoEquipo // Enviamos el tipo de equipo al controlador
+                },
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(data) {
+                    var url = URL.createObjectURL(data);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = prefix + '_' + numActFijo + '.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(function() {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                },
+                error: function(xhr) {
+                    alert('Error al generar el PDF: ' + xhr.responseText);
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf"></i>');
+                }
             });
+        });
 
             // Manejar el click en los botones "Hoja de Servicio" de Equipos de Cómputo
             $('#tablaEC').on('click', '.btnGenerarPdf', function() {
