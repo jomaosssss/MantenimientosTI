@@ -18,7 +18,7 @@ namespace ProyectoMantenimientos.Controllers
             Directory.GetCurrentDirectory(),
             "wwwroot",
             "Plantillas",
-            "CFEMATICO.pdf");
+            "CFEMATICO2.pdf");
 
         private readonly string _rutaPlantillaCFETURNO = Path.Combine(
             Directory.GetCurrentDirectory(),
@@ -465,8 +465,8 @@ namespace ProyectoMantenimientos.Controllers
             EscribirTexto(cb, bf, 10, 145f, 612f, numCajero);
             EscribirTexto(cb, bf, 10, 290f, 612f, numSerie);
             EscribirTexto(cb, bf, 10, 495f, 612f, numInventario);
-            EscribirTexto(cb, bf, 10, 78f, 75f, responsable);
-            EscribirTexto(cb, bf, 7, 445f, 125f, $"Fecha de Impresión: {fechaImpresion}");
+            EscribirTexto(cb, bf, 10, 78f, 62f, responsable);
+            EscribirTexto(cb, bf, 7, 445f, 112f, $"Fecha de Impresión: {fechaImpresion}");
 
             if (tipoMantenimiento == "C") // Correctivo
             {
