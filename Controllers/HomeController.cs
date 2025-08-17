@@ -73,10 +73,10 @@ namespace ProyectoMantenimientos.Controllers
             // 1. CONSULTAS PARA LOS CONTADORES DE LAS TARJETAS
 
             var terminadosQuery = _dbocontext.Agenda
-    .Include(a => a.NumActFijoNavigation)
-        .ThenInclude(e => e.CatCentro)
-            .ThenInclude(c => c.CatAgencium)
-    .Where(a => a.Estatus == "TERMINADO" &&
+                .Include(a => a.NumActFijoNavigation)
+                .ThenInclude(e => e.CatCentro)
+                .ThenInclude(c => c.CatAgencium)
+                .Where(a => a.Estatus == "TERMINADO" &&
                a.FechaProgramada >= primerDiaMes &&
                a.FechaProgramada <= ultimoDiaMes);  // <- Cambiado de "hoy" a "ultimoDiaMes"
 
@@ -447,7 +447,7 @@ namespace ProyectoMantenimientos.Controllers
             string claveAgenda,
             DateOnly fechaProgramada,
             string responsable,
-            string tipoMantenimiento) // Añadimos este parámetro
+            string tipoMantenimiento)
         {
             string fechaImpresion = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
 
@@ -465,8 +465,8 @@ namespace ProyectoMantenimientos.Controllers
             EscribirTexto(cb, bf, 10, 145f, 612f, numCajero);
             EscribirTexto(cb, bf, 10, 290f, 612f, numSerie);
             EscribirTexto(cb, bf, 10, 495f, 612f, numInventario);
-            EscribirTexto(cb, bf, 10, 78f, 62f, responsable);
-            EscribirTexto(cb, bf, 7, 445f, 112f, $"Fecha de Impresión: {fechaImpresion}");
+            EscribirTexto(cb, bf, 10, 78f, 60f, responsable);
+            EscribirTexto(cb, bf, 7, 445f, 110f, $"Fecha de Impresión: {fechaImpresion}");
 
             if (tipoMantenimiento == "C") // Correctivo
             {
@@ -505,7 +505,6 @@ namespace ProyectoMantenimientos.Controllers
             EscribirTexto(cb, bf, 10, 115f, 670f, zona);
             EscribirTexto(cb, bf, 10, 390f, 670f, agencia);
             EscribirTexto(cb, bf, 10, 110f, 658f, fechaProgramada.ToString("dd/MM/yyyy"));
-            //EscribirTexto(cb, bf, 10, 145f, 612f, tipoEquipo); --- NO OCUPO IMPRIMIRLO
             EscribirTexto(cb, bf, 10, 290f, 615f, serie);
             EscribirTexto(cb, bf, 10, 378f, 90f, responsable);
             EscribirTexto(cb, bf, 7, 445f, 137.5f, $"Fecha de Impresión: {fechaImpresion}");
@@ -538,7 +537,6 @@ namespace ProyectoMantenimientos.Controllers
             EscribirTexto(cb, bf, 10, 115f, 670f, zona);
             EscribirTexto(cb, bf, 10, 390f, 670f, agencia);
             EscribirTexto(cb, bf, 10, 110f, 658f, fechaProgramada.ToString("dd/MM/yyyy"));
-            //EscribirTexto(cb, bf, 10, 145f, 612f, tipoEquipo); --- NO OCUPO IMPRIMIRLO
             EscribirTexto(cb, bf, 10, 290f, 614f, serie);
             EscribirTexto(cb, bf, 10, 378f, 90f, responsable);
             EscribirTexto(cb, bf, 7, 445f, 138.5f, $"Fecha de Impresión: {fechaImpresion}");
@@ -598,8 +596,8 @@ namespace ProyectoMantenimientos.Controllers
             EscribirTexto(cb, bf, 10, 120f, 691f, agencia);
             EscribirTexto(cb, bf, 10, 500f, 721f, fechaProgramada.ToString("dd/MM/yyyy"));
             EscribirTexto(cb, bf, 10, 460f, 647f, seriePc);
-            EscribirTexto(cb, bf, 10, 500f, 706f, rpe ?? "N/A"); // Usar rpe modificado o "N/A" si es null
-            EscribirTexto(cb, bf, 10, 120f, 706f, nombreRpe ?? "N/A"); // Usar nombre modificado o "N/A" si es null
+            EscribirTexto(cb, bf, 10, 500f, 706f, rpe ?? "N/A");
+            EscribirTexto(cb, bf, 10, 120f, 706f, nombreRpe ?? "N/A");
             EscribirTexto(cb, bf, 10, 355f, 140f, responsable);
             EscribirTexto(cb, bf, 10, 100f, 647f, tipoEquipo);
             EscribirTexto(cb, bf, 10, 96f, 662f, numActFijo);

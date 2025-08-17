@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MantenimientosTI.Models;
-using Microsoft.EntityFrameworkCore;
-using MantenimientosTI.Models.ViewModels;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using MantenimientosTI.Models;
+using MantenimientosTI.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace ProyectoMantenimientos.Controllers
 {
@@ -29,7 +29,6 @@ namespace ProyectoMantenimientos.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(VMLogin model)
         {
-            // Limpiamos los errores de validación automáticos
             ModelState.Clear();
 
             // Validación manual de campos vacíos
@@ -63,11 +62,11 @@ namespace ProyectoMantenimientos.Controllers
                     return View(model);
                 }
 
-                // VERIFICACIÓN DE CONTRASEÑA CON HASH (NUEVO)
+                // Verificacion de contraseña con hash
                 var hasher = new PasswordHasher<Usuario>();
                 var result = hasher.VerifyHashedPassword(usuario, usuario.Contrasenia, model.Contrasenia);
 
-                // MIGRACIÓN PARA DESARROLLO (SOLO PARA PRUEBAS)
+                // Migracion para desarrollo (solo para pruebas)
 #if DEBUG
                 if (result == PasswordVerificationResult.Failed && usuario.Contrasenia == model.Contrasenia)
                 {
@@ -90,26 +89,26 @@ namespace ProyectoMantenimientos.Controllers
                     return View(model);
                 }
 
-                // Crear claims para el usuario (MANTENIENDO TODOS TUS DATOS ORIGINALES)
+                // Crear claims para el usuario
                 var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, usuario.Rpe),
-            new Claim(ClaimTypes.Name, $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}"),
-            new Claim(ClaimTypes.Role, usuario.ClaveRolNavigation?.Nombre ?? "Sin rol"),
-            new Claim("RolId", usuario.ClaveRol.ToString()),
-            new Claim("Zona", usuario.ClaveZona),
-            new Claim("ZonaNombre", usuario.CatZona?.NombreZona ?? "Sin zona"),
-            new Claim("Division", usuario.ClaveDivision)
-        };
+                {
+                    new Claim(ClaimTypes.NameIdentifier, usuario.Rpe),
+                    new Claim(ClaimTypes.Name, $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}"),
+                    new Claim(ClaimTypes.Role, usuario.ClaveRolNavigation?.Nombre ?? "Sin rol"),
+                    new Claim("RolId", usuario.ClaveRol.ToString()),
+                    new Claim("Zona", usuario.ClaveZona),
+                    new Claim("ZonaNombre", usuario.CatZona?.NombreZona ?? "Sin zona"),
+                    new Claim("Division", usuario.ClaveDivision)
+                };
 
-                // Crear identidad y principal (IGUAL QUE TU VERSIÓN ORIGINAL)
+                // Crear identidad y principal
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
-                // Iniciar sesión (IGUAL QUE TU VERSIÓN ORIGINAL)
+                // Iniciar sesión
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
 
-                // Configuración de sesión (MANTENIENDO TODOS TUS DATOS ORIGINALES)
+                // Configuración de sesión
                 HttpContext.Session.SetString("Rpe", usuario.Rpe);
                 HttpContext.Session.SetString("NombreUsuario", $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}");
                 HttpContext.Session.SetInt32("Rol", usuario.ClaveRol);
@@ -134,7 +133,6 @@ namespace ProyectoMantenimientos.Controllers
             return RedirectToAction("Login", "Usuario");
         }
 
-        // Acción para mostrar la vista de administración
         [Authorize(Roles = "ADMINISTRADOR")]
         public IActionResult Administrar()
         {
@@ -178,7 +176,7 @@ namespace ProyectoMantenimientos.Controllers
             });
         }
 
-        // Actualizar un usuario existente
+        [Authorize(Roles = "ADMINISTRADOR")]
         [HttpPost]
         public IActionResult ActualizarUsuario([FromBody] UsuarioEditModel model)
         {
@@ -214,8 +212,7 @@ namespace ProyectoMantenimientos.Controllers
             }
         }
 
-        // Crear usuario
-        [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
+        [Authorize(Roles = "ADMINISTRADOR")]
         [HttpPost]
         public IActionResult CrearUsuario([FromBody] UsuarioCreateModel model)
         {

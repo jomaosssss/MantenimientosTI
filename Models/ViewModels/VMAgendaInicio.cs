@@ -7,6 +7,6 @@
         public List<VMAgendaVista> Computo { get; set; } = new();
         public int TerminadosCount { get; set; }
         public int PendientesCount { get; set; }
-        public int ProgramadosCount { get; set; } // Nueva propiedad
+        public int ProgramadosCount { get; set; }
     }
 }

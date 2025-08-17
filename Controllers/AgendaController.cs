@@ -167,7 +167,7 @@ namespace ProyectoMantenimientos.Controllers
 
                             if (equipoExistente == null)
                             {
-                                // Verificar si existe pero en otra zona (solo aplica si no es admin)
+                                // Verificar si el equipo existe en otra zona (solo aplica si no es administrador)
                                 var existeEnOtraZona = !esAdministrador && _dbocontext.Equipos.Any(e => e.NumActFijo == numActFijo);
 
                                 if (existeEnOtraZona)
@@ -391,7 +391,7 @@ namespace ProyectoMantenimientos.Controllers
 
             if (string.IsNullOrEmpty(claveZonaUsuario) || string.IsNullOrEmpty(claveDivisionUsuario))
             {
-                return RedirectToAction("Login", "Account"); // O manejar el error como prefieras
+                return RedirectToAction("Login", "Account");
             }
 
             // Obtener la zona actual del usuario

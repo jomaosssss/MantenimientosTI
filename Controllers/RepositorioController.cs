@@ -29,7 +29,6 @@ namespace ProyectoMantenimientos.Controllers
         {
             try
             {
-                // Buscar en Agenda en lugar de Mantenimiento
                 var agendaItem = await _dbocontext.Agenda
                     .Include(a => a.NumActFijoNavigation)
                         .ThenInclude(e => e.CatCentro)
@@ -53,7 +52,7 @@ namespace ProyectoMantenimientos.Controllers
                     });
                 }
 
-                // Determinar tipo de equipo
+                // Determinar el tipo de equipo
                 string tipoEquipo = "CFEMÁTICO";
                 var equipoAC = await _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
@@ -87,10 +86,10 @@ namespace ProyectoMantenimientos.Controllers
                 {
                     success = true,
                     puedeTerminar = true,
-                    esCorrectivo = agendaItem.ClaveTipoMtto == "C", // Para mostrar campos de fotos
+                    esCorrectivo = agendaItem.ClaveTipoMtto == "C",
                     data = new
                     {
-                        numOrden = agendaItem.ClaveAgenda, // Ahora usamos ClaveAgenda como "número de orden"
+                        numOrden = agendaItem.ClaveAgenda,
                         numActFijo = agendaItem.NumActFijo,
                         fechaProgramada = agendaItem.FechaProgramada.ToString("dd/MM/yyyy"),
                         tipoMantenimiento = agendaItem.ClaveTipoMttoNavigation?.NombreTipoM,
@@ -99,7 +98,6 @@ namespace ProyectoMantenimientos.Controllers
                         agencia = agencia?.NombreAgencia ?? "No especificado",
                         centro = centro?.NombreCentro ?? "No especificado",
                         estatus = agendaItem.Estatus
-                        // Los demás campos vendrán vacíos porque es nuevo
                     }
                 });
             }
@@ -108,6 +106,7 @@ namespace ProyectoMantenimientos.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         [HttpPost]
         public async Task<IActionResult> TerminarMantenimiento(
@@ -316,8 +315,8 @@ namespace ProyectoMantenimientos.Controllers
                     var item = new
                     {
                         m.NumOrden,
-                        FechaProgramada = m.FechaProgramada.ToString("dd/MM/yyyy"), // Formato día/mes/año
-                        FechaTerminada = m.Fecha.ToString("dd/MM/yyyy HH:mm"),      // Formato día/mes/año hora:minuto
+                        FechaProgramada = m.FechaProgramada.ToString("dd/MM/yyyy"),
+                        FechaTerminada = m.Fecha.ToString("dd/MM/yyyy HH:mm"),
                         m.EvidenciaHojaServicio,
                         TieneFotos = await _dbocontext.Fotos.AnyAsync(f => f.NumOrden == m.NumOrden),
                         Rpe = m.Rpe,
@@ -341,7 +340,6 @@ namespace ProyectoMantenimientos.Controllers
                     }
                     else
                     {
-                        // CFEmáticos (incluye EquipoCfematico y otros no clasificados)
                         cfematicos.Add(item);
                     }
                 }
@@ -393,8 +391,8 @@ namespace ProyectoMantenimientos.Controllers
                 // Convertir a bytes
                 byte[] imageBytes = Convert.FromBase64String(cleanBase64);
 
-                // Determinar el tipo de imagen (puedes guardar esta info en la base de datos si es variable)
-                return File(imageBytes, "image/jpeg"); // o "image/png" según corresponda
+                // Determinar el tipo de imagen
+                return File(imageBytes, "image/jpeg");
             }
             catch (Exception ex)
             {
