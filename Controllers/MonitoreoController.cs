@@ -46,6 +46,90 @@ namespace ProyectoMantenimientos.Controllers
             return View(zonasConCfematicos);
         }
 
+        [HttpGet]
+        public IActionResult ObtenerEstadosCfematicos()
+        {
+            try
+            {
+                // Primero obtenemos la fecha máxima GENERAL de TODOS los registros
+                var ultimaFechaGeneral = _dbocontext.RegistroEventos
+                    .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
+
+                var fechaInicio = ultimaFechaGeneral.AddHours(-24);
+
+                // Obtenemos todos los números de cajero primero
+                var numerosCajero = _dbocontext.EquipoCfematicos
+                    .Select(c => c.NumCajero)
+                    .ToList(); // Materializamos la lista aquí
+
+                // Preparamos la consulta para eventos críticos
+                var eventosCriticos = _dbocontext.RegistroEventos
+                    .Where(re => re.FechaEvento >= fechaInicio && re.FechaEvento <= ultimaFechaGeneral)
+                    .Join(_dbocontext.CatEventos,
+                        registro => registro.ClaveEvento,
+                        evento => evento.ClaveEvento,
+                        (registro, evento) => new {
+                            registro.NumCajero,
+                            evento.Descripcion,
+                            evento.Severidad
+                        })
+                    .Where(e => (e.Descripcion == "VENDIDO TONELERO" ||
+                                e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" ||
+                                e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" ||
+                                e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" ||
+                                e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") &&
+                                e.Severidad == 100)
+                    .GroupBy(e => e.NumCajero)
+                    .Select(g => new {
+                        NumCajero = g.Key,
+                        TieneCritico = g.Any()
+                    })
+                    .ToList(); // Materializamos los resultados
+
+                // Preparamos la consulta para eventos de advertencia
+                var eventosAdvertencia = _dbocontext.RegistroEventos
+                    .Where(re => re.FechaEvento >= fechaInicio && re.FechaEvento <= ultimaFechaGeneral)
+                    .Join(_dbocontext.CatEventos,
+                        registro => registro.ClaveEvento,
+                        evento => evento.ClaveEvento,
+                        (registro, evento) => new {
+                            registro.NumCajero,
+                            evento.Descripcion,
+                            evento.Severidad
+                        })
+                    .Where(e => (e.Descripcion == "VENDIDO TONELERO" ||
+                                e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" ||
+                                e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" ||
+                                e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" ||
+                                e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") &&
+                                e.Severidad == 50)
+                    .GroupBy(e => e.NumCajero)
+                    .Select(g => new {
+                        NumCajero = g.Key,
+                        TieneAdvertencia = g.Any()
+                    })
+                    .ToList(); // Materializamos los resultados
+
+                // Creamos el diccionario de estados
+                var estados = numerosCajero.ToDictionary(
+                    numCajero => numCajero,
+                    numCajero => {
+                        var tieneCritico = eventosCriticos.FirstOrDefault(e => e.NumCajero == numCajero)?.TieneCritico ?? false;
+                        var tieneAdvertencia = eventosAdvertencia.FirstOrDefault(e => e.NumCajero == numCajero)?.TieneAdvertencia ?? false;
+
+                        return tieneCritico ? "rojo" :
+                               tieneAdvertencia ? "amarillo" : "verde";
+                    });
+
+                return Json(estados);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error en ObtenerEstadosCfematicos: {ex.Message}");
+                return Json(new { error = "Error al obtener estados" });
+            }
+        }
+
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         public IActionResult Monitoreo()
         {
@@ -115,20 +199,66 @@ namespace ProyectoMantenimientos.Controllers
         }
 
         [HttpGet]
-        public IActionResult ObtenerEstadosCfematicos()
+        public IActionResult ObtenerEstadoCfematico(string numCajero)
         {
-            var estados = _dbocontext.EquipoCfematicos
-                .Select(c => c.NumCajero)
-                .ToList()
-                .ToDictionary(
-                    numCajero => numCajero,
-                    numCajero => _dbocontext.RegistroEventos
-                        .Where(re => re.NumCajero == numCajero)
-                        .OrderByDescending(re => re.FechaEvento)
-                        .FirstOrDefault()?.ClaveEvento ?? "N"
-                );
+            try
+            {
+                // Obtenemos la fecha máxima GENERAL de TODOS los registros
+                var ultimaFechaGeneral = _dbocontext.RegistroEventos
+                    .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
 
-            return Json(estados);
+                var fechaInicio = ultimaFechaGeneral.AddHours(-24);
+
+                // Verificamos eventos críticos (severidad 100)
+                var tieneEventoCritico = _dbocontext.RegistroEventos
+                    .Where(re => re.NumCajero == numCajero &&
+                                re.FechaEvento >= fechaInicio &&
+                                re.FechaEvento <= ultimaFechaGeneral)
+                    .Join(_dbocontext.CatEventos,
+                        registro => registro.ClaveEvento,
+                        evento => evento.ClaveEvento,
+                        (registro, evento) => new {
+                            evento.Descripcion,
+                            evento.Severidad
+                        })
+                    .Any(e => (e.Descripcion == "VENDIDO TONELERO" ||
+                             e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" ||
+                             e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" ||
+                             e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" ||
+                             e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") &&
+                             e.Severidad == 100);
+
+                if (tieneEventoCritico)
+                {
+                    return Json("rojo");
+                }
+
+                // Verificamos eventos de advertencia (severidad 50)
+                var tieneEventoAdvertencia = _dbocontext.RegistroEventos
+                    .Where(re => re.NumCajero == numCajero &&
+                                re.FechaEvento >= fechaInicio &&
+                                re.FechaEvento <= ultimaFechaGeneral)
+                    .Join(_dbocontext.CatEventos,
+                        registro => registro.ClaveEvento,
+                        evento => evento.ClaveEvento,
+                        (registro, evento) => new {
+                            evento.Descripcion,
+                            evento.Severidad
+                        })
+                    .Any(e => (e.Descripcion == "VENDIDO TONELERO" ||
+                             e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" ||
+                             e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" ||
+                             e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" ||
+                             e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") &&
+                             e.Severidad == 50);
+
+                return Json(tieneEventoAdvertencia ? "amarillo" : "verde");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error en ObtenerEstadoCfematico: {ex.Message}");
+                return Json("verde");
+            }
         }
 
         [HttpGet]
