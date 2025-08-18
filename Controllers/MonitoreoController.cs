@@ -17,6 +17,15 @@ namespace ProyectoMantenimientos.Controllers
         [Authorize(Roles = "ADMINISTRADOR")]
         public IActionResult MonitoreoAdmin()
         {
+            // Obtener la última fecha de actualización
+            var ultimaActualizacion = _dbocontext.RegistroEventos
+                .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
+
+            // Formatear la fecha en español
+            var culture = new System.Globalization.CultureInfo("es-ES");
+            ViewBag.UltimaActualizacion = $"el {ultimaActualizacion:dd} de {culture.DateTimeFormat.GetMonthName(ultimaActualizacion.Month)} a las {ultimaActualizacion:HH:mm}";
+
+            // Resto del código para obtener zonas y CFEmáticos...
             var zonasConCfematicos = _dbocontext.CatZonas
                 .OrderBy(z => z.ClaveZona)
                 .Select(zona => new VMMonitoreoAdmin
