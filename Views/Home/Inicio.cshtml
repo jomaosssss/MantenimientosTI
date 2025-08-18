@@ -14,7 +14,6 @@
             color: #721c24 !important;
         }
 
-    /* Estilos para la leyenda */
     .leyenda-mantenimientos {
         font-size: 0.9rem;
     }
@@ -378,11 +377,9 @@
 </div>
 
 @section Scripts {
-    <!-- CSS de DataTables -->
+
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- JS de DataTables -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
     <script>
@@ -421,12 +418,11 @@
                 $('#nombreTecnico').prop('required', false);
             });
 
-            // Manejar el click en los botones "Hoja de Servicio" de Equipos de Atención a Clientes (descarga directa)
-        // En el evento click de los botones de Equipos de Atención a Clientes
+        // Manejar el click en los botones "Hoja de Servicio" de Equipos de Atención a Clientes (descarga directa)
         $('#tablaAC').on('click', '.btnGenerarPdf', function() {
             var fila = $(this).closest('tr');
             var numActFijo = fila.data('num-act-fijo');
-            var tipoEquipo = fila.data('tipo-equipo'); // Asegúrate de que este dato esté disponible
+            var tipoEquipo = fila.data('tipo-equipo');
             var fechaProgramada = fila.find('td:first').text().trim();
 
             // Determinar el prefijo según el tipo de equipo
@@ -451,7 +447,7 @@
                     fechaProgramada: fechaProgramada,
                     responsable: "TECNICO_DE_ZONA",
                     nombreTecnico: "@Context.Session.GetString("NombreUsuario")",
-                    tipoEquipo: tipoEquipo // Enviamos el tipo de equipo al controlador
+                    tipoEquipo: tipoEquipo
                 },
                 xhrFields: {
                     responseType: 'blob'

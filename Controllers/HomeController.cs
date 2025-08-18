@@ -18,7 +18,7 @@ namespace ProyectoMantenimientos.Controllers
             Directory.GetCurrentDirectory(),
             "wwwroot",
             "Plantillas",
-            "CFEMATICO2.pdf");
+            "CFEMATICO.pdf");
 
         private readonly string _rutaPlantillaCFETURNO = Path.Combine(
             Directory.GetCurrentDirectory(),
@@ -78,7 +78,7 @@ namespace ProyectoMantenimientos.Controllers
                 .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.Estatus == "TERMINADO" &&
                a.FechaProgramada >= primerDiaMes &&
-               a.FechaProgramada <= ultimoDiaMes);  // <- Cambiado de "hoy" a "ultimoDiaMes"
+               a.FechaProgramada <= ultimoDiaMes);
 
             // Consulta para contar pendientes (este mes, desde hoy hasta el último día del mes)
             var pendientesQuery = _dbocontext.Agenda
@@ -399,7 +399,7 @@ namespace ProyectoMantenimientos.Controllers
                         Rpe = pc.Rpe,
                         NombreRpe = pc.NombreRpe,
                         ClaveAgenda = a.ClaveAgenda.ToString(),
-                        TipoEquipo = tipo.NombreTipoEquipo // Añadir el tipo de equipo
+                        TipoEquipo = tipo.NombreTipoEquipo
                     }
                 ).FirstOrDefault();
 
@@ -417,7 +417,7 @@ namespace ProyectoMantenimientos.Controllers
                         fecha,
                         nombreUsuario,
                         compData.TipoEquipo,
-                        numActFijo); // Añadir este parámetro
+                        numActFijo);
                     return File(pdf, "application/pdf", $"Computo_HojaServicio_{numActFijo}.pdf");
                 }
 
@@ -654,7 +654,6 @@ namespace ProyectoMantenimientos.Controllers
                 string nombreResponsable = nombreTecnico ?? "Técnico de Zona";
                 var fecha = DateOnly.Parse(fechaProgramada);
 
-                // Resto del código permanece igual...
                 var compData = (
                     from a in _dbocontext.Agenda
                     join pc in _dbocontext.EquipoComputos
@@ -689,7 +688,7 @@ namespace ProyectoMantenimientos.Controllers
                         compData.NombreRpe,
                         compData.ClaveAgenda,
                         fecha,
-                        nombreResponsable, // Usamos el nombre del técnico que viene del usuario logueado
+                        nombreResponsable,
                         compData.TipoEquipo,
                         numActFijo);
 

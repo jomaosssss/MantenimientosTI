@@ -77,7 +77,7 @@
         gap: 6px;
     }
 
-    /* Contenedor de zonas y eventos */
+    /* CONTENEDOR DE ZONAS Y EVENTOS */
     .zones-events-container {
         display: flex;
         flex-direction: column;
@@ -91,7 +91,7 @@
         gap: 5px;
     }
 
-    /* Contenedor de la info del lado derecho */
+    /* CONTENEDOR DE LA INFORMACIÓN DEL CFEMÁTICO */
     .info-container {
         display: flex;
         flex-direction: column;
@@ -105,7 +105,7 @@
         background-color: white;
     }
 
-    /* Tarjeta de eventos */
+    /* TARJETA DE EVENTOS */
     .events-card {
         border: 1px solid #dee2e6;
         border-radius: 5px;
@@ -117,7 +117,7 @@
         padding: 8px;
     }
 
-    /* Botones de estado */
+    /* BOTONES DE ESTADO */
     .status-btn {
         display: inline-block;
         width: 19px;
@@ -130,7 +130,7 @@
         background-color: #f8f9fa !important;
     }
 
-    /* Selector de rango de tiempo */
+    /* SELECTOR DE RANGO DE TIEMPO */
     #rangoTiempo {
         border: 1px solid #ced4da;
         border-radius: 4px;
@@ -145,7 +145,6 @@
             box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.1);
         }
 
-    /* Responsividad */
     @@media (max-width: 1400px) {
         .zones-container {
             grid-template-columns: repeat(3, 1fr);
@@ -162,7 +161,7 @@
         }
     }
 
-    /* Estilos para la lista de eventos */
+    /* ESTILOS PARA LA LISTA DE EVENTOS */
     .event-item {
         border-bottom: 1px solid #eee;
         padding: 5px 0;
@@ -179,7 +178,7 @@
         height: 200px;
     }
 
-    /* Estilos para la tabla de eventos */
+    /* ESTILOS PARA LA TABLA DE EVENTOS */
     .events-card {
         border: 1px solid #dee2e6;
         border-radius: 5px;
@@ -225,7 +224,7 @@
         padding: 0.25rem 0.5rem;
     }
 
-    /* Estilos para los selectores */
+    /* ESTILOS PARA LOS SELECTORES */
     .filters-container {
         display: flex;
         gap: 10px;
@@ -240,7 +239,7 @@
         border: 1px solid #ced4da;
     }
 
-    /* Estilos para la tabla de mantenimientos */
+    /* ESTILOS PARA LA TABLA DE MANTENIMIENTOS */
     #tablaMantenimientos {
         font-size: 0.75rem;
         margin-bottom: 0;
@@ -264,19 +263,19 @@
             background-color: rgba(0, 0, 0, 0.03);
         }
 
-    /* Estilos para el modal de detalles */
+    /* ESTILOS PARA EL MODAL DE DETALLES */
     #problemasDetalle, #diagnosticoDetalle, #observacionesDetalle {
         min-height: 50px;
         white-space: pre-wrap;
     }
 
-    /* Botones de descarga */
+    /* BOTONES DE DESCARGA */
     .btn-descarga {
         font-size: 0.7rem;
         padding: 0.2rem 0.4rem;
     }
 
-    /* Estilos para las fotos en el modal */
+    /* ESTILOS PARA LAS FOTOS DEL MODAL */
     .img-thumbnail {
         border: 1px solid #dee2e6;
         border-radius: 4px;
@@ -289,7 +288,7 @@
         padding-top: 15px;
     }
 
-    /* Placeholder para fotos faltantes */
+    /* PLACEHOLDER PARA FOTOS FALTANTES */
     img[src*="placeholder.com"] {
         opacity: 0.6;
     }
@@ -533,6 +532,7 @@
                         </div>
                     </div>
 
+                    <!-- Gráfica de Eventos -->
                     <div class="info-card mt-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0">Estadísticas de Eventos</h6>
@@ -548,7 +548,7 @@
                         </div>
                     </div>
 
-                    <!-- Estadísticas avanzadas -->
+                    <!-- Estadísticas Avanzadas -->
                     <div class="info-card mt-3">
                         <h6 class="border-bottom pb-2 mb-3">Análisis de Eventos</h6>
                         <div id="estadisticasAvanzadas">
@@ -662,10 +662,10 @@
                 trigger: 'hover'
             });
 
-                // Establecer todos los CFEmáticos en verde
+        // Establecer todos los CFEmáticos en verde
         $('.cfematico-btn').addClass('bg-success');
 
-            // Delegación de eventos para los botones de CFEmáticos
+        // Delegación de eventos para los botones de CFEmáticos
         $(document).on('click', '.cfematico-btn', function() {
             var $clickedButton = $(this);
             var wasSelected = $clickedButton.hasClass('selected');
