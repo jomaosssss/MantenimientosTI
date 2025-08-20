@@ -149,6 +149,14 @@ namespace ProyectoMantenimientos.Controllers
                 return RedirectToAction("Error", "Home");
             }
 
+            // Obtener la última fecha de actualización
+            var ultimaActualizacion = _dbocontext.RegistroEventos
+                .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
+
+            // Formatear la fecha en español
+            var culture = new System.Globalization.CultureInfo("es-ES");
+            ViewBag.UltimaActualizacion = $"el {ultimaActualizacion:dd} de {culture.DateTimeFormat.GetMonthName(ultimaActualizacion.Month)} a las {ultimaActualizacion:HH:mm}";
+
             var cfematicos = _dbocontext.Equipos
                 .Where(e => e.ClaveZona == claveZona)
                 .Include(e => e.CatCentro)
@@ -170,7 +178,7 @@ namespace ProyectoMantenimientos.Controllers
 
             return View(cfematicos);
         }
-        
+
         [HttpGet]
         public IActionResult ObtenerDetallesCfematico(string numCajero)
         {

@@ -691,7 +691,7 @@
         var basicBarChart = null;
         var selectedCfematico = null;
 
-                function aplicarColorCfematico(numCajero, estado) {
+        function aplicarColorCfematico(numCajero, estado) {
             var $boton = $(`.cfematico-btn[data-num-cajero="${numCajero}"]`);
 
             // Remover todas las clases de color primero
@@ -711,8 +711,7 @@
             }
         }
 
-                // Función para cargar los estados de los CFEmáticos en lote
-        // Función para cargar los estados en lote
+        // Función para cargar los estados de los CFEmáticos en lote
         function cargarEstadosEnLote() {
             $.get('@Url.Action("ObtenerEstadosCfematicos", "Monitoreo")', function(data) {
                 if (!data) {
@@ -742,11 +741,8 @@
 
         // Cargar estados iniciales
         cargarEstadosEnLote();
-        // Establecer todos los CFEmáticos en verde
-        //$('.cfematico-btn').addClass('bg-success');
 
         // Delegación de eventos para los botones de CFEmáticos
-        // Modificar el evento click
         $(document).on('click', '.cfematico-btn', function() {
             var $clickedButton = $(this);
             var wasSelected = $clickedButton.hasClass('selected');

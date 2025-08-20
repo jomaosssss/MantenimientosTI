@@ -11,10 +11,9 @@
         margin: -5px;
     }
 
-    /* ESTILO PARA LOS BOTONES */
+    /* ESTILO PARA LOS BOTONES CIRCULARES */
     .cfematico-btn {
         transition: all 0.3s ease;
-        background-color: #28a745;
         color: white;
         border: none;
         width: 50px !important;
@@ -25,19 +24,35 @@
         justify-content: center;
         margin: 4px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 50% !important;
+        /* Color por defecto verde */
+        background-color: #28a745;
     }
+
+        /* Clases de color con !important para asegurar que sobrescriban */
+        .cfematico-btn.bg-success {
+            background-color: #28a745 !important;
+        }
+
+        .cfematico-btn.bg-danger {
+            background-color: #dc3545 !important;
+        }
+
+        .cfematico-btn.bg-warning {
+            background-color: #ffc107 !important;
+            color: #212529 !important; /* Texto oscuro para amarillo */
+        }
 
         .cfematico-btn.selected {
             box-shadow: 0 0 0 3px #0d6efd;
             position: relative;
             z-index: 1;
             transform: scale(1.1);
-            background-color: #218838;
         }
 
         .cfematico-btn:not(.selected):hover {
             transform: scale(1.05);
-            background-color: #218838;
+            opacity: 0.9;
         }
 
     .info-card, .events-card {
@@ -105,26 +120,41 @@
         border-top: 1px solid #eee;
         padding-top: 15px;
     }
+
+    /* ESTILOS PARA BOTONES PEQUEÑOS DE ESTADO */
+    .status-btn {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1px solid rgba(0,0,0,0.1);
+        margin-right: 4px;
+    }
 </style>
 
 <div class="container mt-4">
     <div class="card shadow">
         <div class="card-header py-2 d-flex justify-content-between align-items-center">
             <h3 class="mb-0">Monitoreo de CFEmáticos</h3>
-            @* <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center gap-1">
-                    <span class="status-btn bg-success" title="Normal"></span>
-                    <span class="small">Normal</span>
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-muted small me-3">
+                    Última actualización @ViewBag.UltimaActualizacion
                 </div>
-                <div class="d-flex align-items-center gap-1">
-                    <span class="status-btn bg-warning" title="Mantenimiento"></span>
-                    <span class="small">Mantenimiento</span>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="status-btn bg-success me-1"></div>
+                        <small class="text-muted">Normal</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="status-btn bg-warning me-1"></div>
+                        <small class="text-muted">Preventivo</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="status-btn bg-danger me-1"></div>
+                        <small class="text-muted">Crítico</small>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center gap-1">
-                    <span class="status-btn bg-danger" title="Fuera"></span>
-                    <span class="small">Fuera</span>
-                </div>
-            </div> *@
+            </div>
         </div>
 
         <div class="card-body">
@@ -136,8 +166,11 @@
                         <div class="d-flex flex-wrap justify-content-center">
                             @foreach (var cfematico in Model)
                             {
-                                <button class="btn btn-light rounded-circle cfematico-btn"
-                                        data-num-cajero="@cfematico.NumCajero">
+                                <button class="btn cfematico-btn"
+                                        data-num-cajero="@cfematico.NumCajero"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="top"
+                                        title="@cfematico.NumCajero">
                                     @cfematico.NumCajero
                                 </button>
                             }
@@ -240,10 +273,6 @@
                                     <span class="fw-bold">Número de Inventario:</span>
                                     <span id="numInventario" class="ms-2">-</span>
                                 </div>
-                                @* <div class="mb-3">
-                                    <span class="fw-bold">Versión:</span>
-                                    <span class="ms-2">No disponible</span>
-                                </div> *@
                             </div>
                         </div>
                         <h6 class="border-bottom pb-2 mb-3 mt-3">Ubicación</h6>
@@ -296,6 +325,7 @@
     </div>
 </div>
 
+<!-- Modales -->
 <div class="modal fade" id="eventosModal" tabindex="-1" aria-labelledby="eventosModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -391,11 +421,56 @@
         var basicBarChart = null;
         var selectedCfematico = null;
 
+        function aplicarColorCfematico(numCajero, estado) {
+            var $boton = $(`.cfematico-btn[data-num-cajero="${numCajero}"]`);
+
+            // Remover todas las clases de color primero
+            $boton.removeClass('bg-success bg-danger bg-warning');
+
+            // Agregar la clase correspondiente
+            switch(estado) {
+                case 'rojo':
+                    $boton.addClass('bg-danger');
+                    break;
+                case 'amarillo':
+                    $boton.addClass('bg-warning');
+                    break;
+                default: // verde
+                    $boton.addClass('bg-success');
+                    break;
+            }
+        }
+
+        // Función para cargar los estados en lote
+        function cargarEstadosEnLote() {
+            $.get('@Url.Action("ObtenerEstadosCfematicos", "Monitoreo")', function(data) {
+                if (!data) {
+                    console.error('No se recibieron datos de estados');
+                    return;
+                }
+
+                console.log('Datos de estados recibidos:', data);
+
+                $('.cfematico-btn').each(function() {
+                    var numCajero = $(this).data('num-cajero');
+                    var estado = data[numCajero] || 'verde';
+
+                    console.log(`Aplicando estado ${estado} a CFEmático ${numCajero}`);
+                    aplicarColorCfematico(numCajero, estado);
+                });
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.error('Error al cargar estados:', textStatus, errorThrown);
+            });
+        }
+
         $(document).ready(function() {
             // Inicializar tooltips
             $('[data-bs-toggle="tooltip"]').tooltip({
                 trigger: 'hover'
             });
+
+            // Cargar estados iniciales
+            cargarEstadosEnLote();
 
             // Delegación de eventos para los botones de CFEmáticos
             $(document).on('click', '.cfematico-btn', function() {
@@ -408,6 +483,16 @@
                 if (!wasSelected) {
                     $clickedButton.addClass('selected');
                     selectedCfematico = numCajero;
+
+                    // Cargar y actualizar estado individual
+                    $.get('@Url.Action("ObtenerEstadoCfematico", "Monitoreo")', { numCajero: numCajero })
+                        .done(function(estado) {
+                            console.log(`Estado actual para ${numCajero}:`, estado);
+                            aplicarColorCfematico(numCajero, estado);
+                        })
+                        .fail(function(jqXHR, textStatus, errorThrown) {
+                            console.error('Error al obtener estado:', textStatus, errorThrown);
+                        });
 
                     // Cargar detalles del CFEmático
                     cargarDetallesCfematico(numCajero);
@@ -874,12 +959,6 @@
             });
         }
 
-        // Llamar esta función al cargar la página
-        $(document).ready(function() {
-            cargarTiposFalla();
-            cargarEstadosEnLote();
-        });
-
         // Función para cargar los mantenimientos del CFEmático seleccionado
         function cargarMantenimientosCfematico(numCajero) {
             $.get('@Url.Action("ObtenerMantenimientosCfematico", "Monitoreo")', { numCajero: numCajero }, function(data) {
@@ -897,34 +976,31 @@
                 }
 
                 data.sort((a, b) => {
-            const fechaA = new Date(a.fechaProgramada.split('/').reverse().join('-'));
-            const fechaB = new Date(b.fechaProgramada.split('/').reverse().join('-'));
-            return fechaA - fechaB;  // Cambia a `fechaA - fechaB` para orden ascendente
-        });
-
-        var $tbody = $('#tablaMantenimientos tbody');
-        $tbody.empty();
+                    const fechaA = new Date(a.fechaProgramada.split('/').reverse().join('-'));
+                    const fechaB = new Date(b.fechaProgramada.split('/').reverse().join('-'));
+                    return fechaA - fechaB;
+                });
 
                 $.each(data, function(index, item) {
-                        var hojaServicioHtml = item.tieneHojaServicio
-                ? `<button class="btn btn-sm btn-outline-primary btn-descarga"
-                     data-num-cajero="${numCajero}"
-                     data-fecha="${item.fechaProgramada}">
-                    <i class="fas fa-file-pdf"></i> Descargar
-                   </button>`
-                : 'N/A';
+                    var hojaServicioHtml = item.tieneHojaServicio
+                        ? `<button class="btn btn-sm btn-outline-primary btn-descarga"
+                             data-num-cajero="${numCajero}"
+                             data-fecha="${item.fechaProgramada}">
+                            <i class="fas fa-file-pdf"></i> Descargar
+                           </button>`
+                        : 'N/A';
 
                     var detallesHtml = item.estatus === 'TERMINADO'
-                    ? `<button class="btn btn-sm btn-outline-info btn-detalles"
-                         data-rpe="${item.rpe || 'No registrado'}"
-                         data-tipo-mtto="${item.tipoMantenimiento}"
-                         data-problemas="${escapeHtml(item.problemas || '')}"
-                         data-diagnostico="${escapeHtml(item.diagnostico || '')}"
-                         data-observaciones="${escapeHtml(item.observaciones || '')}"
-                         data-fotos='${JSON.stringify(item.fotos || null)}'>
-                        <i class="fas fa-eye"></i> Ver
-                       </button>`
-                    : 'N/A';
+                        ? `<button class="btn btn-sm btn-outline-info btn-detalles"
+                             data-rpe="${item.rpe || 'No registrado'}"
+                             data-tipo-mtto="${item.tipoMantenimiento}"
+                             data-problemas="${escapeHtml(item.problemas || '')}"
+                             data-diagnostico="${escapeHtml(item.diagnostico || '')}"
+                             data-observaciones="${escapeHtml(item.observaciones || '')}"
+                             data-fotos='${JSON.stringify(item.fotos || null)}'>
+                            <i class="fas fa-eye"></i> Ver
+                           </button>`
+                        : 'N/A';
 
                     var row = `<tr>
                         <td>${item.fechaProgramada}</td>
