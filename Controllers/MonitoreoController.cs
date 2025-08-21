@@ -17,7 +17,7 @@ namespace ProyectoMantenimientos.Controllers
         [Authorize(Roles = "ADMINISTRADOR")]
         public IActionResult MonitoreoAdmin()
         {
-            // Obtener la última fecha de actualización
+            // Última fecha de actualización
             var ultimaActualizacion = _dbocontext.RegistroEventos
                 .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
 
@@ -25,7 +25,6 @@ namespace ProyectoMantenimientos.Controllers
             var culture = new System.Globalization.CultureInfo("es-ES");
             ViewBag.UltimaActualizacion = $"el {ultimaActualizacion:dd} de {culture.DateTimeFormat.GetMonthName(ultimaActualizacion.Month)} a las {ultimaActualizacion:HH:mm}";
 
-            // Resto del código para obtener zonas y CFEmáticos...
             var zonasConCfematicos = _dbocontext.CatZonas
                 .OrderBy(z => z.ClaveZona)
                 .Select(zona => new VMMonitoreoAdmin
@@ -60,18 +59,18 @@ namespace ProyectoMantenimientos.Controllers
         {
             try
             {
-                // Primero obtenemos la fecha máxima GENERAL de TODOS los registros
+                //Obtengo la fecha máxima GENERAL de TODOS los registros
                 var ultimaFechaGeneral = _dbocontext.RegistroEventos
                     .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
 
                 var fechaInicio = ultimaFechaGeneral.AddHours(-24);
 
-                // Obtenemos todos los números de cajero primero
+                // Obtengo todos los números de cajero primero
                 var numerosCajero = _dbocontext.EquipoCfematicos
                     .Select(c => c.NumCajero)
                     .ToList(); // Materializamos la lista aquí
 
-                // Preparamos la consulta para eventos críticos
+                // Consulta para eventos críticos
                 var eventosCriticos = _dbocontext.RegistroEventos
                     .Where(re => re.FechaEvento >= fechaInicio && re.FechaEvento <= ultimaFechaGeneral)
                     .Join(_dbocontext.CatEventos,
@@ -93,9 +92,9 @@ namespace ProyectoMantenimientos.Controllers
                         NumCajero = g.Key,
                         TieneCritico = g.Any()
                     })
-                    .ToList(); // Materializamos los resultados
+                    .ToList();
 
-                // Preparamos la consulta para eventos de advertencia
+                // Consulta para eventos de advertencia
                 var eventosAdvertencia = _dbocontext.RegistroEventos
                     .Where(re => re.FechaEvento >= fechaInicio && re.FechaEvento <= ultimaFechaGeneral)
                     .Join(_dbocontext.CatEventos,
@@ -117,9 +116,9 @@ namespace ProyectoMantenimientos.Controllers
                         NumCajero = g.Key,
                         TieneAdvertencia = g.Any()
                     })
-                    .ToList(); // Materializamos los resultados
+                    .ToList();
 
-                // Creamos el diccionario de estados
+                // Diccionario de estados
                 var estados = numerosCajero.ToDictionary(
                     numCajero => numCajero,
                     numCajero => {
