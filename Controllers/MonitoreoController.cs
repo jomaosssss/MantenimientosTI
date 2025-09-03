@@ -202,6 +202,7 @@ namespace ProyectoMantenimientos.Controllers
                     numSerie = cfematico.NumSerie ?? "-",
                     numInventario = cfematico.NumInventario ?? "-",
                     ipCajero = cfematico.IpCajero ?? "-",
+                    version = cfematico.Version ?? "No disponible",
                     zona = cfematico.NumActFijoNavigation?.CatCentro?.CatAgencium?.CatZona?.NombreZona ?? "-",
                     agencia = cfematico.NumActFijoNavigation?.CatCentro?.CatAgencium?.NombreAgencia ?? "-",
                     centro = cfematico.NumActFijoNavigation?.CatCentro?.NombreCentro ?? "-"
@@ -551,7 +552,7 @@ namespace ProyectoMantenimientos.Controllers
                         (x, mantenimiento) => new {
                             x.agenda.FechaProgramada,
                             x.agenda.ClaveTipoMtto,
-                            FechaTerminacion = mantenimiento != null ? mantenimiento.Fecha : (DateTime?)null,
+                            FechaTerminacion = mantenimiento != null ? mantenimiento.FechaInsercion : (DateTime?)null,
                             x.agenda.Estatus,
                             HojaServicio = mantenimiento != null ? mantenimiento.EvidenciaHojaServicio : null,
                             Rpe = mantenimiento != null ? mantenimiento.Rpe : null,

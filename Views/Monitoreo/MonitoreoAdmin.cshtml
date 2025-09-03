@@ -537,10 +537,10 @@
                                         <span class="fw-bold">Número de Inventario:</span>
                                         <span id="numInventario" class="ms-2">-</span>
                                     </div>
-                                    @* <div class="mb-3">
+                                    <div class="mb-3">
                                         <span class="fw-bold">Versión:</span>
-                                        <span class="ms-2">No disponible</span>
-                                    </div> *@
+                                        <span id="version" class="ms-2">-</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -816,6 +816,7 @@
                     $('#numSerie').text(data.numSerie);
                     $('#numInventario').text(data.numInventario);
                     $('#ipCajero').text(data.ipCajero);
+                    $('#version').text(data.version);
                     $('#zona').text(data.zona);
                     $('#agencia').text(data.agencia);
                     $('#centro').text(data.centro);
@@ -832,6 +833,7 @@
             $('#numSerie').text('-');
             $('#numInventario').text('-');
             $('#ipCajero').text('-');
+            $('#version').text('No disponible');
             $('#zona').text('-');
             $('#agencia').text('-');
             $('#centro').text('-');
@@ -1085,6 +1087,7 @@
         // Función para limpiar los datos cuando se deselecciona un CFEmático
         function limpiarDatos() {
             $('#numCajero, #numActFijo, #numSerie, #numInventario, #ipCajero, #zona, #agencia, #centro').text('-');
+            $('#version').text('No disponible');
             $('#listaEventos').html('<div class="text-center py-2"><p class="text-muted">Seleccione un CFEmático para ver sus eventos</p></div>');
             $('#estadisticasAvanzadas').html('<p class="text-muted small">Seleccione un CFEmático para ver análisis detallado</p>');
             $('#tablaMantenimientos tbody').html('<tr><td colspan="5" class="text-center text-muted py-3">Seleccione un CFEmático</td></tr>');

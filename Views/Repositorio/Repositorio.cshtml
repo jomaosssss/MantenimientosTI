@@ -25,6 +25,7 @@
                                     <th>Centro</th>
                                     <th>Cajero</th>
                                     <th>Fecha Programada</th>
+                                    <th>Fecha de Atención</th>
                                     <th>Fecha Terminada</th>
                                     <th>Foto Antes</th>
                                     <th>Foto Durante</th>
@@ -53,6 +54,7 @@
                                     <th>Centro</th>
                                     <th>Tipo de Equipo</th>
                                     <th>Fecha Programada</th>
+                                    <th>Fecha de Atención</th>
                                     <th>Fecha Terminada</th>
                                     <th>Hoja de Servicio</th>
                                     <th>Ver Equipo</th>
@@ -78,6 +80,7 @@
                                     <th>Centro</th>
                                     <th>Tipo de Equipo</th>
                                     <th>Fecha Programada</th>
+                                    <th>Fecha de Atención</th>
                                     <th>Fecha Terminada</th>
                                     <th>Hoja de Servicio</th>
                                     <th>Ver Equipo</th>
@@ -150,8 +153,9 @@
                     { data: 'agencia' },
                     { data: 'centro' },
                     { data: 'numCajero' },
-                    { data: 'fechaProgramada' }, // Ya viene formateada desde el servidor
-                    { data: 'fechaTerminada' },  // Ya viene formateada desde el servidor
+                    { data: 'fechaProgramada' },
+                    { data: 'fechaAtencion' },
+                    { data: 'fechaTerminada' },
                     {
                         data: 'tieneFotos',
                         render: function(data, type, row) {
@@ -211,8 +215,9 @@
                     { data: 'agencia' },
                     { data: 'centro' },
                     { data: 'tipoEquipo' },
-                    { data: 'fechaProgramada' }, // Ya viene formateada desde el servidor
-                    { data: 'fechaTerminada' },  // Ya viene formateada desde el servidor
+                    { data: 'fechaProgramada' },
+                    { data: 'fechaAtencion' },
+                    { data: 'fechaTerminada' },
                     {
                         data: 'evidenciaHojaServicio',
                         render: function(data, type, row) {
@@ -245,8 +250,9 @@
                     { data: 'agencia' },
                     { data: 'centro' },
                     { data: 'tipoEquipo' },
-                    { data: 'fechaProgramada' }, // Ya viene formateada desde el servidor
-                    { data: 'fechaTerminada' },  // Ya viene formateada desde el servidor
+                    { data: 'fechaProgramada' },
+                    { data: 'fechaAtencion' },
+                    { data: 'fechaTerminada' },
                     {
                         data: 'evidenciaHojaServicio',
                         render: function(data, type, row) {

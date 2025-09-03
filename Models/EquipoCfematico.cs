@@ -15,5 +15,7 @@ public partial class EquipoCfematico
 
     public string IpCajero { get; set; } = null!;
 
+    public string? Version { get; set; }
+
     public virtual Equipo NumActFijoNavigation { get; set; } = null!;
 }

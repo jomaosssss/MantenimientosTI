@@ -12,14 +12,19 @@
                 <div class="mt-2 small">
                     <strong>Requisitos del archivo:</strong>
                     <ul class="mb-0">
-                        <li>Formato CSV con codificación ISO-8859-1 (soporta acentos/ñ).</li>
-                        <li>En la primera línea va el encabezado (se ignora).</li>
-                        <li>Columnas requeridas: numeroActivoFijo,fechaProgramada (DD/MM/YYYY).</li>
                         <li>Máximo 1000 registros por archivo.</li>
+                        <li>Formato CSV con codificación ISO-8859-1 (soporta acentos/ñ).</li>
+                        <li>Columnas requeridas: numeroActivoFijo,fechaProgramada (DD/MM/YYYY).</li>
+                        <li>En la primera línea va el encabezado (se ignora).</li>
                     </ul>
+                    <strong>Ejemplo:</strong>
+                    <p class="mb-1">numActFijo,fechaProgramada</p>
+                    <p class="mb-1">12345678,12/12/2025</p>
+                    <p class="mb-1">12345678,12/12/2025</p>
+                    <p class="mb-0">12345678,12/12/2025</p>
                 </div>
             </div>
-            <img src="~/images/EjemploCSV.png" style="height: 250px;">
+            @* <img src="~/images/EjemploCSV.png" style="height: 250px;"> *@
         </div>
 
         <div class="card-body">

@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MantenimientosTI.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MantenimientosTI.Models;
+using System.Globalization;
 
 namespace ProyectoMantenimientos.Controllers
 {
@@ -13,11 +14,13 @@ namespace ProyectoMantenimientos.Controllers
         {
             _dbocontext = context;
         }
+
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         public IActionResult TerminarMantenimiento()
         {
             return View();
         }
+
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         public IActionResult Repositorio()
         {
@@ -111,6 +114,7 @@ namespace ProyectoMantenimientos.Controllers
         [HttpPost]
         public async Task<IActionResult> TerminarMantenimiento(
             [FromForm] int numOrden,
+            [FromForm] string fechaAtencion, // formato yyyy-MM-dd
             [FromForm] string problemas,
             [FromForm] string diagnostico,
             [FromForm] string observaciones,
@@ -123,38 +127,58 @@ namespace ProyectoMantenimientos.Controllers
             {
                 try
                 {
+                    // Parsear desde formato yyyy-MM-dd
+                    if (!DateOnly.TryParseExact(fechaAtencion, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly fechaAtencionParsed))
+                    {
+                        return Json(new { success = false, message = "Formato de fecha inválida" });
+                    }
+
                     // 1. Validar y obtener agenda
                     var agendaItem = await _dbocontext.Agenda
                         .FirstOrDefaultAsync(a => a.ClaveAgenda == numOrden);
 
                     if (agendaItem == null)
-                        return Json(new { success = false, message = "Registro no encontrado en Agenda" });
+                        return Json(new { success = false, message = "Registro no encontrado en la Agenda" });
 
                     // 2. Validar RPE
                     var rpe = HttpContext.Session.GetString("Rpe");
                     if (string.IsNullOrEmpty(rpe))
-                        return Json(new { success = false, message = "Sesión inválida (RPE no encontrado)" });
+                        return Json(new { success = false, message = "Sesión inválida, RPE no encontrado" });
 
                     // 3. Crear mantenimiento
                     var mantenimiento = new Mantenimiento
                     {
-                        NumOrden = numOrden, // Usar el parámetro recibido (Opción 1)
-
+                        NumOrden = agendaItem.ClaveAgenda,
                         ClaveAgenda = agendaItem.ClaveAgenda,
                         NumActFijo = agendaItem.NumActFijo,
-                        FechaProgramada = agendaItem.FechaProgramada,
                         ClaveTipoMtto = agendaItem.ClaveTipoMtto,
                         Rpe = rpe,
                         Problemas = problemas ?? string.Empty,
                         Diagnostico = diagnostico ?? string.Empty,
                         Observaciones = observaciones ?? string.Empty,
-                        Fecha = DateTime.Now
+                        FechaInsercion = DateTime.Now,
+                        FechaAtencion = fechaAtencionParsed
                     };
 
                     // 4. Procesar PDF
                     if (archivoPdf != null && archivoPdf.Length > 0)
                     {
+                        if (archivoPdf.Length > 5 * 1024 * 1024)
+                        {
+                            return Json(new { success = false, message = "La hoja de servicio no debe exceder los 5MB" });
+                        }
+
+                        var extension = Path.GetExtension(archivoPdf.FileName).ToLower();
+                        if (extension != ".pdf")
+                        {
+                            return Json(new { success = false, message = "Solo se permiten archivos PDF" });
+                        }
+
                         mantenimiento.EvidenciaHojaServicio = await GuardarArchivo(archivoPdf);
+                    }
+                    else
+                    {
+                        return Json(new { success = false, message = "La hoja de servicio es obligatoria" });
                     }
 
                     // 5. Guardar primero el mantenimiento
@@ -171,13 +195,31 @@ namespace ProyectoMantenimientos.Controllers
                         };
 
                         if (fotoAntes != null && fotoAntes.Length > 0)
+                        {
+                            if (fotoAntes.Length > 2 * 1024 * 1024)
+                            {
+                                return Json(new { success = false, message = "La foto 'Antes' no debe exceder los 2MB" });
+                            }
                             foto.FotoAntes = await ProcesarImagen(fotoAntes);
+                        }
 
                         if (fotoDurante != null && fotoDurante.Length > 0)
+                        {
+                            if (fotoDurante.Length > 2 * 1024 * 1024)
+                            {
+                                return Json(new { success = false, message = "La foto 'Durante' no debe exceder los 2MB" });
+                            }
                             foto.FotoDurante = await ProcesarImagen(fotoDurante);
+                        }
 
                         if (fotoDespues != null && fotoDespues.Length > 0)
+                        {
+                            if (fotoDespues.Length > 2 * 1024 * 1024)
+                            {
+                                return Json(new { success = false, message = "La foto 'Después' no debe exceder los 2MB" });
+                            }
                             foto.FotoDespues = await ProcesarImagen(fotoDespues);
+                        }
 
                         _dbocontext.Fotos.Add(foto);
                     }
@@ -188,7 +230,21 @@ namespace ProyectoMantenimientos.Controllers
                     await _dbocontext.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    return Json(new { success = true, message = "Mantenimiento registrado correctamente" });
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Mantenimiento Terminado Correctamente."
+                    });
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    await transaction.RollbackAsync();
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Error al guardar en la base de datos",
+                        error = dbEx.InnerException?.Message ?? dbEx.Message
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -196,8 +252,8 @@ namespace ProyectoMantenimientos.Controllers
                     return Json(new
                     {
                         success = false,
-                        message = $"Error: {ex.Message}",
-                        inner = ex.InnerException?.Message
+                        message = "Error inesperado al procesar la solicitud",
+                        error = ex.Message
                     });
                 }
             }
@@ -208,14 +264,12 @@ namespace ProyectoMantenimientos.Controllers
             using (var ms = new MemoryStream())
             {
                 await imagen.CopyToAsync(ms);
-                // Guardar como Base64 sin prefijo
                 return Convert.ToBase64String(ms.ToArray());
             }
         }
 
         private async Task<string> GuardarArchivo(IFormFile archivo)
         {
-            // Crear la carpeta si no existe
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
             if (!Directory.Exists(uploadsPath))
             {
@@ -281,7 +335,7 @@ namespace ProyectoMantenimientos.Controllers
                 }
 
                 var mantenimientos = await query
-                    .OrderByDescending(m => m.Fecha)
+                    .OrderByDescending(m => m.FechaInsercion)
                     .ToListAsync();
 
                 // Listas para cada categoría
@@ -315,8 +369,9 @@ namespace ProyectoMantenimientos.Controllers
                     var item = new
                     {
                         m.NumOrden,
-                        FechaProgramada = m.FechaProgramada.ToString("dd/MM/yyyy"),
-                        FechaTerminada = m.Fecha.ToString("dd/MM/yyyy HH:mm"),
+                        FechaProgramada = m.Agendum.FechaProgramada.ToString("dd/MM/yyyy"),
+                        FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
+                        FechaTerminada = m.FechaInsercion.ToString("dd/MM/yyyy HH:mm"),
                         m.EvidenciaHojaServicio,
                         TieneFotos = await _dbocontext.Fotos.AnyAsync(f => f.NumOrden == m.NumOrden),
                         Rpe = m.Rpe,
@@ -503,8 +558,8 @@ namespace ProyectoMantenimientos.Controllers
                         <h5>Información del Mantenimiento</h5>
                         <ul class='list-group list-group-flush'>
                             <li class='list-group-item'><strong>Número de Orden:</strong> {mantenimiento.NumOrden}</li>
-                            <li class='list-group-item'><strong>Fecha Programada:</strong> {mantenimiento.FechaProgramada.ToString("dd/MM/yyyy")}</li>
-                            <li class='list-group-item'><strong>Fecha de Terminación:</strong> {mantenimiento.Fecha.ToString("dd/MM/yyyy HH:mm")}</li>
+
+                            <li class='list-group-item'><strong>Fecha de Terminación:</strong> {mantenimiento.FechaInsercion.ToString("dd/MM/yyyy HH:mm")}</li>
                             <li class='list-group-item'><strong>Tipo de Mantenimiento:</strong> {mantenimiento.Agendum.ClaveTipoMttoNavigation?.NombreTipoM}</li>
                             <li class='list-group-item'><strong>Técnico (RPE):</strong> {mantenimiento.Rpe}</li>
                         </ul>

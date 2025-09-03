@@ -8,15 +8,13 @@
 <div class="container mt-5">
     <div class="card mt-4 shadow-sm rounded">
         <div class="card shadow-sm">
-            <div class="card-header bg-white">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h1 class="mb-0">Administración de Usuarios</h1>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+                    <i class="fas fa-user-plus"></i> Crear Usuario
+                </button>
             </div>
             <div class="card-body">
-                <div class="d-flex justify-content-end mb-3">
-                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
-                        <i class="fas fa-user-plus"></i> Crear Usuario
-                    </button>
-                </div>
 
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
@@ -55,9 +53,9 @@
                                             }
                                         </td>
                                         <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario"
+                                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario"
                                                     onclick="cargarDatosEdicion('@usuario.Rpe')">
-                                                <i class="fas fa-edit"></i>
+                                                <i class="fas fa-edit"></i> <!-- Icono con fondo amarillo -->
                                             </button>
                                         </td>
                                     </tr>
@@ -81,59 +79,74 @@
             </div>
             <div class="modal-body">
                 <form id="formNuevoUsuario">
-                    <div class="mb-3">
-                        <label for="RpeNuevo" class="form-label">RPE</label>
-                        <input type="text" class="form-control" id="RpeNuevo" name="Rpe" required minlength="5" maxlength="10"
-                               oninvalid="this.setCustomValidity('El RPE debe tener al menos 5 caracteres')"
-                               oninput="this.setCustomValidity('')">
-                        <div class="invalid-feedback">El RPE debe tener al menos 5 caracteres</div>
+                    <div class="row">
+                        <!-- Primera fila: ROL y ZONA -->
+                        <div class="col-md-6 mb-3">
+                            <label for="RolNuevo" class="form-label">ROL</label>
+                            <select class="form-select" id="RolNuevo" name="ClaveRol" required>
+                                <option value="">SELECCIONE UN ROL</option>
+                                @foreach (var rol in ViewBag.Roles as List<CatRol>)
+                                {
+                                    <option value="@rol.ClaveRol">@rol.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ZonaNuevo" class="form-label">ZONA</label>
+                            <select class="form-select" id="ZonaNuevo" name="ClaveZona" required>
+                                <option value="">SELECCIONE UNA ZONA</option>
+                                @foreach (var zona in ViewBag.Zonas as List<CatZona>)
+                                {
+                                    <option value="@zona.ClaveZona">@zona.NombreZona</option>
+                                }
+                            </select>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="RolNuevo" class="form-label">ROL</label>
-                        <select class="form-select" id="RolNuevo" name="ClaveRol" required>
-                            <option value="">SELECCIONE UN ROL</option>
-                            @foreach (var rol in ViewBag.Roles as List<CatRol>)
-                            {
-                                <option value="@rol.ClaveRol">@rol.Nombre</option>
-                            }
-                        </select>
+
+                    <!-- Segunda fila: RPE y NOMBRE -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RpeNuevo" class="form-label">RPE</label>
+                            <input type="text" class="form-control" id="RpeNuevo" name="Rpe" required minlength="5" maxlength="10"
+                                   oninvalid="this.setCustomValidity('El RPE debe tener al menos 5 caracteres')"
+                                   oninput="this.setCustomValidity('')">
+                            <div class="invalid-feedback">El RPE debe tener al menos 5 caracteres</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NombreNuevo" class="form-label">NOMBRE</label>
+                            <input type="text" class="form-control text-uppercase" id="NombreNuevo" name="Nombre" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="ZonaNuevo" class="form-label">ZONA</label>
-                        <select class="form-select" id="ZonaNuevo" name="ClaveZona" required>
-                            <option value="">SELECCIONE UNA ZONA</option>
-                            @foreach (var zona in ViewBag.Zonas as List<CatZona>)
-                            {
-                                <option value="@zona.ClaveZona">@zona.NombreZona</option>
-                            }
-                        </select>
+
+                    <!-- Tercera fila: APELLIDO PATERNO y APELLIDO MATERNO -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoPNuevo" class="form-label">APELLIDO PATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoPNuevo" name="ApellidoP" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoMNuevo" class="form-label">APELLIDO MATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoMNuevo" name="ApellidoM" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="NombreNuevo" class="form-label">NOMBRE</label>
-                        <input type="text" class="form-control text-uppercase" id="NombreNuevo" name="Nombre" required
-                               oninput="this.value = this.value.toUpperCase()">
-                    </div>
-                    <div class="mb-3">
-                        <label for="ApellidoPNuevo" class="form-label">APELLIDO PATERNO</label>
-                        <input type="text" class="form-control text-uppercase" id="ApellidoPNuevo" name="ApellidoP" required
-                               oninput="this.value = this.value.toUpperCase()">
-                    </div>
-                    <div class="mb-3">
-                        <label for="ApellidoMNuevo" class="form-label">APELLIDO MATERNO</label>
-                        <input type="text" class="form-control text-uppercase" id="ApellidoMNuevo" name="ApellidoM" required
-                               oninput="this.value = this.value.toUpperCase()">
-                    </div>
-                    <div class="mb-3">
-                        <label for="CorreoNuevo" class="form-label">CORREO</label>
-                        <input type="email" class="form-control" id="CorreoNuevo" name="Correo" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="ContraseniaNuevo" class="form-label">CONTRASEÑA</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" id="ContraseniaNuevo" name="Contrasenia" required minlength="8" maxlength="20">
-                            <button class="btn btn-outline-secondary" type="button" id="togglePasswordNuevo">
-                                <i class="fas fa-eye"></i>
-                            </button>
+
+                    <!-- Cuarta fila: CORREO y CONTRASEÑA -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="CorreoNuevo" class="form-label">CORREO</label>
+                            <input type="email" class="form-control" id="CorreoNuevo" name="Correo" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ContraseniaNuevo" class="form-label">CONTRASEÑA</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="ContraseniaNuevo" name="Contrasenia" required minlength="8" maxlength="20">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePasswordNuevo">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -157,51 +170,72 @@
             <div class="modal-body">
                 <form id="formEditarUsuario">
                     <input type="hidden" id="RpeEditar" name="Rpe">
-                    <div class="mb-3">
-                        <label for="RolEditar" class="form-label">ROL</label>
-                        <select class="form-select" id="RolEditar" name="ClaveRol" required>
-                            <option value="">SELECCIONE UN ROL</option>
-                            @foreach (var rol in ViewBag.Roles as List<CatRol>)
-                            {
-                                <option value="@rol.ClaveRol">@rol.Nombre</option>
-                            }
-                        </select>
+
+                    <!-- Primera fila: ROL y ZONA -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RolEditar" class="form-label">ROL</label>
+                            <select class="form-select" id="RolEditar" name="ClaveRol" required>
+                                <option value="">SELECCIONE UN ROL</option>
+                                @foreach (var rol in ViewBag.Roles as List<CatRol>)
+                                {
+                                    <option value="@rol.ClaveRol">@rol.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ZonaEditar" class="form-label">ZONA</label>
+                            <select class="form-select" id="ZonaEditar" name="ClaveZona" required>
+                                <option value="">SELECCIONE UNA ZONA</option>
+                                @foreach (var zona in ViewBag.Zonas as List<CatZona>)
+                                {
+                                    <option value="@zona.ClaveZona">@zona.NombreZona</option>
+                                }
+                            </select>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="ZonaEditar" class="form-label">ZONA</label>
-                        <select class="form-select" id="ZonaEditar" name="ClaveZona" required>
-                            <option value="">SELECCIONE UNA ZONA</option>
-                            @foreach (var zona in ViewBag.Zonas as List<CatZona>)
-                            {
-                                <option value="@zona.ClaveZona">@zona.NombreZona</option>
-                            }
-                        </select>
+
+                    <!-- Segunda fila: RPE (solo lectura) y NOMBRE -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RpeDisplay" class="form-label">RPE</label>
+                            <input type="text" class="form-control" id="RpeDisplay" readonly>
+                            <div class="form-text">El RPE no se puede modificar</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NombreEditar" class="form-label">NOMBRE</label>
+                            <input type="text" class="form-control text-uppercase" id="NombreEditar" name="Nombre" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="NombreEditar" class="form-label">NOMBRE</label>
-                        <input type="text" class="form-control text-uppercase" id="NombreEditar" name="Nombre" required
-                               oninput="this.value = this.value.toUpperCase()">
+
+                    <!-- Tercera fila: APELLIDO PATERNO y APELLIDO MATERNO -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoPEditar" class="form-label">APELLIDO PATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoPEditar" name="ApellidoP" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoMEditar" class="form-label">APELLIDO MATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoMEditar" name="ApellidoM" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="ApellidoPEditar" class="form-label">APELLIDO PATERNO</label>
-                        <input type="text" class="form-control text-uppercase" id="ApellidoPEditar" name="ApellidoP" required
-                               oninput="this.value = this.value.toUpperCase()">
-                    </div>
-                    <div class="mb-3">
-                        <label for="ApellidoMEditar" class="form-label">APELLIDO MATERNO</label>
-                        <input type="text" class="form-control text-uppercase" id="ApellidoMEditar" name="ApellidoM" required
-                               oninput="this.value = this.value.toUpperCase()">
-                    </div>
-                    <div class="mb-3">
-                        <label for="CorreoEditar" class="form-label">CORREO</label>
-                        <input type="email" class="form-control" id="CorreoEditar" name="Correo" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="EstatusEditar" class="form-label">ESTATUS</label>
-                        <select class="form-select" id="EstatusEditar" name="Estatus" required>
-                            <option value="Activo">ACTIVO</option>
-                            <option value="Inactivo">INACTIVO</option>
-                        </select>
+
+                    <!-- Cuarta fila: CORREO y ESTATUS -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="CorreoEditar" class="form-label">CORREO</label>
+                            <input type="email" class="form-control" id="CorreoEditar" name="Correo" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="EstatusEditar" class="form-label">ESTATUS</label>
+                            <select class="form-select" id="EstatusEditar" name="Estatus" required>
+                                <option value="Activo">ACTIVO</option>
+                                <option value="Inactivo">INACTIVO</option>
+                            </select>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -276,6 +310,7 @@
             $.get('/Usuario/ObtenerUsuarioPorRpe', { rpe: rpe })
                 .done(function(data) {
                     $('#RpeEditar').val(data.rpe);
+                    $('#RpeDisplay').val(data.rpe);  // Nueva línea para mostrar el RPE
                     $('#RolEditar').val(data.claveRol);
                     $('#ZonaEditar').val(data.claveZona);
                     $('#NombreEditar').val(data.nombre);

@@ -59,7 +59,7 @@ public partial class MantenimientosTIContext : DbContext
     {
         modelBuilder.Entity<Agendum>(entity =>
         {
-            entity.HasKey(e => new { e.ClaveAgenda, e.NumActFijo, e.FechaProgramada }).HasName("PK__Agenda__7E00260FDB6E0C48");
+            entity.HasKey(e => e.ClaveAgenda).HasName("PK_Agenda_C34F139CA770DDB7");
 
             entity.Property(e => e.ClaveAgenda)
                 .ValueGeneratedOnAdd()
@@ -81,13 +81,11 @@ public partial class MantenimientosTIContext : DbContext
 
             entity.HasOne(d => d.ClaveTipoMttoNavigation).WithMany(p => p.Agenda)
                 .HasForeignKey(d => d.ClaveTipoMtto)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Agenda__claveTip__4E88ABD4");
+                .HasConstraintName("FK_Agenda_claveTp_03FD984C");
 
             entity.HasOne(d => d.NumActFijoNavigation).WithMany(p => p.Agenda)
                 .HasForeignKey(d => d.NumActFijo)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Agenda__numActFi__4D94879B");
+                .HasConstraintName("FK_Agenda_numActF1_02FC7413");
         });
 
         modelBuilder.Entity<CatAgencium>(entity =>
@@ -386,6 +384,11 @@ public partial class MantenimientosTIContext : DbContext
                 .HasMaxLength(20)
                 .IsUnicode(false)
                 .HasColumnName("numSerie");
+            entity.Property(e => e.Version)
+                .HasMaxLength(10)
+                .IsUnicode(false)
+                .IsFixedLength()
+                .HasColumnName("version");
 
             entity.HasOne(d => d.NumActFijoNavigation).WithMany(p => p.EquipoCfematicos)
                 .HasForeignKey(d => d.NumActFijo)
@@ -457,14 +460,13 @@ public partial class MantenimientosTIContext : DbContext
 
         modelBuilder.Entity<Mantenimiento>(entity =>
         {
-            entity.ToTable("Mantenimiento"); // Esto es lo más importante
-            // Clave primaria
-            entity.HasKey(e => e.NumOrden).HasName("PK__Mantenimiento__numOrden");
+            entity.ToTable("Mantenimiento");
 
-            // Configuración de columnas
+            entity.HasKey(e => e.NumOrden).HasName("PK_Mantenim_03BED0813500DED1");
+
             entity.Property(e => e.NumOrden)
                 .HasColumnName("numOrden")
-                .ValueGeneratedNever(); // Asumes que se asigna manualmente
+                .ValueGeneratedNever();
 
             entity.Property(e => e.ClaveAgenda)
                 .HasColumnName("claveAgenda");
@@ -473,9 +475,6 @@ public partial class MantenimientosTIContext : DbContext
                 .HasMaxLength(20)
                 .IsUnicode(false)
                 .HasColumnName("numActFijo");
-
-            entity.Property(e => e.FechaProgramada)
-                .HasColumnName("fechaProgramada");
 
             entity.Property(e => e.ClaveTipoMtto)
                 .HasMaxLength(1)
@@ -508,23 +507,34 @@ public partial class MantenimientosTIContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("observaciones");
 
-            entity.Property(e => e.Fecha)
-                .HasColumnName("fecha")
+            entity.Property(e => e.FechaInsercion)
+                .HasColumnName("fechaInsercion")
                 .HasDefaultValueSql("(getdate())");
 
-            // Relación con Agenda (clave compuesta)
+            entity.Property(e => e.FechaAtencion)
+                .HasColumnName("fechaAtencion");
+
+            // Relaciones con nombres exactos de constraints
             entity.HasOne(d => d.Agendum)
                 .WithMany(p => p.Mantenimientos)
-                .HasForeignKey(d => new { d.ClaveAgenda, d.NumActFijo, d.FechaProgramada })
-                .HasConstraintName("FK_Mantenimiento_Agenda");
+                .HasForeignKey(d => d.ClaveAgenda)
+                .HasConstraintName("FK_Mantenimi_clave_07C12930");
 
-            // Relación con Usuario
             entity.HasOne(d => d.RpeNavigation)
                 .WithMany(p => p.Mantenimientos)
                 .HasForeignKey(d => d.Rpe)
-                .HasConstraintName("FK_Mantenimiento_Usuario");
+                .HasConstraintName("FK_Mantenimien_RPE_09A971A2");
 
-            // Relación 1 a muchos con Foto (una orden de mantenimiento puede tener múltiples fotos)
+            entity.HasOne(d => d.NumActFijoNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.NumActFijo)
+                .HasConstraintName("FK_Mantenimi_numAct_08B6AD69");
+
+            entity.HasOne(d => d.ClaveTipoMttoNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.ClaveTipoMtto)
+                .HasConstraintName("FK_Mantenimi_clave_0A9D95DB");
+
             entity.HasMany(d => d.Fotos)
                 .WithOne(p => p.Mantenimiento)
                 .HasForeignKey(d => d.NumOrden)

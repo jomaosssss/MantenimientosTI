@@ -23,7 +23,7 @@
                 </div>
             </div>
 
-            <div id="resultadoBusqueda" class="mt-4" style="display: none;">
+            <div id="resultadoBusqueda" class="mt-4 mb-4" style="display: none;">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light">
                         <h5 class="mb-0">Información del Mantenimiento</h5>
@@ -34,29 +34,29 @@
                                 <p><strong>Número de Orden:</strong> <span id="infoNumOrden">-</span></p>
                             </div>
                             <div class="col-md-4">
+                                <p><strong>Tipo de Mantenimiento:</strong> <span id="infoTipoMantenimiento">-</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Zona:</strong> <span id="infoZona">-</span></p>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
                                 <p><strong>Número de Activo Fijo:</strong> <span id="infoNumActFijo">-</span></p>
                             </div>
                             <div class="col-md-4">
                                 <p><strong>Fecha Programada:</strong> <span id="infoFechaProgramada">-</span></p>
                             </div>
+                            <div class="col-md-4">
+                                <p><strong>Agencia:</strong> <span id="infoAgencia">-</span></p>
+                            </div>
                         </div>
                         <div class="row mt-2">
-                            <div class="col-md-4">
-                                <p><strong>Tipo de Mantenimiento:</strong> <span id="infoTipoMantenimiento">-</span></p>
-                            </div>
                             <div class="col-md-4">
                                 <p><strong>Tipo de Equipo:</strong> <span id="infoTipoEquipo">-</span></p>
                             </div>
                             <div class="col-md-4">
                                 <p><strong>Estatus:</strong> <span id="infoEstatus">-</span></p>
-                            </div>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-md-4">
-                                <p><strong>Zona:</strong> <span id="infoZona">-</span></p>
-                            </div>
-                            <div class="col-md-4">
-                                <p><strong>Agencia:</strong> <span id="infoAgencia">-</span></p>
                             </div>
                             <div class="col-md-4">
                                 <p><strong>Centro:</strong> <span id="infoCentro">-</span></p>
@@ -67,34 +67,83 @@
             </div>
 
             <div class="row mb-4">
-                <div class="col-md-12">
+                <div class="col-md-4">
                     <div class="form-group">
-                        <label class="form-label">Problemas:</label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label mb-0">Problemas:</label>
+                            <span class="char-counter" id="contador-problemas">300 caracteres restantes</span>
+                        </div>
                         <textarea id="problemas" class="form-control" rows="3" placeholder="Describa los problemas encontrados" disabled></textarea>
                     </div>
                 </div>
-            </div>
 
-            <div class="row mb-4">
-                <div class="col-md-12">
+                <div class="col-md-4">
                     <div class="form-group">
-                        <label class="form-label">Diagnóstico:</label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label mb-0">Diagnóstico:</label>
+                            <span class="char-counter" id="contador-diagnostico">300 caracteres restantes</span>
+                        </div>
                         <textarea id="diagnostico" class="form-control" rows="3" placeholder="Describa el diagnóstico técnico" disabled></textarea>
                     </div>
                 </div>
+
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label mb-0">Observaciones:</label>
+                            <span class="char-counter" id="contador-observaciones">300 caracteres restantes</span>
+                        </div>
+                        <textarea id="observaciones" class="form-control" rows="3" placeholder="Agregue cualquier observación adicional" disabled></textarea>
+                    </div>
+                </div>
             </div>
 
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label class="form-label">Observaciones:</label>
-                        <textarea id="observaciones" class="form-control" rows="2" placeholder="Agregue cualquier observación adicional" disabled></textarea>
+            <div id="fotoAntesGroup" style="display: none;">
+                <div class="row mb-4">
+                    <!-- Foto antes -->
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Foto Antes del Mantenimiento:</label>
+                            <div class="input-group">
+                                <input type="file" id="fotoAntes" class="form-control" accept="image/*" disabled>
+                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoAntes">
+                                    <i class="bi bi-x-circle"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Foto durante -->
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Foto Durante el Mantenimiento:</label>
+                            <div class="input-group">
+                                <input type="file" id="fotoDurante" class="form-control" accept="image/*" disabled>
+                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDurante">
+                                    <i class="bi bi-x-circle"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Foto después -->
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Foto Después del Mantenimiento:</label>
+                            <div class="input-group">
+                                <input type="file" id="fotoDespues" class="form-control" accept="image/*" disabled>
+                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDespues">
+                                    <i class="bi bi-x-circle"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="row mb-4">
-                <div class="col-md-12">
+                <!-- Hoja de Servicio (PDF) -->
+                <div class="col-md-6">
                     <div class="form-group">
                         <label class="form-label">Hoja de Servicio (PDF):</label>
                         <div class="input-group">
@@ -106,51 +155,16 @@
                         <small class="form-text text-muted">Tamaño máximo: 5MB</small>
                     </div>
                 </div>
-            </div>
 
-            <div id="fotoAntesGroup" style="display: none;">
-                <div class="row mb-4">
-                    <div class="col-md-12">
-                        <div class="form-group">
-                            <label class="form-label">Foto antes del mantenimiento:</label>
-                            <div class="input-group">
-                                <input type="file" id="fotoAntes" class="form-control" accept="image/*" disabled>
-                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoAntes">
-                                    <i class="bi bi-x-circle"></i> Limpiar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mb-4">
-                    <div class="col-md-12">
-                        <div class="form-group">
-                            <label class="form-label">Foto durante el mantenimiento:</label>
-                            <div class="input-group">
-                                <input type="file" id="fotoDurante" class="form-control" accept="image/*" disabled>
-                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDurante">
-                                    <i class="bi bi-x-circle"></i> Limpiar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mb-4">
-                    <div class="col-md-12">
-                        <div class="form-group">
-                            <label class="form-label">Foto después del mantenimiento:</label>
-                            <div class="input-group">
-                                <input type="file" id="fotoDespues" class="form-control" accept="image/*" disabled>
-                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDespues">
-                                    <i class="bi bi-x-circle"></i> Limpiar
-                                </button>
-                            </div>
-                        </div>
+                <!-- Fecha de Atención - Ahora ocupa 6 columnas -->
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Fecha de Atención:</label>
+                        <input type="date" id="fechaAtencion" class="form-control" disabled>
                     </div>
                 </div>
             </div>
+
         </div>
 
         <div class="card-footer text-end">
@@ -162,10 +176,36 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Estilos para los contadores de caracteres */
+        .char-counter {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+            .char-counter.warning {
+                color: #ffc107;
+            }
+
+            .char-counter.danger {
+                color: #dc3545;
+                font-weight: bold;
+            }
+
+        /* Estilo para textareas cuando están en límite */
+        .textarea-limit {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+    </style>
     <script>
         $(document).ready(function() {
             // Configuración inicial
             bloquearCampos(true);
+
+            // Inicializar contadores de caracteres
+            inicializarContadoresCaracteres();
 
             // Eventos de búsqueda
             $('#btnBuscarOrden').click(buscarMantenimiento);
@@ -180,19 +220,90 @@
             $('#btnLimpiarFotoDespues').click(() => $('#fotoDespues').val(''));
 
             // Terminar mantenimiento
-            $('#btnTerminar').click(terminarMantenimiento);
+            $('#btnTerminar').click(validarAntesDeConfirmar);
         });
 
+        function inicializarContadoresCaracteres() {
+            // Eventos para actualizar contadores y limitar caracteres
+            $('#problemas').on('input', function() {
+                limitarCaracteres('problemas', 300);
+            });
+
+            $('#diagnostico').on('input', function() {
+                limitarCaracteres('diagnostico', 300);
+            });
+
+            $('#observaciones').on('input', function() {
+                limitarCaracteres('observaciones', 300);
+            });
+
+            // Prevenir pegado de texto que exceda el límite
+            $('#problemas, #diagnostico, #observaciones').on('paste', function(e) {
+                const maxCaracteres = 300;
+                const textoPegado = e.originalEvent.clipboardData.getData('text');
+                const textoActual = $(this).val();
+                const totalCaracteres = textoActual.length + textoPegado.length;
+
+                if (totalCaracteres > maxCaracteres) {
+                    e.preventDefault();
+                    const permitido = maxCaracteres - textoActual.length;
+                    if (permitido > 0) {
+                        const textoRecortado = textoPegado.substring(0, permitido);
+                        document.execCommand('insertText', false, textoRecortado);
+                    }
+                }
+            });
+        }
+
+        function limitarCaracteres(campoId, maxCaracteres) {
+            const textarea = $('#' + campoId);
+            const texto = textarea.val();
+            const longitud = texto.length;
+            const caracteresRestantes = maxCaracteres - longitud;
+            const contador = $('#contador-' + campoId);
+
+            // Actualizar contador
+            contador.text(caracteresRestantes + ' caracteres restantes');
+
+            // Cambiar color según caracteres restantes
+            contador.removeClass('warning danger');
+            textarea.removeClass('textarea-limit');
+
+            if (caracteresRestantes <= 0) {
+                contador.addClass('danger');
+                textarea.addClass('textarea-limit');
+
+                // Cortar el texto si excede el límite
+                if (longitud > maxCaracteres) {
+                    textarea.val(texto.substring(0, maxCaracteres));
+                    contador.text('0 caracteres restantes');
+                }
+            } else if (caracteresRestantes <= 30) {
+                contador.addClass('warning');
+            } else if (caracteresRestantes <= 10) {
+                contador.addClass('danger');
+            }
+        }
+
         function bloquearCampos(bloquear) {
-            $('#problemas, #diagnostico, #observaciones, #archivoPdf, #fotoAntes, #fotoDurante, #fotoDespues, #btnTerminar')
+            $('#problemas, #diagnostico, #observaciones, #archivoPdf, #fotoAntes, #fotoDurante, #fotoDespues, #fechaAtencion, #btnTerminar')
                 .prop('disabled', bloquear);
+
+            // Si se están bloqueando los campos, resetear contadores
+            if (bloquear) {
+                $('#contador-problemas, #contador-diagnostico, #contador-observaciones')
+                    .text('300 caracteres restantes')
+                    .removeClass('warning danger');
+
+                $('#problemas, #diagnostico, #observaciones').removeClass('textarea-limit');
+            }
         }
 
         function buscarMantenimiento() {
             const claveAgenda = $('#numeroOrden').val().trim();
 
             if (!claveAgenda) {
-                alert('Por favor ingrese un número de orden válido');
+                mostrarAlerta('Campo requerido', 'Por favor ingrese un número de orden válido', 'warning');
                 return;
             }
 
@@ -200,8 +311,6 @@
 
             $.get('/Repositorio/BuscarPorNumeroOrden', { claveAgenda: claveAgenda })
                 .done(function(response) {
-                    console.log("Respuesta del servidor:", response); // Debug
-
                     if (response.success) {
                         // Llenar datos
                         $('#infoNumOrden').text(response.data.numOrden);
@@ -221,27 +330,112 @@
                             $('#fotoAntesGroup').hide();
                         }
 
+                        // Establecer fecha actual
+                        const hoy = new Date().toISOString().split('T')[0];
+                        $('#fechaAtencion').val(hoy);
+
                         // Habilitar campos
                         bloquearCampos(false);
                         $('#resultadoBusqueda').show();
                     } else {
-                        alert(response.message);
+                        mostrarAlerta('Búsqueda sin resultados', response.message, 'info');
                         $('#resultadoBusqueda').hide();
                     }
                 })
                 .fail(function() {
-                    alert('Error al conectar con el servidor');
+                    mostrarAlerta('Error de conexión', 'Error al conectar con el servidor', 'error');
                 })
                 .always(function() {
                     $('#btnBuscarOrden').prop('disabled', false).html('<i class="bi bi-search"></i> Buscar');
                 });
         }
 
-        function terminarMantenimiento() {
-            if (!confirm('¿Está seguro de terminar este mantenimiento?')) return;
+        function validarAntesDeConfirmar() {
+            // Validar fecha de atención
+            const fechaAtencion = $('#fechaAtencion').val();
+            if (!fechaAtencion) {
+                mostrarAlerta('Campo requerido', 'Por favor seleccione la fecha de atención', 'warning');
+                return;
+            }
 
+            // Validar PDF obligatorio
+            const archivoPdf = $('#archivoPdf')[0].files[0];
+            if (!archivoPdf) {
+                mostrarAlerta('Archivo requerido', 'La hoja de servicio es obligatoria', 'warning');
+                return;
+            }
+
+            // Validar tipo de archivo PDF
+            const extension = archivoPdf.name.split('.').pop().toLowerCase();
+            if (extension !== 'pdf') {
+                mostrarAlerta('Formato incorrecto', 'Solo se permiten archivos PDF', 'warning');
+                return;
+            }
+
+            // Validar tamaño máximo del PDF (5MB)
+            if (archivoPdf.size > 5 * 1024 * 1024) {
+                mostrarAlerta('Archivo muy grande', 'La hoja de servicio no debe exceder los 5MB', 'warning');
+                return;
+            }
+
+            // Si es correctivo, validar fotos
+            const esCorrectivo = $('#fotoAntesGroup').is(':visible');
+            if (esCorrectivo) {
+                const fotoAntes = $('#fotoAntes')[0].files[0];
+                const fotoDurante = $('#fotoDurante')[0].files[0];
+                const fotoDespues = $('#fotoDespues')[0].files[0];
+
+                const archivosImagen = [fotoAntes, fotoDurante, fotoDespues].filter(file => file);
+                for (const file of archivosImagen) {
+                    const extensionImg = file.name.split('.').pop().toLowerCase();
+                    const extensionesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
+
+                    if (!extensionesPermitidas.includes(extensionImg)) {
+                        mostrarAlerta('Formato incorrecto', 'Solo se permiten imágenes', 'warning');
+                        return;
+                    }
+
+                    if (file.size > 2 * 1024 * 1024) {
+                        mostrarAlerta('Imagen muy grande', 'Las imágenes no deben exceder los 2MB', 'warning');
+                        return;
+                    }
+                }
+            }
+
+            confirmarTerminacion();
+        }
+
+        function confirmarTerminacion() {
+            Swal.fire({
+                title: '¿Desea terminar este mantenimiento?',
+                text: "Esta acción no se puede deshacer.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, terminar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,
+                customClass: {
+                    confirmButton: 'btn btn-success mx-2',
+                    cancelButton: 'btn btn-secondary mx-2'
+                },
+                buttonsStyling: false,
+                showClass: {
+                    popup: 'animate__animated animate__fadeInDown'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__fadeOutUp'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    terminarMantenimiento();
+                }
+            });
+        }
+
+        function terminarMantenimiento() {
             const formData = new FormData();
             formData.append('numOrden', $('#numeroOrden').val());
+            formData.append('fechaAtencion', $('#fechaAtencion').val());
             formData.append('problemas', $('#problemas').val());
             formData.append('diagnostico', $('#diagnostico').val());
             formData.append('observaciones', $('#observaciones').val());
@@ -259,7 +453,8 @@
             const fotoDespues = $('#fotoDespues')[0].files[0];
             if (fotoDespues) formData.append('fotoDespues', fotoDespues);
 
-            $('#btnTerminar').prop('disabled', true).html('<i class="bi bi-hourglass"></i> Procesando...');
+            // Mostrar loading
+            $('#btnTerminar').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...');
 
             $.ajax({
                 url: '/Repositorio/TerminarMantenimiento',
@@ -268,15 +463,50 @@
                 processData: false,
                 contentType: false,
                 success: function(response) {
-                    alert(response.message);
-                    if (response.success) location.reload();
+                    if (response.success) {
+                        mostrarAlertaExito('¡Éxito!', response.message);
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        mostrarAlerta('Error', response.message, 'error');
+                    }
                 },
-                error: function() {
-                    alert('Error al terminar el mantenimiento');
+                error: function(xhr) {
+                    const errorMessage = xhr.responseJSON?.message || 'Error al terminar el mantenimiento';
+                    mostrarAlerta('Error', errorMessage, 'error');
                 },
                 complete: function() {
                     $('#btnTerminar').prop('disabled', false).html('<i class="bi bi-check-circle"></i> Terminar');
                 }
+            });
+        }
+
+        // Función para mostrar alertas
+        function mostrarAlerta(titulo, mensaje, tipo) {
+            Swal.fire({
+                title: titulo,
+                text: mensaje,
+                icon: tipo,
+                confirmButtonText: 'Aceptar',
+                customClass: {
+                    confirmButton: 'btn btn-primary'
+                },
+                buttonsStyling: false
+            });
+        }
+
+        // Función para el mensaje de éxito
+        function mostrarAlertaExito(titulo, mensaje) {
+            Swal.fire({
+                title: titulo,
+                text: mensaje,
+                icon: 'success',
+                confirmButtonText: 'Aceptar',
+                customClass: {
+                    confirmButton: 'btn btn-success'
+                },
+                buttonsStyling: false
             });
         }
     </script>

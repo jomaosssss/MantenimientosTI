@@ -11,7 +11,7 @@ public partial class Mantenimiento
 
     public string NumActFijo { get; set; } = null!;
 
-    public DateOnly FechaProgramada { get; set; }
+    //public DateOnly FechaProgramada { get; set; }
 
     public string ClaveTipoMtto { get; set; } = null!;
 
@@ -25,11 +25,17 @@ public partial class Mantenimiento
 
     public string? Observaciones { get; set; }
 
-    public DateTime Fecha { get; set; } = DateTime.Now;
+    public DateTime FechaInsercion { get; set; } = DateTime.Now;
+
+    public DateOnly FechaAtencion { get; set; } // NUEVO CAMPO
 
     public virtual Agendum Agendum { get; set; } = null!;
 
     public virtual Usuario RpeNavigation { get; set; } = null!;
+
+    public virtual Equipo NumActFijoNavigation { get; set; } = null!; // NUEVA RELACIÓN
+
+    public virtual CatTipoMantenimiento ClaveTipoMttoNavigation { get; set; } = null!; // NUEVA RELACIÓN
 
     public virtual ICollection<Foto> Fotos { get; set; } = new List<Foto>();
 }
