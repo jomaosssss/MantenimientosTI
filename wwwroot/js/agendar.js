@@ -60,6 +60,10 @@
                 });
 
                 mostrarResultadoDetallado(data);
+
+                // LIMPIAR EL SELECTOR DE ARCHIVO - AÑADIDO AQUÍ
+                input.value = '';
+
             } else {
                 // Mostrar SweetAlert con errores
                 let mensajeError = data.message;
@@ -86,6 +90,9 @@
                 if (data.lineasProcesadasDetalle) {
                     mostrarResultadoDetallado(data);
                 }
+
+                // LIMPIAR EL SELECTOR DE ARCHIVO TAMBIÉN EN CASO DE ERROR - AÑADIDO AQUÍ
+                input.value = '';
             }
         })
         .catch(error => {
@@ -95,6 +102,9 @@
                 text: 'Error al conectar con el servidor: ' + error.message,
                 confirmButtonColor: '#3085d6'
             });
+
+            // LIMPIAR EL SELECTOR DE ARCHIVO TAMBIÉN EN CASO DE ERROR DE CONEXIÓN - AÑADIDO AQUÍ
+            input.value = '';
         })
         .finally(() => {
             // Restaurar el botón
@@ -103,6 +113,7 @@
         });
 }
 
+// El resto de tu código permanece igual...
 function mostrarResultadoDetallado(data) {
     const resultadoDetallado = document.getElementById("resultadoDetallado");
     const detalleLineas = document.getElementById("detalleLineas");

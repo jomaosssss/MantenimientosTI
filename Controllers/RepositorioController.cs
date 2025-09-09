@@ -127,25 +127,21 @@ namespace ProyectoMantenimientos.Controllers
             {
                 try
                 {
-                    // Parsear desde formato yyyy-MM-dd
                     if (!DateOnly.TryParseExact(fechaAtencion, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly fechaAtencionParsed))
                     {
                         return Json(new { success = false, message = "Formato de fecha inválida" });
                     }
 
-                    // 1. Validar y obtener agenda
                     var agendaItem = await _dbocontext.Agenda
                         .FirstOrDefaultAsync(a => a.ClaveAgenda == numOrden);
 
                     if (agendaItem == null)
                         return Json(new { success = false, message = "Registro no encontrado en la Agenda" });
 
-                    // 2. Validar RPE
                     var rpe = HttpContext.Session.GetString("Rpe");
                     if (string.IsNullOrEmpty(rpe))
                         return Json(new { success = false, message = "Sesión inválida, RPE no encontrado" });
 
-                    // 3. Crear mantenimiento
                     var mantenimiento = new Mantenimiento
                     {
                         NumOrden = agendaItem.ClaveAgenda,
@@ -160,19 +156,13 @@ namespace ProyectoMantenimientos.Controllers
                         FechaAtencion = fechaAtencionParsed
                     };
 
-                    // 4. Procesar PDF
                     if (archivoPdf != null && archivoPdf.Length > 0)
                     {
                         if (archivoPdf.Length > 5 * 1024 * 1024)
-                        {
                             return Json(new { success = false, message = "La hoja de servicio no debe exceder los 5MB" });
-                        }
 
-                        var extension = Path.GetExtension(archivoPdf.FileName).ToLower();
-                        if (extension != ".pdf")
-                        {
+                        if (Path.GetExtension(archivoPdf.FileName).ToLower() != ".pdf")
                             return Json(new { success = false, message = "Solo se permiten archivos PDF" });
-                        }
 
                         mantenimiento.EvidenciaHojaServicio = await GuardarArchivo(archivoPdf);
                     }
@@ -181,50 +171,55 @@ namespace ProyectoMantenimientos.Controllers
                         return Json(new { success = false, message = "La hoja de servicio es obligatoria" });
                     }
 
-                    // 5. Guardar primero el mantenimiento
                     _dbocontext.Mantenimientos.Add(mantenimiento);
                     await _dbocontext.SaveChangesAsync();
 
-                    // 6. Procesar fotos para correctivos
-                    if (agendaItem.ClaveTipoMtto == "C")
+                    // ===== CAMBIO EN EL CONTROLADOR =====
+                    // Se movió este bloque fuera de la condición if (agendaItem.ClaveTipoMtto == "C")
+                    // Ahora las fotos se procesan SIEMPRE que se envíen.
+
+                    var foto = new Foto
                     {
-                        var foto = new Foto
-                        {
-                            NumOrden = mantenimiento.NumOrden,
-                            FechaHora = DateTime.Now
-                        };
+                        NumOrden = mantenimiento.NumOrden,
+                        FechaHora = DateTime.Now
+                    };
 
-                        if (fotoAntes != null && fotoAntes.Length > 0)
-                        {
-                            if (fotoAntes.Length > 2 * 1024 * 1024)
-                            {
-                                return Json(new { success = false, message = "La foto 'Antes' no debe exceder los 2MB" });
-                            }
-                            foto.FotoAntes = await ProcesarImagen(fotoAntes);
-                        }
+                    bool seAgregoAlgunaFoto = false;
 
-                        if (fotoDurante != null && fotoDurante.Length > 0)
-                        {
-                            if (fotoDurante.Length > 2 * 1024 * 1024)
-                            {
-                                return Json(new { success = false, message = "La foto 'Durante' no debe exceder los 2MB" });
-                            }
-                            foto.FotoDurante = await ProcesarImagen(fotoDurante);
-                        }
+                    if (fotoAntes != null && fotoAntes.Length > 0)
+                    {
+                        if (fotoAntes.Length > 2 * 1024 * 1024)
+                            return Json(new { success = false, message = "La foto 'Antes' no debe exceder los 2MB" });
 
-                        if (fotoDespues != null && fotoDespues.Length > 0)
-                        {
-                            if (fotoDespues.Length > 2 * 1024 * 1024)
-                            {
-                                return Json(new { success = false, message = "La foto 'Después' no debe exceder los 2MB" });
-                            }
-                            foto.FotoDespues = await ProcesarImagen(fotoDespues);
-                        }
+                        foto.FotoAntes = await ProcesarImagen(fotoAntes);
+                        seAgregoAlgunaFoto = true;
+                    }
 
+                    if (fotoDurante != null && fotoDurante.Length > 0)
+                    {
+                        if (fotoDurante.Length > 2 * 1024 * 1024)
+                            return Json(new { success = false, message = "La foto 'Durante' no debe exceder los 2MB" });
+
+                        foto.FotoDurante = await ProcesarImagen(fotoDurante);
+                        seAgregoAlgunaFoto = true;
+                    }
+
+                    if (fotoDespues != null && fotoDespues.Length > 0)
+                    {
+                        if (fotoDespues.Length > 2 * 1024 * 1024)
+                            return Json(new { success = false, message = "La foto 'Después' no debe exceder los 2MB" });
+
+                        foto.FotoDespues = await ProcesarImagen(fotoDespues);
+                        seAgregoAlgunaFoto = true;
+                    }
+
+                    // Solo se guarda la entidad Foto si se subió al menos una imagen
+                    if (seAgregoAlgunaFoto)
+                    {
                         _dbocontext.Fotos.Add(foto);
                     }
 
-                    // 7. Actualizar agenda
+                    // Actualizar agenda
                     agendaItem.Estatus = "TERMINADO";
 
                     await _dbocontext.SaveChangesAsync();
@@ -236,23 +231,14 @@ namespace ProyectoMantenimientos.Controllers
                         message = "Mantenimiento Terminado Correctamente."
                     });
                 }
-                catch (DbUpdateException dbEx)
-                {
-                    await transaction.RollbackAsync();
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Error al guardar en la base de datos",
-                        error = dbEx.InnerException?.Message ?? dbEx.Message
-                    });
-                }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
+                    // Devuelve un mensaje de error más detallado para depuración
                     return Json(new
                     {
                         success = false,
-                        message = "Error inesperado al procesar la solicitud",
+                        message = "Error inesperado al procesar la solicitud.",
                         error = ex.Message
                     });
                 }

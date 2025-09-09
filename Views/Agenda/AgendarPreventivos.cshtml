@@ -7,29 +7,35 @@
     <div class="card shadow-sm">
         <div class="card-header bg-white">
             <h1 class="mb-0">Mantenimientos Preventivos</h1>
-            <div class="alert alert-secondary mt-3">
-                <i class="fas fa-info-circle"></i> Seleccione su archivo .csv con sus mantenimientos preventivos.
-                <div class="mt-2 small">
-                    <strong>Requisitos del archivo:</strong>
-                    <ul class="mb-0">
-                        <li>Máximo 1000 registros por archivo.</li>
-                        <li>Formato CSV con codificación ISO-8859-1 (soporta acentos/ñ).</li>
-                        <li>Columnas requeridas: numeroActivoFijo,fechaProgramada (DD/MM/YYYY).</li>
-                        <li>En la primera línea va el encabezado (se ignora).</li>
-                    </ul>
-                    <strong>Ejemplo:</strong>
-                    <p class="mb-1">numActFijo,fechaProgramada</p>
-                    <p class="mb-1">12345678,12/12/2025</p>
-                    <p class="mb-1">12345678,12/12/2025</p>
-                    <p class="mb-0">12345678,12/12/2025</p>
+
+            <!-- Contenedor principal con dos columnas -->
+            <div class="row mt-3">
+                <!-- Primera columna: información -->
+                <div class="col-md-8">
+                    <div class="alert alert-secondary h-100">
+                        <i class="fas fa-info-circle"></i> Seleccione su archivo .csv con sus mantenimientos preventivos.
+                        <div class="mt-2 small">
+                            <strong>Requisitos del archivo:</strong>
+                            <ul class="mb-0">
+                                <li>Máximo 1000 registros por archivo.</li>
+                                <li>Formato CSV con codificación ISO-8859-1 (soporta acentos/ñ).</li>
+                                <li>Columnas requeridas: numeroActivoFijo,fechaProgramada (DD/MM/YYYY o DD-MM-YYYY).</li>
+                                <li>En la primera línea va el encabezado (este se ignora).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Segunda columna: imagen -->
+                <div class="col-md-4 d-flex align-items-center justify-content-center">
+                    <img src="~/images/EjemploCSV.png" class="img-fluid" style="max-height: 190px;" alt="Ejemplo de archivo CSV">
                 </div>
             </div>
-            @* <img src="~/images/EjemploCSV.png" style="height: 250px;"> *@
         </div>
 
         <div class="card-body">
             <div class="row mb-4 align-items-end">
-                <div class="col-md-4">
+                <div class="col-md-5">
                     <label for="inputExcel" class="form-label fw-bold">Seleccione su archivo .csv:</label>
                     <input class="form-control" type="file" id="ArchivoCsv" name="ArchivoCsv" accept=".csv" />
                 </div>
@@ -55,19 +61,19 @@
                                         <th>Registros Procesados del Archivo:</th>
                                         <td id="totalLineas">0</td>
                                     </tr>
-                                    <tr class="table-success">
+                                    <tr>
                                         <th>Registros Exitosos:</th>
                                         <td id="exitosos">0</td>
                                     </tr>
-                                    <tr class="table-danger">
+                                    <tr>
                                         <th>Errores:</th>
                                         <td id="errores">0</td>
                                     </tr>
-                                    <tr class="table-warning">
+                                    <tr>
                                         <th>Registros Duplicados (Total):</th>
                                         <td id="duplicados">0</td>
                                     </tr>
-                                    <tr class="table-warning">
+                                    <tr>
                                         <th>Detalles:</th>
                                         <td>
                                             <ul class="list-unstyled mb-0 small">
@@ -76,15 +82,15 @@
                                             </ul>
                                         </td>
                                     </tr>
-                                    <tr class="table-warning">
+                                    <tr>
                                         <th>Equipos No Existentes:</th>
                                         <td id="activosNoExistentes">0</td>
                                     </tr>
-                                    <tr class="table-warning">
+                                    <tr>
                                         <th>Mantenimientos Vencidos:</th>
                                         <td id="fechasPasadas">0</td>
                                     </tr>
-                                    <tr class="table-warning">
+                                    <tr>
                                         <th>Equipos de Otras Zonas:</th>
                                         <td id="activosOtraZona">0</td>
                                     </tr>

@@ -86,7 +86,6 @@ namespace ProyectoMantenimientos.Controllers
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.Estatus == "PENDIENTE" &&
-                           a.FechaProgramada >= hoy &&
                            a.FechaProgramada <= ultimoDiaMes);
 
             // NUEVA CONSULTA: Todos los programados este mes (sin importar estatus)
@@ -125,7 +124,7 @@ namespace ProyectoMantenimientos.Controllers
                         .ThenInclude(c => c.CatAgencium)
                             .ThenInclude(a => a.CatZona)
                 .Include(a => a.ClaveTipoMttoNavigation)
-                .Where(a => a.FechaProgramada >= hoy && a.Estatus == "PENDIENTE");
+                .Where(a => a.Estatus == "PENDIENTE");
 
             // Filtro por zona si no es administrador
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
@@ -590,7 +589,11 @@ namespace ProyectoMantenimientos.Controllers
             using var ms = new MemoryStream();
             using var stamper = new PdfStamper(reader, ms);
             var cb = stamper.GetOverContent(1);
-            var bf = BaseFont.CreateFont(BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+            // --- LÍNEA MEJORADA ---
+            // Construye la ruta a la fuente de forma robusta, sin depender del disco C:
+            string fontPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
+            var bf = BaseFont.CreateFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+
 
             EscribirTexto(cb, bf, 10, 505f, 735f, claveAgenda);
             EscribirTexto(cb, bf, 10, 120f, 691f, agencia);
@@ -641,12 +644,12 @@ namespace ProyectoMantenimientos.Controllers
 
         [HttpPost]
         public IActionResult GenerarHojaServicioComputo(
-    string numActFijo,
-    string fechaProgramada,
-    string responsable = "TECNICO_DE_ZONA",
-    string nombreTecnico = null,
-    string rpe = null,
-    string nombre = null)
+        string numActFijo,
+        string fechaProgramada,
+        string responsable = "TECNICO_DE_ZONA",
+        string nombreTecnico = null,
+        string rpe = null,
+        string nombre = null)
         {
             try
             {

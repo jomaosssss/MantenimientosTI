@@ -126,7 +126,7 @@ namespace ProyectoMantenimientos.Controllers
                                 numero = numeroLinea,
                                 contenido = linea,
                                 estado = "ignorado",
-                                mensaje = "Línea acía ignorada"
+                                mensaje = "Línea vacía ignorada"
                             };
                             lineasProcesadasDetalle.Add(detalleLinea);
                             continue;
@@ -199,11 +199,24 @@ namespace ProyectoMantenimientos.Controllers
                                 continue;
                             }
 
-                            // Validar y convertir la fecha
+                            // Validar y convertir la fecha - MODIFICADO PARA ACEPTAR DOS FORMATOS
                             DateOnly fechaProgramada;
                             try
                             {
-                                fechaProgramada = DateOnly.ParseExact(fechaStr, "dd/MM/yyyy");
+                                // Primero intentar con formato con barras DD/MM/YYYY
+                                if (fechaStr.Contains('/'))
+                                {
+                                    fechaProgramada = DateOnly.ParseExact(fechaStr, "dd/MM/yyyy");
+                                }
+                                // Luego intentar con formato con guiones DD-MM-YYYY
+                                else if (fechaStr.Contains('-'))
+                                {
+                                    fechaProgramada = DateOnly.ParseExact(fechaStr, "dd-MM-yyyy");
+                                }
+                                else
+                                {
+                                    throw new FormatException("Formato de fecha no reconocido");
+                                }
                             }
                             catch
                             {
@@ -212,10 +225,10 @@ namespace ProyectoMantenimientos.Controllers
                                     numero = numeroLinea,
                                     contenido = linea,
                                     estado = "error",
-                                    mensaje = $"Formato de fecha inválido ({fechaStr}) por favor, verifique su estructura"
+                                    mensaje = $"Formato de fecha inválido ({fechaStr}). Use el formato DD/MM/YYYY o DD-MM-YYYY."
                                 };
                                 lineasProcesadasDetalle.Add(detalleLinea);
-                                errores.Add($"Línea {numeroLinea}: Formato de fecha inválido ({fechaStr}). Use el formato DD/MM/YYYY.");
+                                errores.Add($"Línea {numeroLinea}: Formato de fecha inválido ({fechaStr}). Use el formato DD/MM/YYYY o DD-MM-YYYY.");
                                 lineasConError++;
                                 continue;
                             }

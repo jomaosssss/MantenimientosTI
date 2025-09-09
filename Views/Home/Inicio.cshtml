@@ -468,7 +468,7 @@
                     alert('Error al generar el PDF: ' + xhr.responseText);
                 },
                 complete: function() {
-                    $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf"></i>');
+                    $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf"></i>Descargar');
                 }
             });
         });
@@ -569,13 +569,14 @@
             });
 
             // Función para descargar el PDF de computo
-            function descargarPdfComputo(usarDatosModificados) {
-                var formData = {
-                    numActFijo: $('#numActFijoPdfComputo').val(),
-                    fechaProgramada: $('#fechaProgramadaPdfComputo').val(),
-                    responsable: "TECNICO_DE_ZONA",
-                    nombreTecnico: "@Context.Session.GetString("NombreUsuario")"
-                };
+        function descargarPdfComputo(usarDatosModificados) {
+            var formData = {
+                numActFijo: $('#numActFijoPdfComputo').val(),
+                fechaProgramada: $('#fechaProgramadaPdfComputo').val(),
+                responsable: "TECNICO_DE_ZONA",
+                // --- LÍNEA CORREGIDA ---
+                nombreTecnico: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Context.Session.GetString("NombreUsuario")))
+            };
 
                 if (usarDatosModificados) {
                     // Validar campos modificados
