@@ -56,6 +56,12 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(13, 110, 253, 0.2) !important;
     }
+
+    /* Efecto para tarjeta roja */
+    .card[style*="background-color: #808080"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(128, 128, 128, 0.2) !important;
+    }
 </style>
 
 <div class="container mt-5">
@@ -63,7 +69,7 @@
     <div class="card mt-4 shadow-sm rounded">
 
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h1 class="mb-0">Bienvenid@@, @CultureInfo.CurrentCulture.TextInfo.ToTitleCase(Context.Session.GetString("NombreUsuario")?.ToLower() ?? "")</h1>
+            <h2 class="mb-0">Bienvenid@@, @CultureInfo.CurrentCulture.TextInfo.ToTitleCase(Context.Session.GetString("NombreUsuario")?.ToLower() ?? "")</h2>
             <div class="leyenda-mantenimientos d-flex gap-3">
                 <div class="d-flex align-items-center">
                     <div class="color-box bg-white border me-2" style="width: 20px; height: 20px;"></div>
@@ -120,6 +126,22 @@
                                 </div>
                                 <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
                                     <i class="fas fa-spinner text-warning" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-4 col-sm-6">
+                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #808080; min-height: 100px;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-black-50 mb-1 fw-bold" style="font-size: 0.75rem;">PROGRAMADOS EL PROXIMO MES</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">0</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-calendar-alt text-black-50" style="font-size: 1.5rem;"></i>
                                 </div>
                             </div>
                         </div>
