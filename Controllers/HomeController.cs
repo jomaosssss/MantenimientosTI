@@ -70,6 +70,13 @@ namespace ProyectoMantenimientos.Controllers
             var primerDiaMes = new DateOnly(hoy.Year, hoy.Month, 1);
             var ultimoDiaMes = new DateOnly(hoy.Year, hoy.Month, DateTime.DaysInMonth(hoy.Year, hoy.Month));
 
+            var primerDiaProximoMes = primerDiaMes.AddMonths(1);
+            var ultimoDiaProximoMes = new DateOnly(
+                primerDiaProximoMes.Year,
+                primerDiaProximoMes.Month,
+                DateTime.DaysInMonth(primerDiaProximoMes.Year, primerDiaProximoMes.Month)
+            );
+
             // 1. CONSULTAS PARA LOS CONTADORES DE LAS TARJETAS
 
             var terminadosQuery = _dbocontext.Agenda
@@ -80,13 +87,14 @@ namespace ProyectoMantenimientos.Controllers
                a.FechaProgramada >= primerDiaMes &&
                a.FechaProgramada <= ultimoDiaMes);
 
-            // Consulta para contar pendientes (este mes, desde hoy hasta el último día del mes)
+            // Consulta para contar pendientes (SOLO de este mes)
             var pendientesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.Estatus == "PENDIENTE" &&
-                           a.FechaProgramada <= ultimoDiaMes);
+                       a.FechaProgramada >= primerDiaMes && // <-- AÑADE ESTA LÍNEA
+                       a.FechaProgramada <= ultimoDiaMes);
 
             // NUEVA CONSULTA: Todos los programados este mes (sin importar estatus)
             var programadosQuery = _dbocontext.Agenda
@@ -95,6 +103,13 @@ namespace ProyectoMantenimientos.Controllers
                         .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
+
+            var proximoMesQuery = _dbocontext.Agenda
+                .Include(a => a.NumActFijoNavigation)
+                    .ThenInclude(e => e.CatCentro)
+                        .ThenInclude(c => c.CatAgencium)
+                .Where(a => a.FechaProgramada >= primerDiaProximoMes &&
+                        a.FechaProgramada <= ultimoDiaProximoMes);
 
             // Aplicar filtro por zona SOLO si NO es administrador (Rol = 1)
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
@@ -110,12 +125,16 @@ namespace ProyectoMantenimientos.Controllers
                 programadosQuery = programadosQuery
                     .Where(a => a.NumActFijoNavigation != null &&
                                a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+                proximoMesQuery = proximoMesQuery
+                    .Where(a => a.NumActFijoNavigation != null &&
+                        a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
             }
 
             // Obtener los conteos
             int terminadosCount = terminadosQuery.Count();
             int pendientesCount = pendientesQuery.Count();
             int programadosCount = programadosQuery.Count();
+            int proximoMesCount = proximoMesQuery.Count();
 
             // 2. CONSULTA PARA LAS TABLAS (SOLO PENDIENTES - mantiene el filtro original)
             var agendaQuery = _dbocontext.Agenda
@@ -204,7 +223,8 @@ namespace ProyectoMantenimientos.Controllers
                 Computo = computo.OrderBy(vm => vm.FechaProgramada).ToList(),
                 TerminadosCount = terminadosCount,
                 PendientesCount = pendientesCount,
-                ProgramadosCount = programadosCount // Nueva propiedad
+                ProgramadosCount = programadosCount, // Nueva propiedad
+                ProgramadosProximoMesCount = proximoMesCount
             };
 
             return View(vmInicio);

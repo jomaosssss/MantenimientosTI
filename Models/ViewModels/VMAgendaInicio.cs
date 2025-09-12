@@ -8,5 +8,6 @@
         public int TerminadosCount { get; set; }
         public int PendientesCount { get; set; }
         public int ProgramadosCount { get; set; }
+        public int ProgramadosProximoMesCount { get; set; }
     }
 }
