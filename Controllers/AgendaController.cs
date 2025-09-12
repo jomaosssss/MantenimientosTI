@@ -234,20 +234,20 @@ namespace ProyectoMantenimientos.Controllers
                             }
 
                             // Validar fecha futura
-                            if (fechaProgramada < DateOnly.FromDateTime(DateTime.Now))
-                            {
-                                detalleLinea = new
-                                {
-                                    numero = numeroLinea,
-                                    contenido = linea,
-                                    estado = "error",
-                                    mensaje = $"Fecha vencida ({fechaStr})"
-                                };
-                                lineasProcesadasDetalle.Add(detalleLinea);
-                                errores.Add($"Línea {numeroLinea}: La fecha {fechaStr} ya esta vencida.");
-                                lineasConFechaPasada++;
-                                continue;
-                            }
+                            //if (fechaProgramada < DateOnly.FromDateTime(DateTime.Now))
+                            //{
+                            //    detalleLinea = new
+                            //    {
+                            //        numero = numeroLinea,
+                            //        contenido = linea,
+                            //        estado = "error",
+                            //        mensaje = $"Fecha vencida ({fechaStr})"
+                            //    };
+                            //    lineasProcesadasDetalle.Add(detalleLinea);
+                            //    errores.Add($"Línea {numeroLinea}: La fecha {fechaStr} ya esta vencida.");
+                            //    lineasConFechaPasada++;
+                            //    continue;
+                            //}
 
                             // Crear clave única para el activo+fecha
                             var claveActivoFecha = (numActFijo, fechaProgramada);
