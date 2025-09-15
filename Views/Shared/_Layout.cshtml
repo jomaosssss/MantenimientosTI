@@ -108,9 +108,9 @@
                     </a>
 
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        @* <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Opciones</a></li> *@
-                        @* <li><hr class="dropdown-divider" /></li> *@
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuracion</a></li>
+                        <li><hr class="dropdown-divider" /></li>
                         <li><a class="dropdown-item" href="@Url.Action("CerrarSesion", "Usuario")"><i class="fas fa-sign-out-alt me-2"></i>Salir</a></li>
                     </ul>
                 </li>
@@ -127,7 +127,7 @@
 
                         <a href="/Home/Inicio" class="nav-link ajax-link text-white">
                             <div class="sb-nav-link-icon"><i class="fas fa-home"></i></div>
-                            Inicio
+                            Bandeja de Entrada
                         </a>
 
                         @if (User.IsInRole("ADMINISTRADOR"))

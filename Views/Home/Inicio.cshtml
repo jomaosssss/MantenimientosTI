@@ -83,7 +83,6 @@
         </div>
 
         <div class="card-body">
-
             <div class="row g-3">
                 <div class="col-xl-3 col-md-4 col-sm-6">
                     <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #0d6efd; min-height: 100px;">
@@ -148,11 +147,9 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="card-body">
+            <p class="text-dark text-center mt-3 mb-3 h5">Mantenimientos pendientes. ¡Buena suerte!</p>
 
-            <!-- CFEmáticos -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-table me-1"></i> CFEmáticos
@@ -167,7 +164,6 @@
                                 <th>Centro</th>
                                 <th>Tipo de Equipo</th>
                                 <th>Núm. de Cajero</th>
-                                <th>Estatus</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
                             </tr>
@@ -175,7 +171,7 @@
                         <tbody>
                             @foreach (var item in Model.Cfematicos)
                             {
-                                <tr data-num-act-fijo="@item.NumActFijo" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
+                                <tr data-num-act-fijo="@item.NumActFijo" data-clave-agenda="@item.ClaveAgenda" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
                                     <td data-order="@item.FechaProgramada.ToDateTime(TimeOnly.MinValue).Ticks">
                                         @item.FechaProgramada.ToString("dd/MM/yyyy")
                                     </td>
@@ -184,7 +180,6 @@
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
                                     <td>@item.NumCajero</td>
-                                    <td>@item.Estatus</td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -202,7 +197,6 @@
                 </div>
             </div>
 
-            <!-- Equipos de Atención a Clientes -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-table me-1"></i> Equipos de Atención a Clientes
@@ -216,7 +210,6 @@
                                 <th>Agencia</th>
                                 <th>Centro</th>
                                 <th>Tipo de Equipo</th>
-                                <th>Estatus</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
                             </tr>
@@ -224,7 +217,7 @@
                         <tbody>
                             @foreach (var item in Model.AtencionClientes)
                             {
-                                <tr data-num-act-fijo="@item.NumActFijo" data-tipo-equipo="@item.Tipo" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
+                                <tr data-num-act-fijo="@item.NumActFijo" data-clave-agenda="@item.ClaveAgenda" data-tipo-equipo="@item.Tipo" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
                                     <td data-order="@item.FechaProgramada.ToDateTime(TimeOnly.MinValue).Ticks">
                                         @item.FechaProgramada.ToString("dd/MM/yyyy")
                                     </td>
@@ -232,7 +225,6 @@
                                     <td>@item.Agencia</td>
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
-                                    <td>@item.Estatus</td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -250,7 +242,6 @@
                 </div>
             </div>
 
-            <!-- Equipos de Cómputo -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-table me-1"></i> Equipos de Cómputo
@@ -264,7 +255,7 @@
                                 <th>Agencia</th>
                                 <th>Centro</th>
                                 <th>Tipo de Equipo</th>
-                                <th>Estatus</th>
+                                <th>Usuario</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
                             </tr>
@@ -272,7 +263,7 @@
                         <tbody>
                             @foreach (var item in Model.Computo)
                             {
-                                <tr data-num-act-fijo="@item.NumActFijo" data-tipo-equipo="@item.Tipo" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
+                                <tr data-num-act-fijo="@item.NumActFijo" data-clave-agenda="@item.ClaveAgenda" data-tipo-equipo="@item.Tipo" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
                                     <td data-order="@item.FechaProgramada.ToDateTime(TimeOnly.MinValue).Ticks">
                                         @item.FechaProgramada.ToString("dd/MM/yyyy")
                                     </td>
@@ -280,7 +271,7 @@
                                     <td>@item.Agencia</td>
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
-                                    <td>@item.Estatus</td>
+                                    <td>@item.UsuarioAsignado</td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -297,10 +288,10 @@
                     </table>
                 </div>
             </div>
+
         </div>
     </div>
 
-    <!-- Modal para ver la informacion del equipo -->
     <div class="modal fade" id="modalInfo" tabindex="-1" aria-labelledby="modalInfoLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content rounded">
@@ -314,7 +305,6 @@
         </div>
     </div>
 
-    <!-- Modal para equipos de computo -->
     <div class="modal fade" id="modalPdfComputo" tabindex="-1" aria-labelledby="modalPdfComputoLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content rounded">
@@ -362,7 +352,6 @@
         </div>
     </div>
 
-    <!-- Modal para descargar la hoja de servicio -->
     <div class="modal fade" id="modalPdf" tabindex="-1" aria-labelledby="modalPdfLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content rounded">
@@ -413,17 +402,29 @@
                 }
             });
 
-            // Manejar el click en los botones "Ver Equipo"
+            // --- CÓDIGO FINAL PARA MANEJAR EL MODAL ---
             $('[data-bs-target="#modalInfo"]').on('click', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');
+                var claveAgenda = fila.data('clave-agenda'); // Leemos el número de orden
 
-                $.get('/Home/ObtenerDetallesEquipo', { numActFijo: numActFijo }, function(data) {
+                $('#modalInfoBody').html('<div class="text-center p-4"><div class="spinner-border" role="status"></div></div>');
+
+                // Ahora enviamos AMBOS datos al controlador
+                $.get('/Home/ObtenerDetallesEquipo', { numActFijo: numActFijo, claveAgenda: claveAgenda }, function(data) {
+                    // La respuesta (data) ya vendrá con el número de orden incluido,
+                    // así que solo tenemos que mostrarla.
                     $('#modalInfoBody').html(data);
                 });
             });
 
-            // Manejar el click en los botones "Hoja de Servicio" de CFEmáticos (abre modal)
+            // Código para resetear el modal al cerrar
+            $('#modalInfo').on('hidden.bs.modal', function (e) {
+                $('#modalInfoLabel').text('Información del Equipo');
+                $('#modalInfoBody').html('');
+            });
+
+            // --- CÓDIGO ORIGINAL PARA LOS PDFs (SE MANTIENE) ---
             $('#tablaCFEmaticos').on('click', '[data-bs-target="#modalPdf"]', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');
@@ -434,93 +435,80 @@
                 $('#fechaProgramadaPdf').val(fechaProgramada);
                 $('#numCajeroPdf').val(numCajero);
 
-                // Resetear el formulario
                 $('#formHojaServicio')[0].reset();
                 $('#divTecnicoExterno').hide();
                 $('#nombreTecnico').prop('required', false);
             });
 
-        // Manejar el click en los botones "Hoja de Servicio" de Equipos de Atención a Clientes (descarga directa)
-        $('#tablaAC').on('click', '.btnGenerarPdf', function() {
-            var fila = $(this).closest('tr');
-            var numActFijo = fila.data('num-act-fijo');
-            var tipoEquipo = fila.data('tipo-equipo');
-            var fechaProgramada = fila.find('td:first').text().trim();
+            $('#tablaAC').on('click', '.btnGenerarPdf', function() {
+                var fila = $(this).closest('tr');
+                var numActFijo = fila.data('num-act-fijo');
+                var tipoEquipo = fila.data('tipo-equipo');
+                var fechaProgramada = fila.find('td:first').text().trim();
 
-            // Determinar el prefijo según el tipo de equipo
-            var prefix = 'HojaServicio';
-            if (tipoEquipo.toUpperCase().includes('CFECAM')) {
-                prefix += 'CFECAM';
-            } else if (tipoEquipo.toUpperCase().includes('CFETURNO')) {
-                prefix += 'CFETURNO';
-            } else {
-                prefix += 'EquipoAC'; // Por defecto
-            }
-
-            // Mostrar carga
-            var $btn = $(this);
-            $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
-
-            $.ajax({
-                url: '/Home/GenerarHojaServicio',
-                type: 'POST',
-                data: {
-                    numActFijo: numActFijo,
-                    fechaProgramada: fechaProgramada,
-                    responsable: "TECNICO_DE_ZONA",
-                    nombreTecnico: "@Context.Session.GetString("NombreUsuario")",
-                    tipoEquipo: tipoEquipo
-                },
-                xhrFields: {
-                    responseType: 'blob'
-                },
-                success: function(data) {
-                    var url = URL.createObjectURL(data);
-                    var a = document.createElement('a');
-                    a.href = url;
-                    a.download = prefix + '_' + numActFijo + '.pdf';
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(function() {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 100);
-                },
-                error: function(xhr) {
-                    alert('Error al generar el PDF: ' + xhr.responseText);
-                },
-                complete: function() {
-                    $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf"></i>Descargar');
+                var prefix = 'HojaServicio';
+                if (tipoEquipo.toUpperCase().includes('CFECAM')) {
+                    prefix += 'CFECAM';
+                } else if (tipoEquipo.toUpperCase().includes('CFETURNO')) {
+                    prefix += 'CFETURNO';
+                } else {
+                    prefix += 'EquipoAC';
                 }
-            });
-        });
 
-            // Manejar el click en los botones "Hoja de Servicio" de Equipos de Cómputo
+                var $btn = $(this);
+                $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
+
+                $.ajax({
+                    url: '/Home/GenerarHojaServicio',
+                    type: 'POST',
+                    data: {
+                        numActFijo: numActFijo,
+                        fechaProgramada: fechaProgramada,
+                        responsable: "TECNICO_DE_ZONA",
+                        nombreTecnico: "@Context.Session.GetString("NombreUsuario")",
+                        tipoEquipo: tipoEquipo
+                    },
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+                    success: function(data) {
+                        var url = URL.createObjectURL(data);
+                        var a = document.createElement('a');
+                        a.href = url;
+                        a.download = prefix + '_' + numActFijo + '.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(function() {
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        }, 100);
+                    },
+                    error: function(xhr) {
+                        alert('Error al generar el PDF: ' + xhr.responseText);
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf"></i>Descargar');
+                    }
+                });
+            });
+
             $('#tablaEC').on('click', '.btnGenerarPdf', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');
                 var fechaProgramada = fila.find('td:first').text().trim();
 
-                // Obtener los datos del equipo de cómputo
                 $.get('/Home/ObtenerDatosComputo', { numActFijo: numActFijo }, function(data) {
                     $('#numActFijoPdfComputo').val(numActFijo);
                     $('#fechaProgramadaPdfComputo').val(fechaProgramada);
                     $('#rpeAsignado').text(data.rpe);
                     $('#nombreAsignado').text(data.nombre);
-
-                    // Limpiar los campos de modificación (aparecerán vacíos)
                     $('#rpeComputo').val('');
                     $('#nombreComputo').val('');
-
-                    // Ocultar sección de modificación inicialmente
                     $('#camposModificacion').hide();
-
-                    // Mostrar el modal
                     $('#modalPdfComputo').modal('show');
                 });
             });
 
-            // Mostrar/ocultar campo de técnico externo en el modal de CFEmáticos
             $('#responsable').change(function() {
                 if ($(this).val() === 'TECNICO_EXTERNO') {
                     $('#divTecnicoExterno').show();
@@ -531,7 +519,6 @@
                 }
             });
 
-            // Manejar el botón "Generar PDF" dentro del modal de CFEmáticos
             $('#btnGenerarPdf').click(function() {
                 if ($('#formHojaServicio')[0].checkValidity()) {
                     var formData = $('#formHojaServicio').serialize();
@@ -575,33 +562,27 @@
                 }
             });
 
-            // Manejar el botón Continuar en modal de cómputo (descarga directa con datos originales)
             $('#btnContinuarComputo').click(function() {
                 descargarPdfComputo(false);
             });
 
-            // Manejar el botón Modificar en modal de cómputo (mostrar campos para edición)
             $('#btnModificarComputo').click(function() {
                 $('#camposModificacion').show();
             });
 
-            // Manejar el botón Descargar en modal de cómputo (con datos modificados)
             $('#btnDescargarComputo').click(function() {
                 descargarPdfComputo(true);
             });
 
-            // Función para descargar el PDF de computo
-        function descargarPdfComputo(usarDatosModificados) {
-            var formData = {
-                numActFijo: $('#numActFijoPdfComputo').val(),
-                fechaProgramada: $('#fechaProgramadaPdfComputo').val(),
-                responsable: "TECNICO_DE_ZONA",
-                // --- LÍNEA CORREGIDA ---
-                nombreTecnico: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Context.Session.GetString("NombreUsuario")))
-            };
+            function descargarPdfComputo(usarDatosModificados) {
+                var formData = {
+                    numActFijo: $('#numActFijoPdfComputo').val(),
+                    fechaProgramada: $('#fechaProgramadaPdfComputo').val(),
+                    responsable: "TECNICO_DE_ZONA",
+                    nombreTecnico: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Context.Session.GetString("NombreUsuario")))
+                };
 
                 if (usarDatosModificados) {
-                    // Validar campos modificados
                     if (!$('#rpeComputo').val() || !$('#nombreComputo').val()) {
                         alert('Por favor complete ambos campos (RPE y Nombre)');
                         return;

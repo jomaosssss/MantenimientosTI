@@ -203,14 +203,32 @@ namespace ProyectoMantenimientos.Controllers
                     Tipo = tipo,
                     Estatus = item.Estatus,
                     NumCajero = equipoCfematico?.NumCajero ?? "N/A",
-                    TipoMantenimiento = item.ClaveTipoMttoNavigation?.NombreTipoM ?? "PREVENTIVO"
+                    TipoMantenimiento = item.ClaveTipoMttoNavigation?.NombreTipoM ?? "PREVENTIVO",
+                    ClaveAgenda = item.ClaveAgenda
                 };
 
                 // Clasificar en las listas correspondientes
                 if (equipoAc != null)
                     atencionClientes.Add(viewModel);
                 else if (equipoComputo != null)
-                    computo.Add(viewModel);
+                {
+                    // --- LÍNEAS NUEVAS ---
+                    // Si el equipo es de cómputo, preparamos la cadena del usuario.
+                    string rpe = equipoComputo.Rpe;
+                    string nombre = equipoComputo.NombreRpe;
+
+                    // Verificamos si los datos existen para evitar mostrar "- "
+                    if (!string.IsNullOrEmpty(rpe) && !string.IsNullOrEmpty(nombre))
+                    {
+                        viewModel.UsuarioAsignado = $"{rpe} - {nombre}";
+                    }
+                    else
+                    {
+                        viewModel.UsuarioAsignado = "No asignado";
+                    }
+
+                    computo.Add(viewModel); // <-- Ahora el viewModel lleva el dato extra
+                }
                 else
                     cfematicos.Add(viewModel);
             }
@@ -230,10 +248,17 @@ namespace ProyectoMantenimientos.Controllers
             return View(vmInicio);
         }
 
+        // En el archivo: /Controllers/HomeController.cs
+
+        // --- REEMPLAZA TU MÉTODO CON ESTE ---
         [HttpGet]
-        public IActionResult ObtenerDetallesEquipo(string numActFijo)
+        // 1. Añadimos 'int claveAgenda' para recibir el dato del JavaScript.
+        public IActionResult ObtenerDetallesEquipo(string numActFijo, int claveAgenda)
         {
-            // Primero buscamos en EquipoCFEmatico
+            // 2. Guardamos el valor recibido en el ViewBag para que las vistas parciales lo usen.
+            ViewBag.NumeroDeOrden = claveAgenda;
+
+            // El resto de tu código para buscar el equipo está perfecto y no cambia.
             var cfematico = _dbocontext.EquipoCfematicos
                 .Include(e => e.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -246,7 +271,6 @@ namespace ProyectoMantenimientos.Controllers
                 return PartialView("_DetallesCFEmatico", cfematico);
             }
 
-            // Si no es CFEmático, buscamos en EquipoAC
             var equipoAC = _dbocontext.EquipoAcs
                 .Include(e => e.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -260,7 +284,6 @@ namespace ProyectoMantenimientos.Controllers
                 return PartialView("_DetallesEquipoAC", equipoAC);
             }
 
-            // Si no es ninguno de los anteriores, buscamos en EquipoComputo
             var equipoComputo = _dbocontext.EquipoComputos
                 .Include(e => e.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)

@@ -11,5 +11,7 @@
         public string Estatus { get; set; }
         public string NumCajero { get; set; }
         public string TipoMantenimiento { get; set; }
+        public string UsuarioAsignado { get; set; }
+        public int ClaveAgenda { get; set; }
     }
 }
