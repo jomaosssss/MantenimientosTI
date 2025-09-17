@@ -1,0 +1,58 @@
+﻿@{
+    ViewData["Title"] = "Inventario de Equipos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="card shadow-sm" style="width: 100%; max-width: 800px;">
+        <div class="card-header bg-white text-center">
+            <h3 class="mb-0">Inventario de Equipos</h3>
+        </div>
+
+        <div class="card-body">
+            <!-- Información del reporte -->
+            <div class="alert alert-secondary mb-4">
+                <i class="fas fa-info-circle me-2"></i> Descargue el inventario completo de sus equipos en formato Excel.
+                <div class="mt-2 small">
+                    <strong>Características del archivo:</strong>
+                    <ul class="mb-0">
+                        <li>Archivo Excel con tres hojas diferentes</li>
+                        <li>Hoja 1: CFEmáticos</li>
+                        <li>Hoja 2: Equipos de Atención a Clientes</li>
+                        <li>Hoja 3: Equipos de Cómputo</li>
+                        <li>Filtrado automáticamente por su zona asignada</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Botón de descarga -->
+            <div class="text-center">
+                <button class="btn btn-success btn-lg shadow-sm" id="btnDescargarInventario">
+                    <i class="fas fa-download me-2"></i> Descargar Inventario
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#btnDescargarInventario').click(function() {
+                // Mostrar loading
+                const originalHtml = $(this).html();
+                $(this).html('<i class="fas fa-spinner fa-spin me-2"></i> Generando Excel...');
+                $(this).prop('disabled', true);
+
+                // Hacer la petición para descargar el Excel
+                window.location.href = '@Url.Action("DescargarInventarioExcel", "Repositorio")';
+
+                // Restaurar el botón después de 3 segundos
+                setTimeout(function() {
+                    $('#btnDescargarInventario').html(originalHtml);
+                    $('#btnDescargarInventario').prop('disabled', false);
+                }, 3000);
+            });
+        });
+    </script>
+}

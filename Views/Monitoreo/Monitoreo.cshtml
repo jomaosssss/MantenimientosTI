@@ -488,15 +488,8 @@
                     $clickedButton.addClass('selected');
                     selectedCfematico = numCajero;
 
-                    // Cargar y actualizar estado individual
-                    $.get('@Url.Action("ObtenerEstadoCfematico", "Monitoreo")', { numCajero: numCajero })
-                        .done(function(estado) {
-                            console.log(`Estado actual para ${numCajero}:`, estado);
-                            aplicarColorCfematico(numCajero, estado);
-                        })
-                        .fail(function(jqXHR, textStatus, errorThrown) {
-                            console.error('Error al obtener estado:', textStatus, errorThrown);
-                        });
+                    // --- SE ELIMINÓ LA LLAMADA REDUNDANTE A ObtenerEstadoCfematico ---
+                    // El estado ya fue establecido por cargarEstadosEnLote() y es válido.
 
                     // Cargar detalles del CFEmático
                     cargarDetallesCfematico(numCajero);
@@ -743,6 +736,7 @@
         }
 
         // Función para cargar los eventos recientes
+        // Función para cargar los eventos recientes (Versión Corregida)
         function cargarEventos(numCajero) {
             var dias = $('#rangoTiempo').val();
 
@@ -750,7 +744,15 @@
                 numCajero: numCajero,
                 dias: dias
             }, function(data) {
+                // --- VERIFICACIÓN CRÍTICA AÑADIDA ---
+                // Buscar el contenedor, si no existe, salir silenciosamente.
                 var $lista = $('#listaEventos');
+                if ($lista.length === 0) {
+                    console.log("El contenedor #listaEventos no existe en esta vista. Saltando carga de eventos.");
+                    return; // Sale de la función sin hacer nada más.
+                }
+                // --- FIN DE LA VERIFICACIÓN ---
+
                 $lista.empty();
 
                 if (data.length === 0) {

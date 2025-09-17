@@ -1,8 +1,10 @@
-﻿using MantenimientosTI.Models;
+﻿using ClosedXML.Excel;
+using MantenimientosTI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using ClosedXML.Excel;
 
 namespace ProyectoMantenimientos.Controllers
 {
@@ -23,6 +25,12 @@ namespace ProyectoMantenimientos.Controllers
 
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         public IActionResult Repositorio()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
+        public IActionResult InventarioEquipos()
         {
             return View();
         }
@@ -572,6 +580,139 @@ namespace ProyectoMantenimientos.Controllers
             catch (Exception ex)
             {
                 return Content($"<div class='alert alert-danger'>Error al obtener los detalles: {ex.Message}</div>");
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DescargarInventarioExcel()
+        {
+            try
+            {
+                var claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+
+                if (string.IsNullOrEmpty(claveZonaUsuario))
+                {
+                    return Json(new { success = false, message = "No se pudo determinar la zona del usuario" });
+                }
+
+                using (var workbook = new XLWorkbook())
+                {
+                    // Hoja 1: Equipos CFEmático
+                    var worksheetCfematico = workbook.Worksheets.Add("CFEmáticos");
+                    var cfematicos = await _dbocontext.EquipoCfematicos
+                        .Include(ec => ec.NumActFijoNavigation)
+                        .Where(ec => ec.NumActFijoNavigation.ClaveZona == claveZonaUsuario)
+                        .ToListAsync();
+
+                    // Encabezados
+                    worksheetCfematico.Cell(1, 1).Value = "Número Activo Fijo";
+                    worksheetCfematico.Cell(1, 2).Value = "Número Cajero";
+                    worksheetCfematico.Cell(1, 3).Value = "Número Serie";
+                    worksheetCfematico.Cell(1, 4).Value = "Número Inventario";
+                    worksheetCfematico.Cell(1, 5).Value = "IP Cajero";
+                    worksheetCfematico.Cell(1, 6).Value = "Versión";
+
+                    // Datos
+                    for (int i = 0; i < cfematicos.Count; i++)
+                    {
+                        var row = i + 2;
+                        worksheetCfematico.Cell(row, 1).Value = cfematicos[i].NumActFijo;
+                        worksheetCfematico.Cell(row, 2).Value = cfematicos[i].NumCajero;
+                        worksheetCfematico.Cell(row, 3).Value = cfematicos[i].NumSerie;
+                        worksheetCfematico.Cell(row, 4).Value = cfematicos[i].NumInventario;
+                        worksheetCfematico.Cell(row, 5).Value = cfematicos[i].IpCajero;
+                        worksheetCfematico.Cell(row, 6).Value = cfematicos[i].Version;
+                    }
+
+                    // Formato de encabezados
+                    var headerRangeCfematico = worksheetCfematico.Range(1, 1, 1, 6);
+                    headerRangeCfematico.Style.Fill.BackgroundColor = XLColor.LightGray;
+                    headerRangeCfematico.Style.Font.Bold = true;
+
+                    // Autoajustar columnas
+                    worksheetCfematico.Columns().AdjustToContents();
+
+                    // Hoja 2: Equipos AC
+                    var worksheetAC = workbook.Worksheets.Add("Equipos de Atencion a Clientes");
+                    var equiposAC = await _dbocontext.EquipoAcs
+                        .Include(e => e.NumActFijoNavigation)
+                        .Include(e => e.ClaveTipoEquipoNavigation)
+                        .Where(e => e.NumActFijoNavigation.ClaveZona == claveZonaUsuario)
+                        .ToListAsync();
+
+                    // Encabezados
+                    worksheetAC.Cell(1, 1).Value = "Número Activo Fijo";
+                    worksheetAC.Cell(1, 2).Value = "Tipo de Equipo";
+                    worksheetAC.Cell(1, 3).Value = "Número Serie";
+
+                    // Datos
+                    for (int i = 0; i < equiposAC.Count; i++)
+                    {
+                        var row = i + 2;
+                        worksheetAC.Cell(row, 1).Value = equiposAC[i].NumActFijo;
+                        worksheetAC.Cell(row, 2).Value = equiposAC[i].ClaveTipoEquipoNavigation?.NombreTipoEquipo;
+                        worksheetAC.Cell(row, 3).Value = equiposAC[i].NumSerie;
+                    }
+
+                    // Formato de encabezados
+                    var headerRangeAC = worksheetAC.Range(1, 1, 1, 3);
+                    headerRangeAC.Style.Fill.BackgroundColor = XLColor.LightGray;
+                    headerRangeAC.Style.Font.Bold = true;
+                    worksheetAC.Columns().AdjustToContents();
+
+                    // Hoja 3: Equipos de Cómputo
+                    var worksheetComputo = workbook.Worksheets.Add("Equipos de Cómputo");
+                    var equiposComputo = await _dbocontext.EquipoComputos
+                        .Include(e => e.NumActFijoNavigation)
+                        .Include(e => e.ClaveTipoEquipoNavigation)
+                        .Where(e => e.NumActFijoNavigation.ClaveZona == claveZonaUsuario)
+                        .ToListAsync();
+
+                    // Encabezados
+                    worksheetComputo.Cell(1, 1).Value = "Número Activo Fijo";
+                    worksheetComputo.Cell(1, 2).Value = "Tipo de Equipo";
+                    worksheetComputo.Cell(1, 3).Value = "Número Serie PC";
+                    worksheetComputo.Cell(1, 4).Value = "Número Serie Monitor";
+                    worksheetComputo.Cell(1, 5).Value = "RPE";
+                    worksheetComputo.Cell(1, 6).Value = "Nombre RPE";
+
+                    // Datos
+                    for (int i = 0; i < equiposComputo.Count; i++)
+                    {
+                        var row = i + 2;
+                        worksheetComputo.Cell(row, 1).Value = equiposComputo[i].NumActFijo;
+                        worksheetComputo.Cell(row, 2).Value = equiposComputo[i].ClaveTipoEquipoNavigation?.NombreTipoEquipo;
+                        worksheetComputo.Cell(row, 3).Value = equiposComputo[i].NumSeriePc;
+                        worksheetComputo.Cell(row, 4).Value = equiposComputo[i].NumSerieMonitor;
+                        worksheetComputo.Cell(row, 5).Value = equiposComputo[i].Rpe;
+                        worksheetComputo.Cell(row, 6).Value = equiposComputo[i].NombreRpe;
+                    }
+
+                    // Formato de encabezados
+                    var headerRangeComputo = worksheetComputo.Range(1, 1, 1, 6);
+                    headerRangeComputo.Style.Fill.BackgroundColor = XLColor.LightGray;
+                    headerRangeComputo.Style.Font.Bold = true;
+                    worksheetComputo.Columns().AdjustToContents();
+
+                    // Crear el archivo en memoria
+                    using (var stream = new MemoryStream())
+                    {
+                        workbook.SaveAs(stream);
+                        var content = stream.ToArray();
+
+                        //var fileName = $"Inventario_Zona_{claveZonaUsuario}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                        var fileName = $"Inventario_Zona_{claveZonaUsuario}.xlsx";
+
+
+                        return File(content,
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            fileName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al generar el Excel: {ex.Message}" });
             }
         }
     }

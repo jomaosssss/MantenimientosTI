@@ -754,15 +754,8 @@
                 $clickedButton.addClass('selected');
                 selectedCfematico = numCajero;
 
-                // Cargar y actualizar estado individual
-                $.get('@Url.Action("ObtenerEstadoCfematico", "Monitoreo")', { numCajero: numCajero })
-                    .done(function(estado) {
-                        console.log(`Estado actual para ${numCajero}:`, estado);
-                        aplicarColorCfematico(numCajero, estado);
-                    })
-                    .fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error('Error al obtener estado:', textStatus, errorThrown);
-                    });
+                // --- SE ELIMINÓ LA LLAMADA REDUNDANTE A ObtenerEstadoCfematico ---
+                // El estado ya fue establecido por cargarEstadosEnLote() y es válido.
 
                 // Resto de la funcionalidad...
                 cargarDetallesCfematico(numCajero);

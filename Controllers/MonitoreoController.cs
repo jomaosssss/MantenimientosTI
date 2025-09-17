@@ -216,69 +216,6 @@ namespace ProyectoMantenimientos.Controllers
         }
 
         [HttpGet]
-        public IActionResult ObtenerEstadoCfematico(string numCajero)
-        {
-            try
-            {
-                // Obtenemos la fecha máxima GENERAL de TODOS los registros
-                var ultimaFechaGeneral = _dbocontext.RegistroEventos
-                    .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
-
-                var fechaInicio = ultimaFechaGeneral.AddHours(-24);
-
-                // Verificamos eventos críticos (severidad 100)
-                var tieneEventoCritico = _dbocontext.RegistroEventos
-                    .Where(re => re.NumCajero == numCajero &&
-                                re.FechaEvento >= fechaInicio &&
-                                re.FechaEvento <= ultimaFechaGeneral)
-                    .Join(_dbocontext.CatEventos,
-                        registro => registro.ClaveEvento,
-                        evento => evento.ClaveEvento,
-                        (registro, evento) => new {
-                            evento.Descripcion,
-                            evento.Severidad
-                        })
-                    .Any(e => (e.Descripcion == "VENDIDO TONELERO" ||
-                             e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" ||
-                             e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" ||
-                             e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" ||
-                             e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") &&
-                             e.Severidad == 100);
-
-                if (tieneEventoCritico)
-                {
-                    return Json("rojo");
-                }
-
-                // Verificamos eventos de advertencia (severidad 50)
-                var tieneEventoAdvertencia = _dbocontext.RegistroEventos
-                    .Where(re => re.NumCajero == numCajero &&
-                                re.FechaEvento >= fechaInicio &&
-                                re.FechaEvento <= ultimaFechaGeneral)
-                    .Join(_dbocontext.CatEventos,
-                        registro => registro.ClaveEvento,
-                        evento => evento.ClaveEvento,
-                        (registro, evento) => new {
-                            evento.Descripcion,
-                            evento.Severidad
-                        })
-                    .Any(e => (e.Descripcion == "VENDIDO TONELERO" ||
-                             e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" ||
-                             e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" ||
-                             e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" ||
-                             e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") &&
-                             e.Severidad == 50);
-
-                return Json(tieneEventoAdvertencia ? "amarillo" : "verde");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error en ObtenerEstadoCfematico: {ex.Message}");
-                return Json("verde");
-            }
-        }
-
-        [HttpGet]
         public IActionResult ObtenerEstadisticasEventos(string numCajero, int dias = 7)
         {
             var fechaLimite = DateTime.Now.AddDays(-dias);
