@@ -197,6 +197,10 @@ public partial class MantenimientosTIContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("fuente");
             entity.Property(e => e.Severidad).HasColumnName("severidad");
+            entity.Property(e => e.Importancia)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("importancia");
 
             entity.HasOne(d => d.ClaveFallaNavigation).WithMany(p => p.CatEventos)
                 .HasForeignKey(d => d.ClaveFalla)

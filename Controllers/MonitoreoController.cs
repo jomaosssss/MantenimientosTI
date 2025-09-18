@@ -59,10 +59,9 @@ namespace ProyectoMantenimientos.Controllers
         {
             try
             {
-                //Obtengo la fecha máxima GENERAL de TODOS los registros
+                // Obtengo la fecha máxima GENERAL de TODOS los registros
                 var ultimaFechaGeneral = _dbocontext.RegistroEventos
                     .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
-
                 var fechaInicio = ultimaFechaGeneral.AddHours(-24);
 
                 // Obtengo todos los números de cajero primero
@@ -70,8 +69,8 @@ namespace ProyectoMantenimientos.Controllers
                     .Select(c => c.NumCajero)
                     .ToList(); // Materializamos la lista aquí
 
-                // Consulta para eventos críticos
-                var eventosCriticos = _dbocontext.RegistroEventos
+                // Consulta única para eventos relevantes (con importancia = 1)
+                var eventosRelevantes = _dbocontext.RegistroEventos
                     .Where(re => re.FechaEvento >= fechaInicio && re.FechaEvento <= ultimaFechaGeneral)
                     .Join(_dbocontext.CatEventos,
                         registro => registro.ClaveEvento,
@@ -79,42 +78,20 @@ namespace ProyectoMantenimientos.Controllers
                         (registro, evento) => new {
                             registro.NumCajero,
                             evento.Descripcion,
-                            evento.Severidad
+                            evento.Severidad,
+                            evento.Importancia
                         })
-                    .Where(e => (e.Descripcion == "VENDIDO TONELERO" ||
+                    .Where(e => e.Importancia == "1" && // Filtramos por importancia = 1
+                               (e.Descripcion == "VENDIDO TONELERO" ||
                                 e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" ||
                                 e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" ||
                                 e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" ||
-                                e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") &&
-                                e.Severidad == 100)
+                                e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS"))
                     .GroupBy(e => e.NumCajero)
                     .Select(g => new {
                         NumCajero = g.Key,
-                        TieneCritico = g.Any()
-                    })
-                    .ToList();
-
-                // Consulta para eventos de advertencia
-                var eventosAdvertencia = _dbocontext.RegistroEventos
-                    .Where(re => re.FechaEvento >= fechaInicio && re.FechaEvento <= ultimaFechaGeneral)
-                    .Join(_dbocontext.CatEventos,
-                        registro => registro.ClaveEvento,
-                        evento => evento.ClaveEvento,
-                        (registro, evento) => new {
-                            registro.NumCajero,
-                            evento.Descripcion,
-                            evento.Severidad
-                        })
-                    .Where(e => (e.Descripcion == "VENDIDO TONELERO" ||
-                                e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" ||
-                                e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" ||
-                                e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" ||
-                                e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") &&
-                                e.Severidad == 50)
-                    .GroupBy(e => e.NumCajero)
-                    .Select(g => new {
-                        NumCajero = g.Key,
-                        TieneAdvertencia = g.Any()
+                        TieneCritico = g.Any(e => e.Severidad == 100),
+                        TieneAdvertencia = g.Any(e => e.Severidad == 50)
                     })
                     .ToList();
 
@@ -122,11 +99,11 @@ namespace ProyectoMantenimientos.Controllers
                 var estados = numerosCajero.ToDictionary(
                     numCajero => numCajero,
                     numCajero => {
-                        var tieneCritico = eventosCriticos.FirstOrDefault(e => e.NumCajero == numCajero)?.TieneCritico ?? false;
-                        var tieneAdvertencia = eventosAdvertencia.FirstOrDefault(e => e.NumCajero == numCajero)?.TieneAdvertencia ?? false;
-
-                        return tieneCritico ? "rojo" :
-                               tieneAdvertencia ? "amarillo" : "verde";
+                        var estado = eventosRelevantes.FirstOrDefault(e => e.NumCajero == numCajero);
+                        return estado != null ?
+                               (estado.TieneCritico ? "rojo" :
+                                estado.TieneAdvertencia ? "amarillo" : "verde") :
+                               "verde";
                     });
 
                 return Json(estados);
@@ -257,23 +234,44 @@ namespace ProyectoMantenimientos.Controllers
         }
 
         [HttpGet]
-        public IActionResult ObtenerEventosRecientes(string numCajero, int dias = 7)
+        public IActionResult ObtenerEventosRecientes(string numCajero, int dias = 7, string estado = "")
         {
             var fechaLimite = DateTime.Now.AddDays(-dias);
 
-            var eventos = _dbocontext.RegistroEventos
+            var query = _dbocontext.RegistroEventos
                 .Where(re => re.NumCajero == numCajero && re.FechaEvento >= fechaLimite)
-                .OrderByDescending(re => re.FechaEvento)
-                .Take(5)
                 .Join(_dbocontext.CatEventos,
                     registro => registro.ClaveEvento,
                     evento => evento.ClaveEvento,
                     (registro, evento) => new {
-                        fuente = evento.Fuente,
-                        descripcion = evento.Descripcion,
-                        severidad = evento.Severidad,
-                        fecha = registro.FechaEvento.ToString("g")
-                    })
+                        registro.FechaEvento,
+                        evento.Fuente,
+                        evento.Descripcion,
+                        evento.Severidad,
+                        evento.ClaveFalla,
+                        evento.Importancia
+                    });
+
+            // FILTRO POR ESTADO DEL CFEMÁTICO
+            if (estado == "rojo")
+            {
+                // Para CFEmáticos ROJOS: solo eventos de importancia 1
+                query = query.Where(x => x.Importancia == "1");
+            }
+            else if (estado == "verde")
+            {
+                // Para CFEmáticos VERDES: solo eventos normales (tipo N)
+                query = query.Where(x => x.ClaveFalla == "N");
+            }
+
+            var eventos = query.OrderByDescending(x => x.FechaEvento)
+                .Take(5)
+                .Select(x => new {
+                    fuente = x.Fuente,
+                    descripcion = x.Descripcion,
+                    severidad = x.Severidad,
+                    fecha = x.FechaEvento.ToString("g")
+                })
                 .ToList();
 
             return Json(eventos);
@@ -337,11 +335,11 @@ namespace ProyectoMantenimientos.Controllers
         }
 
         [HttpGet]
-        public IActionResult ObtenerEventosFiltrados(string numCajero, int severidad, string tipo, int dias = 7)
+        public IActionResult ObtenerEventosFiltrados(string numCajero, int severidad, string tipo, int dias = 7, string estado = "")
         {
             var fechaLimite = DateTime.Now.AddDays(-dias);
 
-            var eventos = _dbocontext.RegistroEventos
+            var query = _dbocontext.RegistroEventos
                 .Where(re => re.NumCajero == numCajero &&
                              re.FechaEvento >= fechaLimite)
                 .Join(_dbocontext.CatEventos,
@@ -352,10 +350,24 @@ namespace ProyectoMantenimientos.Controllers
                         evento.Fuente,
                         evento.Descripcion,
                         evento.Severidad,
-                        evento.ClaveFalla
+                        evento.ClaveFalla,
+                        evento.Importancia
                     })
-                .Where(x => x.Severidad == severidad && x.ClaveFalla == tipo)
-                .OrderByDescending(x => x.FechaEvento)
+                .Where(x => x.Severidad == severidad && x.ClaveFalla == tipo);
+
+            // FILTRO POR ESTADO DEL CFEMÁTICO
+            if (estado == "rojo")
+            {
+                // Para CFEmáticos ROJOS: solo eventos de importancia 1
+                query = query.Where(x => x.Importancia == "1");
+            }
+            else if (estado == "verde")
+            {
+                // Para CFEmáticos VERDES: solo eventos normales (tipo N)
+                query = query.Where(x => x.ClaveFalla == "N");
+            }
+
+            var eventos = query.OrderByDescending(x => x.FechaEvento)
                 .Select(x => new {
                     fuente = x.Fuente,
                     descripcion = x.Descripcion,
@@ -435,9 +447,9 @@ namespace ProyectoMantenimientos.Controllers
         }
 
         [HttpGet]
-        public IActionResult ObtenerEventosMensuales(string numCajero, string descripcion, int mes, int year, string claveFalla = "")
+        public IActionResult ObtenerEventosMensuales(string numCajero, string descripcion, int mes, int year, string claveFalla = "", string estado = "")
         {
-            var eventos = _dbocontext.RegistroEventos
+            var query = _dbocontext.RegistroEventos
                 .Where(re => re.NumCajero == numCajero &&
                             re.FechaEvento.Year == year &&
                             re.FechaEvento.Month == mes)
@@ -449,11 +461,25 @@ namespace ProyectoMantenimientos.Controllers
                         evento.Fuente,
                         evento.Descripcion,
                         evento.Severidad,
-                        evento.ClaveFalla
+                        evento.ClaveFalla,
+                        evento.Importancia
                     })
                 .Where(x => x.Descripcion == descripcion &&
-                           (string.IsNullOrEmpty(claveFalla) || x.ClaveFalla == claveFalla))
-                .OrderByDescending(x => x.FechaEvento)
+                           (string.IsNullOrEmpty(claveFalla) || x.ClaveFalla == claveFalla));
+
+            // FILTRO POR ESTADO DEL CFEMÁTICO
+            if (estado == "rojo")
+            {
+                // Para CFEmáticos ROJOS: solo eventos de importancia 1
+                query = query.Where(x => x.Importancia == "1");
+            }
+            else if (estado == "verde")
+            {
+                // Para CFEmáticos VERDES: solo eventos normales (tipo N)
+                query = query.Where(x => x.ClaveFalla == "N");
+            }
+
+            var eventos = query.OrderByDescending(x => x.FechaEvento)
                 .Select(x => new {
                     fuente = x.Fuente,
                     descripcion = x.Descripcion,

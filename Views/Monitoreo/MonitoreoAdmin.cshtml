@@ -683,13 +683,14 @@
         </div>
     </div>
 </div>
-
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Variable global para el gráfico
         var basicBarChart = null;
         var selectedCfematico = null;
+        // Variable global para el estado del CFEmático seleccionado
+        var selectedCfematicoEstado = null;
 
         function aplicarColorCfematico(numCajero, estado) {
             var $boton = $(`.cfematico-btn[data-num-cajero="${numCajero}"]`);
@@ -747,15 +748,19 @@
             var $clickedButton = $(this);
             var wasSelected = $clickedButton.hasClass('selected');
             var numCajero = $clickedButton.data('num-cajero');
+            
+            // Obtener el estado (color) del botón
+            var estado = 'verde'; // Por defecto
+            if ($clickedButton.hasClass('bg-danger')) estado = 'rojo';
+            if ($clickedButton.hasClass('bg-warning')) estado = 'amarillo';
+            
+            selectedCfematicoEstado = estado;
 
             $('.cfematico-btn').removeClass('selected');
 
             if (!wasSelected) {
                 $clickedButton.addClass('selected');
                 selectedCfematico = numCajero;
-
-                // --- SE ELIMINÓ LA LLAMADA REDUNDANTE A ObtenerEstadoCfematico ---
-                // El estado ya fue establecido por cargarEstadosEnLote() y es válido.
 
                 // Resto de la funcionalidad...
                 cargarDetallesCfematico(numCajero);
@@ -766,6 +771,7 @@
                 cargarMantenimientosCfematico(numCajero);
             } else {
                 selectedCfematico = null;
+                selectedCfematicoEstado = null;
                 limpiarDatos();
             }
         });
@@ -953,7 +959,8 @@
                 numCajero: numCajero,
                 severidad: severidad,
                 tipo: tipo,
-                dias: dias
+                dias: dias,
+                estado: selectedCfematicoEstado // ← Nuevo parámetro
             }, function(data) {
                 var $content = $('#modalEventosContent');
                 $content.empty();
@@ -1001,7 +1008,8 @@
 
             $.get('@Url.Action("ObtenerEventosRecientes", "Monitoreo")', {
                 numCajero: numCajero,
-                dias: dias
+                dias: dias,
+                estado: selectedCfematicoEstado // ← Nuevo parámetro
             }, function(data) {
                 var $lista = $('#listaEventos');
                 $lista.empty();
@@ -1095,6 +1103,9 @@
             var $tbody = $('#tablaEventos tbody');
             $tbody.empty();
             $tbody.append('<tr><td colspan="13" class="text-center text-muted py-3">Seleccione un CFEmático</td></tr>');
+            
+            // Limpiar el estado seleccionado
+            selectedCfematicoEstado = null;
         }
 
         // Función para cargar los tipos de falla en el select
@@ -1178,7 +1189,8 @@
                 descripcion: descripcion,
                 mes: mes,
                 year: year,
-                claveFalla: claveFalla
+                claveFalla: claveFalla,
+                estado: selectedCfematicoEstado // ← Nuevo parámetro
             }, function(data) {
                 var $content = $('#modalEventosMensualesContent');
                 $content.empty();
