@@ -1,0 +1,183 @@
+﻿@model List<MantenimientosTI.Models.Usuario>
+
+@{
+    ViewData["Title"] = "Configuración";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="card mt-4 shadow-sm rounded">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">Configuración y Usuarios</h1>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+                    <i class="fas fa-user-plus"></i> Crear Usuario
+                </button>
+            </div>
+            <div class="card-body">
+
+                <div class="card mb-4 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-cogs me-1"></i> Ajustes Generales
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Habilitar Agendamiento de Preventivos por CSV</h6>
+                                <small class="text-muted">Permite a los usuarios subir archivos para agendar mantenimientos preventivos.</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="toggleAgendarPreventivos" style="width: 4em; height: 2em;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-users me-1"></i> Administración de Usuarios
+                    </div>
+                    <div class="card-body">
+                        <table id="tablaUsuarios" class="table table-striped table-bordered" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>RPE</th>
+                                    <th>Rol</th>
+                                    <th>Nombre</th>
+                                    <th>Zona</th>
+                                    <th>Correo</th>
+                                    <th class="text-center">Estatus</th>
+                                    <th class="text-center">Editar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var usuario in Model)
+                                {
+                                    <tr>
+                                        <td>@usuario.Rpe</td>
+                                        <td>@usuario.ClaveRolNavigation?.Nombre</td>
+                                        <td>@usuario.Nombre @usuario.ApellidoP @usuario.ApellidoM</td>
+                                        <td>@usuario.CatZona?.NombreZona</td>
+                                        <td>@usuario.Correo</td>
+                                        <td class="text-center">
+                                            @if (usuario.Estatus.ToLower() == "activo")
+                                            {
+                                                <span class="badge bg-success">Activo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Inactivo</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario"
+                                                    onclick="cargarDatosEdicion('@usuario.Rpe')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNuevoUsuario" tabindex="-1">
+</div>
+
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1">
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Configuración de DataTable (sin cambios)
+            $('#tablaUsuarios').DataTable({
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
+                responsive: true
+            });
+
+            // --- LÓGICA DEL SWITCH DE CONFIGURACIÓN ---
+            $.get('/Configuracion/ObtenerEstadoAgendarPreventivos') // <-- URL ACTUALIZADA
+                .done(data => $('#toggleAgendarPreventivos').prop('checked', data.habilitado));
+
+            $('#toggleAgendarPreventivos').on('change', function () {
+                const habilitar = $(this).is(':checked');
+                $.ajax({
+                    url: '/Configuracion/CambiarEstadoAgendarPreventivos', // <-- URL ACTUALIZADA
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(habilitar),
+                    success: response => {
+                        if (response.success) {
+                            const msg = habilitar ? 'Función HABILITADA.' : 'Función DESHABILITADA.';
+                            mostrarAlerta(msg, 'success');
+                        } else {
+                            mostrarAlerta('Error al cambiar la configuración.', 'danger');
+                            $(this).prop('checked', !habilitar); // Revertir
+                        }
+                    },
+                    error: () => {
+                        mostrarAlerta('Error de conexión.', 'danger');
+                        $(this).prop('checked', !habilitar); // Revertir
+                    }
+                });
+            });
+        });
+
+        // --- FUNCIONES PARA CRUD DE USUARIOS ---
+        function cargarDatosEdicion(rpe) {
+            $.get('/Configuracion/ObtenerUsuarioPorRpe', { rpe: rpe }) // <-- URL ACTUALIZADA
+                .done(function (data) {
+                    $('#RpeEditar').val(data.rpe);
+                    $('#RpeDisplay').val(data.rpe);
+                    // ... Llenar los demás campos del modal de edición
+                });
+        }
+
+        function guardarCambios() {
+            const datos = {
+                Rpe: $('#RpeEditar').val(),
+                // ... obtener los demás datos del formulario
+            };
+            enviarDatos('/Configuracion/ActualizarUsuario', datos, 'Usuario actualizado'); // <-- URL ACTUALIZADA
+        }
+
+        function crearUsuario() {
+            // ... validaciones ...
+            const datos = {
+                Rpe: $('#RpeNuevo').val(),
+                // ... obtener los demás datos del formulario
+            };
+            enviarDatos('/Configuracion/CrearUsuario', datos, 'Usuario creado'); // <-- URL ACTUALIZADA
+        }
+
+        function enviarDatos(url, datos, mensajeExito) {
+            $.ajax({
+                url: url, // La URL ya viene actualizada desde donde se llama
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(datos),
+                success: function (response) {
+                    if (response.success) {
+                        mostrarAlerta(mensajeExito, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        mostrarAlerta(response.message || 'Error en la operación', 'danger');
+                    }
+                }
+            });
+        }
+
+        // Función para mostrar alertas (sin cambios)
+        function mostrarAlerta(mensaje, tipo) { /* ... */ }
+    </script>
+}

@@ -35,6 +35,8 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<CatZona> CatZonas { get; set; }
 
+    public virtual DbSet<Configuracion> Configuraciones { get; set; }
+
     public virtual DbSet<Equipo> Equipos { get; set; }
 
     public virtual DbSet<EquipoAc> EquipoAcs { get; set; }
@@ -197,6 +199,11 @@ public partial class MantenimientosTIContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("fuente");
             entity.Property(e => e.Severidad).HasColumnName("severidad");
+            entity.Property(e => e.Importancia)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasColumnName("importancia");
+
 
             entity.HasOne(d => d.ClaveFallaNavigation).WithMany(p => p.CatEventos)
                 .HasForeignKey(d => d.ClaveFalla)
@@ -292,6 +299,29 @@ public partial class MantenimientosTIContext : DbContext
                 .HasForeignKey(d => d.ClaveDivision)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__catZona__claveDi__267ABA7A");
+        });
+
+        modelBuilder.Entity<Configuracion>(entity =>
+        {
+            entity.ToTable("Configuracion");
+
+            entity.HasKey(e => e.ClaveConfiguracion);
+
+            entity.Property(e => e.ClaveConfiguracion)
+                .HasColumnName("claveConfiguracion")
+                .HasMaxLength(100)
+                .IsUnicode(false);
+
+            entity.Property(e => e.Valor)
+                .HasColumnName("valor")
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .IsRequired();
+
+            entity.Property(e => e.Descripcion)
+                .HasColumnName("descripcion")
+                .HasMaxLength(500)
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<Equipo>(entity =>

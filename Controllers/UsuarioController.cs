@@ -26,6 +26,42 @@ namespace ProyectoMantenimientos.Controllers
             return View();
         }
 
+        [Authorize(Roles = "ADMINISTRADOR")]
+        [HttpGet]
+        public IActionResult ObtenerEstadoAgendarPreventivos()
+        {
+            var config = _dbocontext.Configuraciones.AsNoTracking()
+                .FirstOrDefault(c => c.ClaveConfiguracion == "AGENDAR_PREVENTIVOS");
+
+            bool estaHabilitado = (config != null && config.Valor == "1");
+
+            return Json(new { habilitado = estaHabilitado });
+        }
+
+        [Authorize(Roles = "ADMINISTRADOR")]
+        [HttpPost]
+        public IActionResult CambiarEstadoAgendarPreventivos([FromBody] bool habilitar)
+        {
+            var config = _dbocontext.Configuraciones
+                .FirstOrDefault(c => c.ClaveConfiguracion == "AGENDAR_PREVENTIVOS");
+
+            if (config == null)
+            {
+                return Json(new { success = false, message = "Clave de configuración no encontrada." });
+            }
+
+            try
+            {
+                config.Valor = habilitar ? "1" : "0";
+                _dbocontext.SaveChanges();
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al actualizar la configuración: " + ex.Message });
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> Login(VMLogin model)
         {

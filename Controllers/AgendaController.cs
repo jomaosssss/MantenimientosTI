@@ -18,6 +18,13 @@ namespace ProyectoMantenimientos.Controllers
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         public IActionResult AgendarPreventivos()
         {
+            var config = _dbocontext.Configuraciones
+                .FirstOrDefault(c => c.ClaveConfiguracion == "AGENDAR_PREVENTIVOS");
+
+            bool estaHabilitado = (config != null && config.Valor == "1");
+
+            ViewBag.EstaHabilitado = estaHabilitado;
+
             return View();
         }
 

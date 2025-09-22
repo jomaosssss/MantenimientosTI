@@ -15,5 +15,7 @@ public partial class CatEvento
 
     public int Severidad { get; set; }
 
+    public string Importancia { get; set; } = null!;
+
     public virtual CatFalla ClaveFallaNavigation { get; set; } = null!;
 }

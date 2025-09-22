@@ -16,7 +16,27 @@
             </div>
             <div class="card-body">
 
+
                 <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-cogs me-1"></i> Configuración del Sistema
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Mantenimientos Preventivos</h6>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="toggleAgendarPreventivos" style="width: 4em; height: 2em;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+
+                    
+
                     <div class="card-header bg-success text-white">
                         <i class="fas fa-table me-1"></i> Usuarios Registrados
                     </div>
@@ -55,7 +75,7 @@
                                         <td class="text-center">
                                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario"
                                                     onclick="cargarDatosEdicion('@usuario.Rpe')">
-                                                <i class="fas fa-edit"></i> <!-- Icono con fondo amarillo -->
+                                                <i class="fas fa-edit"></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -80,7 +100,6 @@
             <div class="modal-body">
                 <form id="formNuevoUsuario">
                     <div class="row">
-                        <!-- Primera fila: ROL y ZONA -->
                         <div class="col-md-6 mb-3">
                             <label for="RolNuevo" class="form-label">ROL</label>
                             <select class="form-select" id="RolNuevo" name="ClaveRol" required>
@@ -103,7 +122,6 @@
                         </div>
                     </div>
 
-                    <!-- Segunda fila: RPE y NOMBRE -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="RpeNuevo" class="form-label">RPE</label>
@@ -119,7 +137,6 @@
                         </div>
                     </div>
 
-                    <!-- Tercera fila: APELLIDO PATERNO y APELLIDO MATERNO -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="ApellidoPNuevo" class="form-label">APELLIDO PATERNO</label>
@@ -133,7 +150,6 @@
                         </div>
                     </div>
 
-                    <!-- Cuarta fila: CORREO y CONTRASEÑA -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="CorreoNuevo" class="form-label">CORREO</label>
@@ -171,7 +187,6 @@
                 <form id="formEditarUsuario">
                     <input type="hidden" id="RpeEditar" name="Rpe">
 
-                    <!-- Primera fila: ROL y ZONA -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="RolEditar" class="form-label">ROL</label>
@@ -195,7 +210,6 @@
                         </div>
                     </div>
 
-                    <!-- Segunda fila: RPE (solo lectura) y NOMBRE -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="RpeDisplay" class="form-label">RPE</label>
@@ -209,7 +223,6 @@
                         </div>
                     </div>
 
-                    <!-- Tercera fila: APELLIDO PATERNO y APELLIDO MATERNO -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="ApellidoPEditar" class="form-label">APELLIDO PATERNO</label>
@@ -223,7 +236,6 @@
                         </div>
                     </div>
 
-                    <!-- Cuarta fila: CORREO y ESTATUS -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="CorreoEditar" class="form-label">CORREO</label>
@@ -262,8 +274,44 @@
                 },
                 responsive: true,
                 columnDefs: [
-                    { targets: [5, 6], className: 'dt-center' } // Centrar columnas de Estatus y Acciones
+                    { targets: [5, 6], className: 'dt-center' }
                 ]
+            });
+
+
+            // 1. Obtener el estado inicial de la configuración al cargar la página
+            $.get('/Usuario/ObtenerEstadoAgendarPreventivos')
+                .done(function (data) {
+                    $('#toggleAgendarPreventivos').prop('checked', data.habilitado);
+                })
+                .fail(function () {
+                    mostrarAlerta('No se pudo cargar la configuración del sistema.', 'danger');
+                });
+
+            // 2. Manejar el evento de cambio en el switch
+            $('#toggleAgendarPreventivos').on('change', function () {
+                const habilitar = $(this).is(':checked');
+
+                $.ajax({
+                    url: '/Usuario/CambiarEstadoAgendarPreventivos',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(habilitar), // Enviamos true o false
+                    success: function (response) {
+                        if (response.success) {
+                            const mensaje = habilitar ? 'Función de agendar preventivos HABILITADA.' : 'Función de agendar preventivos DESHABILITADA.';
+                            mostrarAlerta(mensaje, 'success');
+                        } else {
+                            mostrarAlerta(response.message || 'Error al cambiar la configuración.', 'danger');
+                            // Si falla, revertimos el switch a su estado anterior
+                            $('#toggleAgendarPreventivos').prop('checked', !habilitar);
+                        }
+                    },
+                    error: function () {
+                        mostrarAlerta('Error de conexión al cambiar la configuración.', 'danger');
+                        $('#toggleAgendarPreventivos').prop('checked', !habilitar);
+                    }
+                });
             });
 
             // Toggle para mostrar/ocultar contraseña en modal de creación
