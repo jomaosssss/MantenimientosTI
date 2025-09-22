@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
-using MantenimientosTI.Models;
+﻿using MantenimientosTI.Models;
 using MantenimientosTI.Models.ViewModels;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 
 namespace ProyectoMantenimientos.Controllers
 {
@@ -14,10 +17,12 @@ namespace ProyectoMantenimientos.Controllers
     {
         
         private readonly MantenimientosTIContext _dbocontext;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public UsuarioController(MantenimientosTIContext context)
+        public UsuarioController(MantenimientosTIContext context, IHttpClientFactory httpClientFactory)
         {
             _dbocontext = context;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet]
@@ -65,103 +70,116 @@ namespace ProyectoMantenimientos.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(VMLogin model)
         {
-            ModelState.Clear();
-
             // Validación manual de campos vacíos
-            if (string.IsNullOrWhiteSpace(model.Correo) && string.IsNullOrWhiteSpace(model.Contrasenia))
+            if (string.IsNullOrWhiteSpace(model.Rpe))
             {
-                ViewBag.Mensaje = "Por favor, ingrese su correo electrónico y contraseña";
+                ViewBag.Mensaje = "El campo RPE es requerido";
                 return View(model);
             }
-            else if (string.IsNullOrWhiteSpace(model.Correo))
-            {
-                ViewBag.Mensaje = "El campo Correo electrónico es requerido";
-                return View(model);
-            }
-            else if (string.IsNullOrWhiteSpace(model.Contrasenia))
+            if (string.IsNullOrWhiteSpace(model.Contrasenia))
             {
                 ViewBag.Mensaje = "El campo Contraseña es requerido";
                 return View(model);
             }
 
-            // Validación de credenciales
             try
             {
-                var usuario = _dbocontext.Usuarios
+                // 1. Verificar si el usuario existe en tu base de datos local
+                var usuario = await _dbocontext.Usuarios
                     .Include(u => u.ClaveRolNavigation)
                     .Include(u => u.CatZona)
-                    .FirstOrDefault(u => u.Correo == model.Correo);
+                    .FirstOrDefaultAsync(u => u.Rpe == model.Rpe);
 
                 if (usuario == null)
                 {
-                    ViewBag.Mensaje = "Correo electrónico no registrado";
-                    return View(model);
-                }
-
-                // Verificacion de contraseña con hash
-                var hasher = new PasswordHasher<Usuario>();
-                var result = hasher.VerifyHashedPassword(usuario, usuario.Contrasenia, model.Contrasenia);
-
-                // Migracion para desarrollo (solo para pruebas)
-#if DEBUG
-                if (result == PasswordVerificationResult.Failed && usuario.Contrasenia == model.Contrasenia)
-                {
-                    // Hashear la contraseña antigua y guardarla
-                    usuario.Contrasenia = hasher.HashPassword(usuario, model.Contrasenia);
-                    _dbocontext.SaveChanges();
-                    result = PasswordVerificationResult.Success;
-                }
-#endif
-
-                if (result != PasswordVerificationResult.Success)
-                {
-                    ViewBag.Mensaje = "Contraseña incorrecta";
+                    ViewBag.Mensaje = "RPE no registrado en el sistema. Contacte al administrador.";
                     return View(model);
                 }
 
                 if (usuario.Estatus.ToLower() != "activo")
                 {
-                    ViewBag.Mensaje = "Usuario inactivo. Contacte al administrador";
+                    ViewBag.Mensaje = "Usuario inactivo. Contacte al administrador.";
                     return View(model);
                 }
 
-                // Crear claims para el usuario
-                var claims = new List<Claim>
+                // 2. Obtener la URL de la API desde la base de datos
+                var configApi = await _dbocontext.Configuraciones
+                                    .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "LDAP_CFE");
+
+                if (configApi == null || string.IsNullOrWhiteSpace(configApi.Valor))
                 {
-                    new Claim(ClaimTypes.NameIdentifier, usuario.Rpe),
-                    new Claim(ClaimTypes.Name, $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}"),
-                    new Claim(ClaimTypes.Role, usuario.ClaveRolNavigation?.Nombre ?? "Sin rol"),
-                    new Claim("RolId", usuario.ClaveRol.ToString()),
-                    new Claim("Zona", usuario.ClaveZona),
-                    new Claim("ZonaNombre", usuario.CatZona?.NombreZona ?? "Sin zona"),
-                    new Claim("Division", usuario.ClaveDivision)
+                    ViewBag.Mensaje = "Error de configuración: No se encontró la URL de la API.";
+                    return View(model);
+                }
+                string apiUrl = configApi.Valor;
+
+
+                // 3. Llamar a la API para validar las credenciales
+                var client = _httpClientFactory.CreateClient();
+                var apiRequest = new ApiLoginRequest
+                {
+                    rpe = model.Rpe,
+                    contrasenia = model.Contrasenia
                 };
 
-                // Crear identidad y principal
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+                var jsonContent = new StringContent(JsonSerializer.Serialize(apiRequest), Encoding.UTF8, "application/json");
+                var response = await client.PostAsync(apiUrl, jsonContent);
 
-                // Iniciar sesión
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseString = await response.Content.ReadAsStringAsync();
+                    var apiResult = JsonSerializer.Deserialize<ApiResponse>(responseString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                // Configuración de sesión
-                HttpContext.Session.SetString("Rpe", usuario.Rpe);
-                HttpContext.Session.SetString("NombreUsuario", $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}");
-                HttpContext.Session.SetInt32("Rol", usuario.ClaveRol);
-                HttpContext.Session.SetString("NombreRol", usuario.ClaveRolNavigation?.Nombre ?? "Sin rol");
-                HttpContext.Session.SetString("ClaveZona", usuario.ClaveZona);
-                HttpContext.Session.SetString("NombreZona", usuario.CatZona?.NombreZona ?? "Sin zona");
-                HttpContext.Session.SetString("ClaveDivision", usuario.ClaveDivision);
+                    // 4. Procesar la respuesta de la API
+                    if (apiResult != null && apiResult.procesoExitoso == 1)
+                    {
+                        // ¡ÉXITO! Las credenciales son válidas. Ahora usamos los datos locales.
+                        var claims = new List<Claim>
+                        {
+                            new Claim(ClaimTypes.NameIdentifier, usuario.Rpe),
+                            new Claim(ClaimTypes.Name, $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}"),
+                            new Claim(ClaimTypes.Role, usuario.ClaveRolNavigation?.Nombre ?? "Sin rol"),
+                            new Claim("RolId", usuario.ClaveRol.ToString()),
+                            new Claim("Zona", usuario.ClaveZona),
+                            new Claim("ZonaNombre", usuario.CatZona?.NombreZona ?? "Sin zona"),
+                            new Claim("Division", usuario.ClaveDivision)
+                        };
 
-                return RedirectToAction("Inicio", "Home");
+                        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+
+                        HttpContext.Session.SetString("Rpe", usuario.Rpe);
+                        HttpContext.Session.SetString("NombreUsuario", $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}");
+                        HttpContext.Session.SetInt32("Rol", usuario.ClaveRol);
+                        HttpContext.Session.SetString("NombreRol", usuario.ClaveRolNavigation?.Nombre ?? "Sin rol");
+                        HttpContext.Session.SetString("ClaveZona", usuario.ClaveZona);
+                        HttpContext.Session.SetString("NombreZona", usuario.CatZona?.NombreZona ?? "Sin zona");
+                        HttpContext.Session.SetString("ClaveDivision", usuario.ClaveDivision);
+
+                        return RedirectToAction("Inicio", "Home");
+                    }
+                    else
+                    {
+                        // Credenciales incorrectas según la API
+                        ViewBag.Mensaje = apiResult?.mensaje ?? "Usuario y/o contraseña incorrectos.";
+                        return View(model);
+                    }
+                }
+                else
+                {
+                    // La llamada a la API falló (ej. 500 Internal Server Error)
+                    ViewBag.Mensaje = "Error al contactar el servicio de autenticación. Intente más tarde.";
+                    return View(model);
+                }
             }
             catch (Exception ex)
             {
-                ViewBag.Mensaje = "Ocurrió un error al iniciar sesión. Intente nuevamente";
+                // Manejo de errores generales
+                ViewBag.Mensaje = "Ocurrió un error inesperado al iniciar sesión.";
+                // Opcional: Registrar el error 'ex' en un log
                 return View(model);
             }
         }
-
         public async Task<IActionResult> CerrarSesion()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

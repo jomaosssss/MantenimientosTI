@@ -2,7 +2,7 @@
 {
     public class VMLogin
     {
-        public string Correo { get; set; } = string.Empty;
+        public string Rpe { get; set; } = string.Empty;
         public string Contrasenia { get; set; } = string.Empty;
     }
 }
