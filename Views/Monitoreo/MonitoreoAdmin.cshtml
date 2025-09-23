@@ -317,20 +317,7 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="text-muted small me-3">
                     Última actualización @ViewBag.UltimaActualizacion
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <div class="d-flex align-items-center">
-                        <div class="cfematico-btn bg-success me-1"></div>
-                        <small class="text-muted">Normal</small>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <div class="cfematico-btn bg-warning me-1"></div>
-                        <small class="text-muted">Preventivo</small>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <div class="cfematico-btn bg-danger me-1"></div>
-                        <small class="text-muted">Crítico</small>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -683,16 +670,17 @@
         </div>
     </div>
 </div>
-
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Variable global para el gráfico
         var basicBarChart = null;
         var selectedCfematico = null;
+        // Variable global para el estado del CFEmático seleccionado
+        var selectedCfematicoEstado = null;
 
         function aplicarColorCfematico(numCajero, estado) {
-            var $boton = $(`.cfematico-btn[data-num-cajero="${numCajero}"]`);
+            var $boton = $(.cfematico-btn[data-num-cajero="${numCajero}"]);
 
             // Remover todas las clases de color primero
             $boton.removeClass('bg-success bg-danger bg-warning');
@@ -725,7 +713,7 @@
                     var numCajero = $(this).data('num-cajero');
                     var estado = data[numCajero] || 'verde';
 
-                    console.log(`Aplicando estado ${estado} a CFEmático ${numCajero}`);
+                    console.log(Aplicando estado ${estado} a CFEmático ${numCajero});
                     aplicarColorCfematico(numCajero, estado);
                 });
             }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -748,14 +736,18 @@
             var wasSelected = $clickedButton.hasClass('selected');
             var numCajero = $clickedButton.data('num-cajero');
 
+            // Obtener el estado (color) del botón
+            var estado = 'verde'; // Por defecto
+            if ($clickedButton.hasClass('bg-danger')) estado = 'rojo';
+            if ($clickedButton.hasClass('bg-warning')) estado = 'amarillo';
+
+            selectedCfematicoEstado = estado;
+
             $('.cfematico-btn').removeClass('selected');
 
             if (!wasSelected) {
                 $clickedButton.addClass('selected');
                 selectedCfematico = numCajero;
-
-                // --- SE ELIMINÓ LA LLAMADA REDUNDANTE A ObtenerEstadoCfematico ---
-                // El estado ya fue establecido por cargarEstadosEnLote() y es válido.
 
                 // Resto de la funcionalidad...
                 cargarDetallesCfematico(numCajero);
@@ -766,6 +758,7 @@
                 cargarMantenimientosCfematico(numCajero);
             } else {
                 selectedCfematico = null;
+                selectedCfematicoEstado = null;
                 limpiarDatos();
             }
         });
@@ -919,7 +912,7 @@
                                 },
                                 callbacks: {
                                     label: function(context) {
-                                        return `${context.dataset.label}: ${context.parsed.y} eventos`;
+                                        return ${context.dataset.label}: ${context.parsed.y} eventos;
                                     }
                                 }
                             }
@@ -953,7 +946,8 @@
                 numCajero: numCajero,
                 severidad: severidad,
                 tipo: tipo,
-                dias: dias
+                dias: dias,
+                estado: selectedCfematicoEstado // ← Nuevo parámetro
             }, function(data) {
                 var $content = $('#modalEventosContent');
                 $content.empty();
@@ -963,7 +957,7 @@
                     return;
                 }
 
-                var titulo = `Eventos ${getSeveridadText(severidad)} (${tipo === 'O' ? 'Operativos' : 'Técnicos'})`;
+                var titulo = Eventos ${getSeveridadText(severidad)} (${tipo === 'O' ? 'Operativos' : 'Técnicos'});
                 $('#eventosModalLabel').text(titulo);
 
                 var eventosHtml = data.map(function(evento) {
@@ -1001,7 +995,8 @@
 
             $.get('@Url.Action("ObtenerEventosRecientes", "Monitoreo")', {
                 numCajero: numCajero,
-                dias: dias
+                dias: dias,
+                estado: selectedCfematicoEstado // ← Nuevo parámetro
             }, function(data) {
                 var $lista = $('#listaEventos');
                 $lista.empty();
@@ -1043,7 +1038,7 @@
                 $container.empty();
 
                 if (data.mensaje) {
-                    $container.html(`<p class="text-muted small">${data.mensaje}</p>`);
+                    $container.html(<p class="text-muted small">${data.mensaje}</p>);
                     return;
                 }
 
@@ -1095,6 +1090,9 @@
             var $tbody = $('#tablaEventos tbody');
             $tbody.empty();
             $tbody.append('<tr><td colspan="13" class="text-center text-muted py-3">Seleccione un CFEmático</td></tr>');
+
+            // Limpiar el estado seleccionado
+            selectedCfematicoEstado = null;
         }
 
         // Función para cargar los tipos de falla en el select
@@ -1178,7 +1176,8 @@
                 descripcion: descripcion,
                 mes: mes,
                 year: year,
-                claveFalla: claveFalla
+                claveFalla: claveFalla,
+                estado: selectedCfematicoEstado // ← Nuevo parámetro
             }, function(data) {
                 var $content = $('#modalEventosMensualesContent');
                 $content.empty();
@@ -1191,7 +1190,7 @@
                 var nombreMes = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                                 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][mes-1];
 
-                var titulo = `Eventos de ${descripcion} - ${nombreMes} ${year}`;
+                var titulo = Eventos de ${descripcion} - ${nombreMes} ${year};
                 $('#eventosMensualesModalLabel').text(titulo);
 
                 var eventosHtml = data.map(function(evento) {
@@ -1243,7 +1242,7 @@
                 data.sort((a, b) => {
             const fechaA = new Date(a.fechaProgramada.split('/').reverse().join('-'));
             const fechaB = new Date(b.fechaProgramada.split('/').reverse().join('-'));
-            return fechaA - fechaB;  // Cambia a `fechaA - fechaB` para orden ascendente
+            return fechaA - fechaB;  // Cambia a fechaA - fechaB para orden ascendente
         });
 
         var $tbody = $('#tablaMantenimientos tbody');
@@ -1322,7 +1321,7 @@
                 // Función para cargar una foto
                 const cargarFoto = (elementId, fotoBase64) => {
                     if (fotoBase64) {
-                        $(elementId).attr('src', `data:image/jpeg;base64,${fotoBase64}`);
+                        $(elementId).attr('src', data:image/jpeg;base64,${fotoBase64});
                     } else {
                         $(elementId).attr('src', 'https://via.placeholder.com/200x150?text=No+disponible');
                     }

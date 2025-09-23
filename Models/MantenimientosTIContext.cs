@@ -198,10 +198,9 @@ public partial class MantenimientosTIContext : DbContext
                 .HasMaxLength(256)
                 .IsUnicode(false)
                 .HasColumnName("fuente");
-            entity.Property(e => e.Severidad).HasColumnName("severidad");
+            entity.Property(e => e.Severidad)
+                .HasColumnName("severidad");
             entity.Property(e => e.Importancia)
-                .HasMaxLength(1)
-                .IsUnicode(false)
                 .HasColumnName("importancia");
 
 

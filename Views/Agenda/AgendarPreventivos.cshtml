@@ -129,18 +129,14 @@
 else
 {
     <div class="container mt-5">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h1 class="mb-0">Mantenimientos Preventivos</h1>
+        <div class="text-center">
+            <div class="mb-4">
+                <img src="/images/LOGOPAGDESHABILITADA.png" alt="CFE DESHABILITADA" class="img-fluid" style="max-height: 300px;">
             </div>
-            <div class="card-body text-center">
-                <div class="alert alert-warning" role="alert">
-                    <h4 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Función Deshabilitada</h4>
-                    <p>La carga masiva de mantenimientos preventivos ha sido deshabilitada temporalmente por el administrador.</p>
-                    <hr>
-                    <p class="mb-0">Por favor, contacte al administrador del sistema si cree que esto es un error.</p>
-                </div>
-            </div>
+            <p class="fs-3"> <span class="text-danger">Ups!</span> Función Deshabilitada</p>
+            <p class="lead">La carga de mantenimientos preventivos ha sido deshabilitada temporalmente por el administrador.</p>
+            <p class="lead">Por favor, contacte al administrador del sistema si cree que esto es un error.</p>
+            <a href="@Url.Action("Inicio", "Home")" class="btn btn-success">Volver al Inicio</a>
         </div>
     </div>
 }
