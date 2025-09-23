@@ -162,20 +162,20 @@ namespace ProyectoMantenimientos.Controllers
             var fechaLimite = DateTime.Now.AddDays(-dias);
 
             var estadisticas = _dbocontext.RegistroEventos
-                .Where(re => re.NumCajero == numCajero && re.FechaEvento >= fechaLimite)
-                .Join(_dbocontext.CatEventos,
-                    registro => registro.ClaveEvento,
-                    evento => evento.ClaveEvento,
-                    (registro, evento) => new { evento.Severidad, evento.ClaveFalla, evento.Importancia }
-                )
-                .Where(x => x.Importancia == 1) // ¡FILTRO AÑADIDO!
-                .GroupBy(x => new { x.Severidad, x.ClaveFalla })
-                .Select(g => new {
-                    Severidad = g.Key.Severidad,
-                    Tipo = g.Key.ClaveFalla,
-                    Cantidad = g.Count()
-                })
-                .ToList();
+            .Where(re => re.NumCajero == numCajero && re.FechaEvento >= fechaLimite)
+            .Join(_dbocontext.CatEventos,
+                registro => registro.ClaveEvento,
+                evento => evento.ClaveEvento,
+                (registro, evento) => new { evento.Severidad, evento.ClaveFalla, evento.Importancia }
+            )
+            .Where(x => x.Importancia == 1)
+            .GroupBy(x => new { x.Severidad, x.ClaveFalla })
+            .Select(g => new {
+                Severidad = g.Key.Severidad,
+                Tipo = g.Key.ClaveFalla,
+                Cantidad = g.Count()
+            })
+           .ToList();
 
             var criticosOperativos = estadisticas.FirstOrDefault(x => x.Severidad == 100 && x.Tipo == "O")?.Cantidad ?? 0;
             var criticosTecnicos = estadisticas.FirstOrDefault(x => x.Severidad == 100 && x.Tipo == "T")?.Cantidad ?? 0;
