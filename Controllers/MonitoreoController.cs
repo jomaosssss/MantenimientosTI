@@ -54,31 +54,6 @@ namespace ProyectoMantenimientos.Controllers
             return View(zonasConCfematicos);
         }
 
-        [HttpGet]
-        public IActionResult ObtenerEstadosCfematicos()
-        {
-            try
-            {
-                // 1. Obtenemos la lista de todos los números de cajero existentes.
-                var numerosCajero = _dbocontext.EquipoCfematicos
-                    .Select(c => c.NumCajero)
-                    .ToList();
-
-                // 2. Creamos un diccionario donde a CADA cajero se le asigna el valor "verde".
-                var estados = numerosCajero.ToDictionary(
-                    numCajero => numCajero, // La clave es el número del cajero.
-                    numCajero => "verde"    // El valor SIEMPRE es "verde".
-                );
-
-                return Json(estados);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error en ObtenerEstadosCfematicos: {ex.Message}");
-                return Json(new { error = "Error al obtener estados" });
-            }
-        }
-
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         public IActionResult Monitoreo()
         {
