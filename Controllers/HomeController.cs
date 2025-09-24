@@ -143,8 +143,7 @@ namespace ProyectoMantenimientos.Controllers
                         .ThenInclude(c => c.CatAgencium)
                             .ThenInclude(a => a.CatZona)
                 .Include(a => a.ClaveTipoMttoNavigation)
-                .Where(a => a.Estatus == "PENDIENTE");
-
+                .Where(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO"); // <-- LÍNEA CORREGIDA
             // Filtro por zona si no es administrador
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {

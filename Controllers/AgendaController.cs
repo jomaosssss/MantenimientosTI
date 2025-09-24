@@ -549,6 +549,36 @@ namespace ProyectoMantenimientos.Controllers
             }
         }
 
+        [HttpPost]
+        [Authorize(Roles = "ADMINISTRADOR")] // Permitimos que ambos roles puedan reactivar
+        public async Task<IActionResult> ReactivarAgenda(int idAgenda)
+        {
+            try
+            {
+                var agendaItem = await _dbocontext.Agenda.FindAsync(idAgenda);
+
+                if (agendaItem == null)
+                {
+                    return Json(new { success = false, message = "No se encontró la cita en la agenda." });
+                }
+
+                // Solo se puede reactivar si está en "PRE-CANCELADO"
+                if (agendaItem.Estatus != "PRE-CANCELADO")
+                {
+                    return Json(new { success = false, message = $"No se puede reactivar una cita con estatus '{agendaItem.Estatus}'." });
+                }
+
+                agendaItem.Estatus = "PENDIENTE";
+                await _dbocontext.SaveChangesAsync();
+
+                return Json(new { success = true, message = "La cita ha sido reactivada y ahora está pendiente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Ocurrió un error: " + ex.Message });
+            }
+        }
+
         [Authorize(Roles = "ADMINISTRADOR")]
         public async Task<IActionResult> AprobarCancelaciones()
         {

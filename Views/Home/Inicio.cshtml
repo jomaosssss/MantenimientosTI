@@ -198,9 +198,29 @@
                                     </td>
 
                                     <td class="text-center">
-                                        <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
-                                            Pre-cancelar
-                                        </button>
+                                        @if (item.Estatus == "PENDIENTE")
+                                        {
+                                            <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                Cancelar
+                                            </button>
+                                        }
+                                        else if (item.Estatus == "PRE-CANCELADO")
+                                        {
+                                            @if (User.IsInRole("ADMINISTRADOR"))
+                                            {
+                                                <button class="btn btn-success btn-sm btn-activar" data-id="@item.ClaveAgenda">
+                                                    RECHAZAR CANCELACIÓN
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fst-italic">En espera de aprobación</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
                                     </td>
 
                                 </tr>
@@ -223,7 +243,7 @@
                                 <th>Agencia</th>
                                 <th>Centro</th>
                                 <th>Tipo de Equipo</th>
-                                <th>Inf. del Equipo</th>
+                                <th>Estatus</th><th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
                                 <th>Acciones</th>
                             </tr>
@@ -239,6 +259,11 @@
                                     <td>@item.Agencia</td>
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
+
+                                    <td>
+                                        <span class="badge bg-info estatus-agenda">@item.Estatus</span>
+                                    </td>
+
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -251,9 +276,29 @@
                                     </td>
 
                                     <td class="text-center">
-                                        <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
-                                            Pre-cancelar
-                                        </button>
+                                        @if (item.Estatus == "PENDIENTE")
+                                        {
+                                            <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                Cancelar
+                                            </button>
+                                        }
+                                        else if (item.Estatus == "PRE-CANCELADO")
+                                        {
+                                            @if (User.IsInRole("ADMINISTRADOR"))
+                                            {
+                                                <button class="btn btn-success btn-sm btn-activar" data-id="@item.ClaveAgenda">
+                                                    RECHAZAR CANCELACIÓN
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fst-italic">En espera de aprobación</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
                                     </td>
 
                                 </tr>
@@ -277,7 +322,7 @@
                                 <th>Centro</th>
                                 <th>Tipo de Equipo</th>
                                 <th>Usuario</th>
-                                <th>Inf. del Equipo</th>
+                                <th>Estatus</th><th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
                                 <th>Acciones</th>
                             </tr>
@@ -294,6 +339,11 @@
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
                                     <td>@item.UsuarioAsignado</td>
+
+                                    <td>
+                                        <span class="badge bg-info estatus-agenda">@item.Estatus</span>
+                                    </td>
+
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -306,9 +356,29 @@
                                     </td>
 
                                     <td class="text-center">
-                                        <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
-                                            Pre-cancelar
-                                        </button>
+                                        @if (item.Estatus == "PENDIENTE")
+                                        {
+                                            <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                Cancelar
+                                            </button>
+                                        }
+                                        else if (item.Estatus == "PRE-CANCELADO")
+                                        {
+                                            @if (User.IsInRole("ADMINISTRADOR"))
+                                            {
+                                                <button class="btn btn-success btn-sm btn-activar" data-id="@item.ClaveAgenda">
+                                                    RECHAZAR CANCELACIÓN
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fst-italic">En espera de aprobación</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
                                     </td>
 
                                 </tr>
@@ -424,6 +494,8 @@
 
     <script>
         $(document).ready(function () {
+             var esAdmin = @User.IsInRole("ADMINISTRADOR").ToString().ToLower();
+
             // Configuración para las tablas
             $('#tablaCFEmaticos, #tablaAC, #tablaEC').DataTable({
                 language: {
@@ -434,6 +506,8 @@
             $('.display').on('click', '.btn-precancelar', function() {
             var id = $(this).data('id');
             var fila = $(this).closest('tr');
+            var button = $(this); // Importante añadir esta línea si no la tenías
+        
 
             // Usaremos SweetAlert2 que ya tienes en tu proyecto
             Swal.fire({
@@ -461,8 +535,11 @@
                             // 2. Encuentra la celda de acciones (donde estaba el botón).
                             var celdaAcciones = button.closest('td');
                             // 3. Reemplaza el botón con un texto informativo.
-                            celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
-
+                                if (esAdmin) {
+                                    celdaAcciones.html('<button class="btn btn-success btn-sm btn-activar" data-id="' + id + '">ACTIVAR</button>');
+                                } else {
+                                    celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
+                                }
                             // ---- FIN DE LOS CAMBIOS ----
 
                         } else {
@@ -474,6 +551,43 @@
                         });
                 }
             })
+        });
+
+        $('.display').on('click', '.btn-activar', function() {
+            var id = $(this).data('id');
+            var button = $(this);
+            var fila = $(this).closest('tr');
+
+            Swal.fire({
+                title: '¿Reactivar Cita?',
+                text: "La cita volverá al estatus 'PENDIENTE'.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, reactivar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("ReactivarAgenda", "Agenda")', { idAgenda: id })
+                        .done(function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Restaurada!', response.message, 'success');
+
+                                var celdaEstatus = fila.find('.estatus-agenda');
+                                celdaEstatus.html('<span class="badge bg-info">PENDIENTE</span>');
+
+                                var celdaAcciones = button.closest('td');
+                                celdaAcciones.html('<button class="btn btn-warning btn-sm btn-precancelar" data-id="' + id + '">Pre-cancelar</button>');
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
+                            }
+                        })
+                        .fail(function() {
+                            Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                        });
+                }
+            });
         });
 
             // --- CÓDIGO FINAL PARA MANEJAR EL MODAL ---
