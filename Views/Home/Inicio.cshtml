@@ -164,7 +164,7 @@
                                 <th>Centro</th>
                                 <th>Tipo de Equipo</th>
                                 <th>Núm. de Cajero</th>
-                                <th>Inf. del Equipo</th>
+                                <th>Estatus</th> <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
                                 <th>Acciones</th>
                             </tr>
@@ -181,6 +181,11 @@
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
                                     <td>@item.NumCajero</td>
+
+                                    <td>
+                                        <span class="badge bg-info estatus-agenda">@item.Estatus</span>
+                                    </td>
+
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -443,18 +448,27 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.post('@Url.Action("PreCancelar", "Agenda")', { idAgenda: id })
-                        .done(function(response) {
-                            if (response.success) {
-                                Swal.fire('¡Hecho!', response.message, 'success');
-                                fila.fadeOut(500, function() {
-                                    // Esto quita la fila de la tabla dinámicamente
-                                    // Nota: la tabla podría necesitar ser redibujada si usas paginación
-                                    $(this).remove();
-                                });
-                            } else {
-                                Swal.fire('Error', response.message, 'error');
-                            }
-                        })
+                      .done(function(response) {
+                        if (response.success) {
+                            Swal.fire('¡Hecho!', response.message, 'success');
+
+                            // ---- INICIO DE LOS CAMBIOS ----
+
+                            // 1. Encuentra la celda del estatus y actualízala.
+                            var celdaEstatus = fila.find('.estatus-agenda');
+                            celdaEstatus.html('<span class="badge bg-warning text-dark">PRE-CANCELADO</span>');
+
+                            // 2. Encuentra la celda de acciones (donde estaba el botón).
+                            var celdaAcciones = button.closest('td');
+                            // 3. Reemplaza el botón con un texto informativo.
+                            celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
+
+                            // ---- FIN DE LOS CAMBIOS ----
+
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    })
                         .fail(function() {
                             Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
                         });
