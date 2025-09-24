@@ -487,7 +487,80 @@ namespace ProyectoMantenimientos.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
-        
+
+        [HttpPost]
+        [Authorize(Roles = "TÉCNICO DE ZONA")]
+        public async Task<IActionResult> PreCancelar(int idAgenda)
+        {
+            try
+            {
+                var agendaItem = await _dbocontext.Agenda.FindAsync(idAgenda);
+
+                if (agendaItem == null)
+                {
+                    return Json(new { success = false, message = "No se encontró la cita en la agenda." });
+                }
+
+                // Solo se puede pre-cancelar si está pendiente
+                if (agendaItem.Estatus != "PENDIENTE")
+                {
+                    return Json(new { success = false, message = $"No se puede cancelar una cita con estatus '{agendaItem.Estatus}'." });
+                }
+
+                agendaItem.Estatus = "PRE-CANCELADO";
+                await _dbocontext.SaveChangesAsync();
+
+                return Json(new { success = true, message = "La cita ha sido marcada como pre-cancelada. Un administrador debe confirmar la cancelación." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Ocurrió un error: " + ex.Message });
+            }
+        }
+
+
+        [HttpPost]
+        [Authorize(Roles = "ADMINISTRADOR")]
+        public async Task<IActionResult> ConfirmarCancelacion(int idAgenda)
+        {
+            try
+            {
+                var agendaItem = await _dbocontext.Agenda.FindAsync(idAgenda);
+
+                if (agendaItem == null)
+                {
+                    return Json(new { success = false, message = "No se encontró la cita en la agenda." });
+                }
+
+                // Solo se puede confirmar la cancelación si está pre-cancelada
+                if (agendaItem.Estatus != "PRE-CANCELADO")
+                {
+                    return Json(new { success = false, message = $"Esta cita no está en estatus 'Pre-cancelado'." });
+                }
+
+                agendaItem.Estatus = "CANCELADO";
+                await _dbocontext.SaveChangesAsync();
+
+                return Json(new { success = true, message = "La cancelación de la cita ha sido confirmada." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Ocurrió un error: " + ex.Message });
+            }
+        }
+
+        [Authorize(Roles = "ADMINISTRADOR")]
+        public async Task<IActionResult> AprobarCancelaciones()
+        {
+            var citasPrecanceladas = await _dbocontext.Agenda
+                .Where(a => a.Estatus == "PRE-CANCELADO")
+                .Include(a => a.NumActFijoNavigation) // Para obtener detalles del equipo
+                .OrderBy(a => a.FechaProgramada)
+                .ToListAsync();
+
+            return View(citasPrecanceladas);
+        }
+
         [HttpPost]
         public IActionResult AgendarCorrectivo(string numActFijo, string fechaProgramada)
         {

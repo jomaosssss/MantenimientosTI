@@ -166,6 +166,7 @@
                                 <th>Núm. de Cajero</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -190,6 +191,13 @@
                                             <i class="bi bi-file-earmark-pdf me-1"></i>Descargar
                                         </button>
                                     </td>
+
+                                    <td class="text-center">
+                                        <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                            Pre-cancelar
+                                        </button>
+                                    </td>
+
                                 </tr>
                             }
                         </tbody>
@@ -212,6 +220,7 @@
                                 <th>Tipo de Equipo</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -235,6 +244,13 @@
                                             <i class="bi bi-file-earmark-pdf me-1"></i>Descargar
                                         </button>
                                     </td>
+
+                                    <td class="text-center">
+                                        <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                            Pre-cancelar
+                                        </button>
+                                    </td>
+
                                 </tr>
                             }
                         </tbody>
@@ -258,6 +274,7 @@
                                 <th>Usuario</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -282,6 +299,13 @@
                                             <i class="bi bi-file-earmark-pdf me-1"></i>Descargar
                                         </button>
                                     </td>
+
+                                    <td class="text-center">
+                                        <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                            Pre-cancelar
+                                        </button>
+                                    </td>
+
                                 </tr>
                             }
                         </tbody>
@@ -401,6 +425,42 @@
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                 }
             });
+
+            $('.display').on('click', '.btn-precancelar', function() {
+            var id = $(this).data('id');
+            var fila = $(this).closest('tr');
+
+            // Usaremos SweetAlert2 que ya tienes en tu proyecto
+            Swal.fire({
+                title: '¿Solicitar Cancelación?',
+                text: "Esta cita se marcará como pre-cancelada y un administrador deberá confirmarla.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, solicitar',
+                cancelButtonText: 'No'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("PreCancelar", "Agenda")', { idAgenda: id })
+                        .done(function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Hecho!', response.message, 'success');
+                                fila.fadeOut(500, function() {
+                                    // Esto quita la fila de la tabla dinámicamente
+                                    // Nota: la tabla podría necesitar ser redibujada si usas paginación
+                                    $(this).remove();
+                                });
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
+                            }
+                        })
+                        .fail(function() {
+                            Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                        });
+                }
+            })
+        });
 
             // --- CÓDIGO FINAL PARA MANEJAR EL MODAL ---
             $('[data-bs-target="#modalInfo"]').on('click', function() {
