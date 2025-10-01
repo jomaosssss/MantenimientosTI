@@ -1,0 +1,480 @@
+﻿@model List<MantenimientosTI.Models.Usuario>
+
+@{
+    ViewData["Title"] = "Configuración";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="card mt-4 shadow-sm rounded">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">Configuración del Sistema</h1>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+                    <i class="fas fa-user-plus"></i> Crear Usuario
+                </button>
+            </div>
+            <div class="card-body">
+
+
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-cogs me-1"></i> Configuración del Sistema
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Habilitar opción de agendar mantenimientos preventivos con archivo .csv</h6>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="toggleAgendarPreventivos" style="width: 4em; height: 2em;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+
+
+
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-table me-1"></i> Usuarios Registrados
+                    </div>
+                    <div class="card-body">
+                        <table id="tablaUsuarios" class="table table-striped table-bordered" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>RPE</th>
+                                    <th>Rol</th>
+                                    <th>Nombre</th>
+                                    <th>Zona</th>
+                                    <th>Correo</th>
+                                    <th class="text-center">Estatus</th>
+                                    <th class="text-center">Editar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var usuario in Model)
+                                {
+                                    <tr>
+                                        <td>@usuario.Rpe</td>
+                                        <td>@usuario.ClaveRolNavigation?.Nombre</td>
+                                        <td>@usuario.Nombre @usuario.ApellidoP @usuario.ApellidoM</td>
+                                        <td>@usuario.CatZona?.NombreZona</td>
+                                        <td>@usuario.Correo</td>
+                                        <td class="text-center">
+                                            @if (usuario.Estatus.ToLower() == "activo")
+                                            {
+                                                <span class="badge bg-success">Activo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Inactivo</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario"
+                                                    onclick="cargarDatosEdicion('@usuario.Rpe')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear un nuevo usuario -->
+<div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="tituloModalNuevoUsuario" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalNuevoUsuario">NUEVO USUARIO</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNuevoUsuario">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RolNuevo" class="form-label">ROL</label>
+                            <select class="form-select" id="RolNuevo" name="ClaveRol" required>
+                                <option value="">SELECCIONE UN ROL</option>
+                                @foreach (var rol in ViewBag.Roles as List<CatRol>)
+                                {
+                                    <option value="@rol.ClaveRol">@rol.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ZonaNuevo" class="form-label">ZONA</label>
+                            <select class="form-select" id="ZonaNuevo" name="ClaveZona" required>
+                                <option value="">SELECCIONE UNA ZONA</option>
+                                @foreach (var zona in ViewBag.Zonas as List<CatZona>)
+                                {
+                                    <option value="@zona.ClaveZona">@zona.NombreZona</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RpeNuevo" class="form-label">RPE</label>
+                            <input type="text" class="form-control" id="RpeNuevo" name="Rpe" required minlength="5" maxlength="10"
+                                   oninvalid="this.setCustomValidity('El RPE debe tener al menos 5 caracteres')"
+                                   oninput="this.setCustomValidity('')">
+                            <div class="invalid-feedback">El RPE debe tener al menos 5 caracteres</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NombreNuevo" class="form-label">NOMBRE</label>
+                            <input type="text" class="form-control text-uppercase" id="NombreNuevo" name="Nombre" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoPNuevo" class="form-label">APELLIDO PATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoPNuevo" name="ApellidoP" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoMNuevo" class="form-label">APELLIDO MATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoMNuevo" name="ApellidoM" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="CorreoNuevo" class="form-label">CORREO</label>
+                            <input type="email" class="form-control" id="CorreoNuevo" name="Correo" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ContraseniaNuevo" class="form-label">CONTRASEÑA</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="ContraseniaNuevo" name="Contrasenia" required minlength="8" maxlength="20">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePasswordNuevo">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="crearUsuario()">Crear</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar un usuario -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-labelledby="tituloModalEditarUsuario" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalEditarUsuario">EDITAR USUARIO</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarUsuario">
+                    <input type="hidden" id="RpeEditar" name="Rpe">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RolEditar" class="form-label">ROL</label>
+                            <select class="form-select" id="RolEditar" name="ClaveRol" required>
+                                <option value="">SELECCIONE UN ROL</option>
+                                @foreach (var rol in ViewBag.Roles as List<CatRol>)
+                                {
+                                    <option value="@rol.ClaveRol">@rol.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ZonaEditar" class="form-label">ZONA</label>
+                            <select class="form-select" id="ZonaEditar" name="ClaveZona" required>
+                                <option value="">SELECCIONE UNA ZONA</option>
+                                @foreach (var zona in ViewBag.Zonas as List<CatZona>)
+                                {
+                                    <option value="@zona.ClaveZona">@zona.NombreZona</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RpeDisplay" class="form-label">RPE</label>
+                            <input type="text" class="form-control" id="RpeDisplay" readonly>
+                            <div class="form-text">El RPE no se puede modificar</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NombreEditar" class="form-label">NOMBRE</label>
+                            <input type="text" class="form-control text-uppercase" id="NombreEditar" name="Nombre" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoPEditar" class="form-label">APELLIDO PATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoPEditar" name="ApellidoP" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoMEditar" class="form-label">APELLIDO MATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoMEditar" name="ApellidoM" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="CorreoEditar" class="form-label">CORREO</label>
+                            <input type="email" class="form-control" id="CorreoEditar" name="Correo" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="EstatusEditar" class="form-label">ESTATUS</label>
+                            <select class="form-select" id="EstatusEditar" name="Estatus" required>
+                                <option value="Activo">ACTIVO</option>
+                                <option value="Inactivo">INACTIVO</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="guardarCambios()">Guardar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Configuración de DataTable
+            $('#tablaUsuarios').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                },
+                responsive: true,
+                columnDefs: [
+                    { targets: [5, 6], className: 'dt-center' }
+                ]
+            });
+
+
+            // 1. Obtener el estado inicial de la configuración al cargar la página
+            $.get('/Usuario/ObtenerEstadoAgendarPreventivos')
+                .done(function (data) {
+                    $('#toggleAgendarPreventivos').prop('checked', data.habilitado);
+                })
+                .fail(function () {
+                    mostrarAlerta('No se pudo cargar la configuración del sistema.', 'danger');
+                });
+
+            // 2. Manejar el evento de cambio en el switch
+            $('#toggleAgendarPreventivos').on('change', function () {
+                const habilitar = $(this).is(':checked');
+
+                $.ajax({
+                    url: '/Usuario/CambiarEstadoAgendarPreventivos',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(habilitar), // Enviamos true o false
+                    success: function (response) {
+                        if (response.success) {
+                            const mensaje = habilitar ? 'Función de agendar preventivos HABILITADA.' : 'Función de agendar preventivos DESHABILITADA.';
+                            mostrarAlerta(mensaje, 'success');
+                        } else {
+                            mostrarAlerta(response.message || 'Error al cambiar la configuración.', 'danger');
+                            // Si falla, revertimos el switch a su estado anterior
+                            $('#toggleAgendarPreventivos').prop('checked', !habilitar);
+                        }
+                    },
+                    error: function () {
+                        mostrarAlerta('Error de conexión al cambiar la configuración.', 'danger');
+                        $('#toggleAgendarPreventivos').prop('checked', !habilitar);
+                    }
+                });
+            });
+
+            // Toggle para mostrar/ocultar contraseña en modal de creación
+            $('#togglePasswordNuevo').click(function(){
+                togglePasswordVisibility('#ContraseniaNuevo', $(this).find('i'));
+            });
+
+            // Convertir a mayúsculas al escribir en campos de texto
+            $('.text-uppercase').on('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+
+            // Validación personalizada para RPE
+            $('#RpeNuevo').on('input', function() {
+                if(this.value.length < 5 && this.value.length > 0) {
+                    this.setCustomValidity('El RPE debe tener al menos 5 caracteres');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+            // Validación personalizada para Contraseña
+            $('#ContraseniaNuevo').on('input', function() {
+                const password = this.value;
+                if (password.length > 0 && (password.length < 8 || password.length > 20)) {
+                    this.setCustomValidity('La contraseña debe tener entre 8 y 20 caracteres');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        });
+
+        // Función para alternar visibilidad de contraseña
+        function togglePasswordVisibility(inputSelector, iconElement) {
+            const passwordInput = $(inputSelector);
+            const type = passwordInput.attr('type') === 'password' ? 'text' : 'password';
+            passwordInput.attr('type', type);
+
+            // Cambiar icono
+            iconElement.toggleClass('fa-eye fa-eye-slash');
+        }
+
+        // Cargar datos para edición
+        function cargarDatosEdicion(rpe) {
+            $.get('/Usuario/ObtenerUsuarioPorRpe', { rpe: rpe })
+                .done(function(data) {
+                    $('#RpeEditar').val(data.rpe);
+                    $('#RpeDisplay').val(data.rpe);  // Nueva línea para mostrar el RPE
+                    $('#RolEditar').val(data.claveRol);
+                    $('#ZonaEditar').val(data.claveZona);
+                    $('#NombreEditar').val(data.nombre);
+                    $('#ApellidoPEditar').val(data.apellidoP);
+                    $('#ApellidoMEditar').val(data.apellidoM);
+                    $('#CorreoEditar').val(data.correo);
+                    $('#EstatusEditar').val(data.estatus);
+                })
+                .fail(function() {
+                    mostrarAlerta('Error al cargar datos del usuario', 'danger');
+                });
+        }
+
+        // Guardar cambios en usuario existente
+        function guardarCambios() {
+            const form = $('#formEditarUsuario')[0];
+
+            if(!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const datos = {
+                Rpe: $('#RpeEditar').val(),
+                ClaveRol: $('#RolEditar').val(),
+                ClaveZona: $('#ZonaEditar').val(),
+                Nombre: $('#NombreEditar').val(),
+                ApellidoP: $('#ApellidoPEditar').val(),
+                ApellidoM: $('#ApellidoMEditar').val(),
+                Correo: $('#CorreoEditar').val(),
+                Estatus: $('#EstatusEditar').val()
+            };
+
+            enviarDatos('/Usuario/ActualizarUsuario', datos, 'Usuario actualizado correctamente');
+        }
+
+        // Crear nuevo usuario
+        function crearUsuario() {
+            const form = $('#formNuevoUsuario')[0];
+
+            if(!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Validación adicional para RPE
+            if($('#RpeNuevo').val().length < 5) {
+                mostrarAlerta('El RPE debe tener al menos 5 caracteres', 'warning');
+                return;
+            }
+
+            const datos = {
+                Rpe: $('#RpeNuevo').val(),
+                ClaveRol: $('#RolNuevo').val(),
+                ClaveZona: $('#ZonaNuevo').val(),
+                Nombre: $('#NombreNuevo').val(),
+                ApellidoP: $('#ApellidoPNuevo').val(),
+                ApellidoM: $('#ApellidoMNuevo').val(),
+                Correo: $('#CorreoNuevo').val(),
+                Contrasenia: $('#ContraseniaNuevo').val(),
+                Estatus: 'Activo'
+            };
+
+            enviarDatos('/Usuario/CrearUsuario', datos, 'Usuario creado correctamente');
+        }
+
+        // Función genérica para enviar datos al servidor
+        function enviarDatos(url, datos, mensajeExito) {
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(datos),
+                success: function(response) {
+                    if(response.success) {
+                        mostrarAlerta(mensajeExito, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        mostrarAlerta(response.message || 'Error en la operación', 'danger');
+                    }
+                },
+                error: function(xhr) {
+                    mostrarAlerta('Error: ' + (xhr.responseJSON?.message || xhr.statusText), 'danger');
+                }
+            });
+        }
+
+        // Mostrar alerta estilizada
+        function mostrarAlerta(mensaje, tipo) {
+            const alerta = $(`
+                <div class="alert alert-${tipo} alert-dismissible fade show position-fixed top-0 end-0 m-3" role="alert" style="z-index: 1100;">
+                    ${mensaje}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `);
+
+            $('body').append(alerta);
+
+            // Auto-eliminar después de 5 segundos
+            setTimeout(() => {
+                alerta.alert('close');
+            }, 5000);
+        }
+
+        // Limpiar formulario cuando se cierra el modal de nuevo usuario
+        $('#modalNuevoUsuario').on('hidden.bs.modal', function () {
+            $('#formNuevoUsuario')[0].reset();
+            // Limpiar clases de validación
+            $('#formNuevoUsuario').removeClass('was-validated');
+        });
+
+        // Limpiar formulario cuando se cierra el modal de edición
+        $('#modalEditarUsuario').on('hidden.bs.modal', function () {
+            $('#formEditarUsuario')[0].reset();
+            // Limpiar clases de validación
+            $('#formEditarUsuario').removeClass('was-validated');
+        });
+    </script>
+}

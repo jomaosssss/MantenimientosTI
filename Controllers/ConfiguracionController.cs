@@ -17,7 +17,7 @@ namespace ProyectoMantenimientos.Controllers
         }
 
         // --- ACCIÓN PRINCIPAL PARA MOSTRAR LA VISTA ---
-        public IActionResult Index()
+        public IActionResult Configuracion()
         {
             // Carga todos los datos necesarios para la vista (usuarios, roles, zonas)
             var usuarios = _dbocontext.Usuarios

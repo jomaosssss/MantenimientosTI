@@ -111,7 +111,7 @@
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
                         @if (User.IsInRole("ADMINISTRADOR"))
                         {
-                            <li><a class="dropdown-item" href="@Url.Action("Administrar", "Usuario")"><i class="fas fa-cog me-2"></i>Configuracion</a></li>
+                            <li><a class="dropdown-item" href="@Url.Action("Configuracion", "Configuracion")"><i class="fas fa-cog me-2"></i>Configuracion</a></li>
                         }
                         <li><hr class="dropdown-divider" /></li>
                         <li><a class="dropdown-item" href="@Url.Action("CerrarSesion", "Usuario")"><i class="fas fa-sign-out-alt me-2"></i>Salir</a></li>
