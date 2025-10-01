@@ -1,0 +1,104 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="card shadow-sm" style="width: 100%; max-width: 600px;">
+        <div class="card-header bg-white text-center">
+            <h3 class="mb-0">Dashboard</h3>
+        </div>
+
+        <div class="card-body text-center">
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                Generar y enviar reporte de mantenimientos por zona.
+            </div>
+
+            <!-- Selector de Zona -->
+            <div class="mb-4">
+                <label for="selectZona" class="form-label fw-bold">Seleccionar Zona:</label>
+                <select id="selectZona" class="form-select">
+                    <option value="">-- Seleccione una zona --</option>
+                    @foreach (var zona in ViewBag.Zonas)
+                    {
+                        <option value="@zona.ClaveZona">@zona.NombreZona</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Botón de enviar -->
+            <button id="btnEnviarCorreo" class="btn btn-success btn-lg" disabled>
+                <i class="fas fa-paper-plane me-2"></i>Generar y Enviar Reporte
+            </button>
+
+            <div id="mensajeResultado" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Habilitar/deshabilitar botón según selección
+            $('#selectZona').change(function() {
+                const zonaSeleccionada = $(this).val();
+                $('#btnEnviarCorreo').prop('disabled', !zonaSeleccionada);
+            });
+
+            $('#btnEnviarCorreo').click(function() {
+                const zonaSeleccionada = $('#selectZona').val();
+
+                if (!zonaSeleccionada) {
+                    $('#mensajeResultado').html(
+                        '<div class="alert alert-warning alert-dismissible fade show" role="alert">' +
+                        '<i class="fas fa-exclamation-triangle me-2"></i>Por favor seleccione una zona' +
+                        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                        '</div>'
+                    );
+                    return;
+                }
+
+                const btn = $(this);
+                const zonaTexto = $('#selectZona option:selected').text();
+
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Generando y Enviando...');
+                $('#mensajeResultado').html('');
+
+                $.ajax({
+                    url: '@Url.Action("EnviarCorreoPrueba", "Dashboard")',
+                    type: 'POST',
+                    data: { zonaSeleccionada: zonaSeleccionada },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#mensajeResultado').html(
+                                '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                                '<i class="fas fa-check-circle me-2"></i>' + response.message +
+                                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                                '</div>'
+                            );
+                        } else {
+                            $('#mensajeResultado').html(
+                                '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                                '<i class="fas fa-exclamation-circle me-2"></i>' + response.message +
+                                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                                '</div>'
+                            );
+                        }
+                    },
+                    error: function() {
+                        $('#mensajeResultado').html(
+                            '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                            '<i class="fas fa-exclamation-circle me-2"></i>Error de conexión. Intente nuevamente.' +
+                            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                            '</div>'
+                        );
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Generar y Enviar Reporte');
+                    }
+                });
+            });
+        });
+    </script>
+}

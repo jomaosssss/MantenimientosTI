@@ -46,6 +46,9 @@
                                 <div class="col-md-4"><p><strong>Estatus:</strong> <span id="infoEstatus">-</span></p></div>
                                 <div class="col-md-4"><p><strong>Centro:</strong> <span id="infoCentro">-</span></p></div>
                             </div>
+                            <div class="row mt-2" id="filaNumCajero" style="display: none;">
+                                <div class="col-md-4"><p><strong>Número de Cajero:</strong> <span id="infoNumCajero">-</span></p></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -233,7 +236,6 @@
             // Ocultar el formulario si se realiza una nueva búsqueda
             $('#form-body, #footer-form').hide();
 
-
             $.get('/Repositorio/BuscarPorNumeroOrden', { claveAgenda: claveAgenda })
                 .done(function(response) {
                     if (response.success) {
@@ -248,14 +250,20 @@
                         $('#infoAgencia').text(response.data.agencia);
                         $('#infoCentro').text(response.data.centro);
 
+                        // Mostrar u ocultar número de cajero según el tipo de equipo
+                        if (response.data.tipoEquipo === "CFEMÁTICO" && response.data.numCajero && response.data.numCajero !== "N/A") {
+                            $('#infoNumCajero').text(response.data.numCajero);
+                            $('#filaNumCajero').show();
+                        } else {
+                            $('#filaNumCajero').hide();
+                        }
+
                         // Establecer fecha actual
                         const hoy = new Date().toISOString().split('T')[0];
                         $('#fechaAtencion').val(hoy);
 
-                        // ===== CAMBIOS PRINCIPALES AQUÍ =====
                         // Mostrar el cuerpo del formulario y el footer
                         $('#form-body, #footer-form').show();
-                        // Ya no hay condición, las fotos siempre se muestran.
 
                     } else {
                         mostrarAlerta('Búsqueda sin resultados', response.message, 'info');

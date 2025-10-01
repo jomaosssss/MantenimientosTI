@@ -59,6 +59,12 @@ namespace ProyectoMantenimientos.Controllers
             return View();
         }
 
+        [Authorize]
+        public IActionResult Dashboard()
+        {
+            return View();
+        }
+
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         public IActionResult Inicio()
         {

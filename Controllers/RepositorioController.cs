@@ -63,8 +63,10 @@ namespace ProyectoMantenimientos.Controllers
                     });
                 }
 
-                // Determinar el tipo de equipo
+                // Determinar el tipo de equipo y obtener número de cajero si es CFEMÁTICO
                 string tipoEquipo = "CFEMÁTICO";
+                string numCajero = "N/A"; // Valor por defecto
+
                 var equipoAC = await _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
@@ -73,10 +75,26 @@ namespace ProyectoMantenimientos.Controllers
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
 
-                if (equipoAC != null)
+                // Buscar en EquipoCfematico si no es AC ni Computo
+                if (equipoAC == null && equipoComputo == null)
+                {
+                    var equipoCfematico = await _dbocontext.EquipoCfematicos
+                        .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
+
+                    if (equipoCfematico != null)
+                    {
+                        tipoEquipo = "CFEMÁTICO";
+                        numCajero = equipoCfematico.NumCajero ?? "N/A"; // Asignar número de cajero
+                    }
+                }
+                else if (equipoAC != null)
+                {
                     tipoEquipo = equipoAC.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC";
+                }
                 else if (equipoComputo != null)
+                {
                     tipoEquipo = equipoComputo.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo";
+                }
 
                 var centro = agendaItem.NumActFijoNavigation?.CatCentro;
                 var agencia = centro?.CatAgencium;
@@ -108,7 +126,8 @@ namespace ProyectoMantenimientos.Controllers
                         zona = zona?.NombreZona ?? "No especificado",
                         agencia = agencia?.NombreAgencia ?? "No especificado",
                         centro = centro?.NombreCentro ?? "No especificado",
-                        estatus = agendaItem.Estatus
+                        estatus = agendaItem.Estatus,
+                        numCajero = numCajero // Agregar el número de cajero a la respuesta
                     }
                 });
             }
@@ -496,6 +515,7 @@ namespace ProyectoMantenimientos.Controllers
                                     .ThenInclude(a => a.CatZona)
                     .Include(m => m.Agendum)
                         .ThenInclude(a => a.ClaveTipoMttoNavigation)
+                    .Include(m => m.RpeNavigation)
                     .Where(m => m.NumOrden == numOrden);
 
                 // Si no es administrador, filtrar por zona
@@ -518,6 +538,8 @@ namespace ProyectoMantenimientos.Controllers
 
                 // Determinar tipo de equipo
                 string tipoEquipo = "CFEMÁTICO";
+                string numCajero = "N/A";
+
                 var equipoAC = await _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
@@ -526,36 +548,67 @@ namespace ProyectoMantenimientos.Controllers
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
 
-                if (equipoAC != null)
+                if (equipoAC == null && equipoComputo == null)
+                {
+                    var equipoCfematico = await _dbocontext.EquipoCfematicos
+                        .FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
+
+                    if (equipoCfematico != null)
+                    {
+                        tipoEquipo = "CFEMÁTICO";
+                        numCajero = equipoCfematico.NumCajero ?? "N/A";
+                    }
+                }
+                else if (equipoAC != null)
+                {
                     tipoEquipo = equipoAC.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC";
+                }
                 else if (equipoComputo != null)
+                {
                     tipoEquipo = equipoComputo.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo";
+                }
 
                 var centro = mantenimiento.Agendum.NumActFijoNavigation?.CatCentro;
                 var agencia = centro?.CatAgencium;
                 var zona = agencia?.CatZona;
 
-                // Construir el HTML con los detalles
+                var fechaProgramada = mantenimiento.Agendum?.FechaProgramada.ToString("dd/MM/yyyy") ?? "No especificada";
+                var nombreUsuario = $"{mantenimiento.RpeNavigation?.Nombre ?? ""} {mantenimiento.RpeNavigation?.ApellidoP ?? ""} {mantenimiento.RpeNavigation?.ApellidoM ?? ""}".Trim();
+
+                // Construir el HTML con los detalles - NÚMERO DE CAJERO PRIMERO
+                var htmlInfoEquipo = @"
+                <ul class='list-group list-group-flush'>";
+
+                    // Mostrar número de cajero PRIMERO si es CFEMÁTICO y tiene valor
+                    if (tipoEquipo == "CFEMÁTICO" && numCajero != "N/A")
+                    {
+                        htmlInfoEquipo += $@"<li class='list-group-item'><strong>Número de Cajero:</strong> {numCajero}</li>";
+                    }
+
+                    htmlInfoEquipo += $@"
+                    <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {mantenimiento.NumActFijo}</li>
+                    <li class='list-group-item'><strong>Tipo de Equipo:</strong> {tipoEquipo}</li>
+                    <li class='list-group-item'><strong>Zona:</strong> {zona?.NombreZona ?? "No especificado"}</li>
+                    <li class='list-group-item'><strong>Agencia:</strong> {agencia?.NombreAgencia ?? "No especificado"}</li>
+                    <li class='list-group-item'><strong>Centro:</strong> {centro?.NombreCentro ?? "No especificado"}</li>
+                </ul>";
+
                 var html = $@"
                 <div class='row'>
                     <div class='col-md-6'>
                         <h5>Información del Equipo</h5>
-                        <ul class='list-group list-group-flush'>
-                            <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {mantenimiento.NumActFijo}</li>
-                            <li class='list-group-item'><strong>Tipo de Equipo:</strong> {tipoEquipo}</li>
-                            <li class='list-group-item'><strong>Zona:</strong> {zona?.NombreZona ?? "No especificado"}</li>
-                            <li class='list-group-item'><strong>Agencia:</strong> {agencia?.NombreAgencia ?? "No especificado"}</li>
-                            <li class='list-group-item'><strong>Centro:</strong> {centro?.NombreCentro ?? "No especificado"}</li>
-                        </ul>
+                        {htmlInfoEquipo}
                     </div>
                     <div class='col-md-6'>
                         <h5>Información del Mantenimiento</h5>
                         <ul class='list-group list-group-flush'>
                             <li class='list-group-item'><strong>Número de Orden:</strong> {mantenimiento.NumOrden}</li>
-
+                            <li class='list-group-item'><strong>Fecha Programada:</strong> {fechaProgramada}</li>
+                            <li class='list-group-item'><strong>Fecha de Atención:</strong> {mantenimiento.FechaAtencion.ToString("dd/MM/yyyy")}</li>
                             <li class='list-group-item'><strong>Fecha de Terminación:</strong> {mantenimiento.FechaInsercion.ToString("dd/MM/yyyy HH:mm")}</li>
                             <li class='list-group-item'><strong>Tipo de Mantenimiento:</strong> {mantenimiento.Agendum.ClaveTipoMttoNavigation?.NombreTipoM}</li>
-                            <li class='list-group-item'><strong>Técnico (RPE):</strong> {mantenimiento.Rpe}</li>
+                            <li class='list-group-item'><strong>RPE:</strong> {mantenimiento.Rpe}</li>
+                            <li class='list-group-item'><strong>Nombre:</strong> {nombreUsuario}</li>
                         </ul>
                     </div>
                 </div>

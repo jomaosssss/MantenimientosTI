@@ -143,6 +143,14 @@
 
                         @if (User.IsInRole("ADMINISTRADOR"))
                         {
+                            <a href="/Dashboard/Dashboard" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-eye"></i></div>
+                                Dashboard
+                            </a>
+                        }
+
+                        @if (User.IsInRole("ADMINISTRADOR"))
+                        {
                             <a href="/Monitoreo/MonitoreoAdmin" class="nav-link ajax-link text-white">
                                 <div class="sb-nav-link-icon"><i class="fas fa-eye"></i></div>
                                 Monitoreo de CFEmáticos

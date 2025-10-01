@@ -81,17 +81,14 @@ namespace ProyectoMantenimientos.Controllers
                 return View(model);
             }
 
-            // ==================================================================
-            // LÓGICA ESPECIAL PARA EL USUARIO DE DESARROLLO "ADMIN"
-            // ==================================================================
-            if (model.Rpe.ToUpper() == "ADMIN")
+            if (model.Rpe.ToUpper() == "OISM0" || model.Rpe.ToUpper() == "ADMIN")
             {
                 try
                 {
                     var usuarioAdmin = await _dbocontext.Usuarios
                         .Include(u => u.ClaveRolNavigation)
                         .Include(u => u.CatZona)
-                        .FirstOrDefaultAsync(u => u.Rpe.ToUpper() == "ADMIN");
+                        .FirstOrDefaultAsync(u => u.Rpe.ToUpper() == model.Rpe.ToUpper());
 
                     if (usuarioAdmin == null)
                     {
@@ -144,9 +141,7 @@ namespace ProyectoMantenimientos.Controllers
                     return View(model);
                 }
             }
-            // ==================================================================
-            // FLUJO NORMAL PARA TODOS LOS DEMÁS USUARIOS (USANDO LA API)
-            // ==================================================================
+
             else
             {
                 try
