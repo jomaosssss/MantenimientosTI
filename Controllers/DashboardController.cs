@@ -103,15 +103,15 @@ namespace MantenimientosTI.Controllers
                     Subject = $"Reporte de Mantenimientos - Zona {nombreZona} - {mesActual}",
                     Body = $@"Estimado usuario,
 
-                    Se adjunta el reporte de mantenimientos correspondiente a la zona {nombreZona} para el mes de {mesActual}.
+Se adjunta el reporte de mantenimientos correspondiente a la zona {nombreZona} para el mes de {mesActual}.
 
-                    El archivo contiene 3 hojas:
-                    - CFEmáticos
-                    - Equipos de Atención a Clientes  
-                    - Equipos de Cómputo
+El archivo contiene 3 hojas:
+- CFEmáticos
+- Equipos de Atención a Clientes  
+- Equipos de Cómputo
 
-                    Saludos,
-                    Sistema ARGOS",
+Saludos,
+Sistema ARGOS",
                     IsBodyHtml = false
                 };
 
@@ -321,7 +321,7 @@ namespace MantenimientosTI.Controllers
 
             // Configurar encabezados
             string[] headers = { "ZONA", "AGENCIA", "CENTRO", "NÚMERO DE ACTIVO FIJO", "NÚMERO DE SERIE", "TIPO DE EQUIPO",
-                               "Fecha Programada", "Fecha Atención", "Fecha Inserción", "Problemas", "Diagnóstico", "Observaciones" };
+                               "FECHA PROGRAMADA", "FECHA DE ATENCIÓN", "FECHA DE INSERCIÓN", "PROBLEMAS", "DIAGNÓSTICO", "OBSERVACIONES" };
 
             for (int i = 0; i < headers.Length; i++)
             {
@@ -330,7 +330,7 @@ namespace MantenimientosTI.Controllers
 
             // Estilo para encabezados
             var headerRange = worksheet.Range(1, 1, 1, headers.Length);
-            headerRange.Style.Fill.BackgroundColor = XLColor.LightGreen;
+            headerRange.Style.Fill.BackgroundColor = XLColor.Gray;
             headerRange.Style.Font.Bold = true;
 
             // Llenar datos
@@ -425,9 +425,9 @@ namespace MantenimientosTI.Controllers
                                }).ToListAsync();
 
             // Configurar encabezados
-            string[] headers = { "Zona", "Agencia", "Centro", "Activo Fijo", "Serie PC", "Serie Monitor",
-                               "RPE Asignado", "Nombre Responsable", "Tipo Equipo", "Fecha Programada",
-                               "Fecha Atención", "Fecha Inserción", "Problemas", "Diagnóstico", "Observaciones" };
+            string[] headers = { "ZONA", "AGENCIA", "CENTRO", "NÚMERO DE ACTIVO FIJO", "NÚMERO DE SERIE PC", "NÚMERO DE SERIE MONITOR",
+                               "RPE", "NOMBRE", "TIPO DE EQUIPO", "FECHA PROGRAMADA",
+                               "FECHA DE ATENCIÓN", "FECHA DE INSERCIÓN", "PROBLEMAS", "DIAGNÓSTICO", "OBSERVACIONES" };
 
             for (int i = 0; i < headers.Length; i++)
             {
@@ -436,7 +436,7 @@ namespace MantenimientosTI.Controllers
 
             // Estilo para encabezados
             var headerRange = worksheet.Range(1, 1, 1, headers.Length);
-            headerRange.Style.Fill.BackgroundColor = XLColor.LightYellow;
+            headerRange.Style.Fill.BackgroundColor = XLColor.Gray;
             headerRange.Style.Font.Bold = true;
 
             // Llenar datos
