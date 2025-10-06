@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MantenimientosTI.Models;
 using Microsoft.AspNetCore.Identity; // Necesario para PasswordHasher
+using MantenimientosTI.Services;
+using MantenimientosTI.Helpers;
+
 
 namespace ProyectoMantenimientos.Controllers
 {
@@ -10,25 +13,42 @@ namespace ProyectoMantenimientos.Controllers
     public class ConfiguracionController : Controller
     {
         private readonly MantenimientosTIContext _dbocontext;
+        private readonly BitacoraService _bitacora;
 
-        public ConfiguracionController(MantenimientosTIContext context)
+
+
+
+        public ConfiguracionController(MantenimientosTIContext context, BitacoraService bitacora)
         {
             _dbocontext = context;
+            _bitacora = bitacora;
         }
 
         // --- ACCIÓN PRINCIPAL PARA MOSTRAR LA VISTA ---
-        public IActionResult Configuracion()
+        // En: /Controllers/ConfiguracionController.cs
+
+        public async Task<IActionResult> Configuracion()
         {
-            // Carga todos los datos necesarios para la vista (usuarios, roles, zonas)
-            var usuarios = _dbocontext.Usuarios
+            // Carga los datos para los modales de usuarios
+            ViewBag.Roles = await _dbocontext.CatRols.ToListAsync();
+            ViewBag.Zonas = await _dbocontext.CatZonas.ToListAsync();
+
+            // --- CÓDIGO NUEVO ---
+            // Consulta los últimos 50 registros de la bitácora y los envía a la vista
+            var ultimosMovimientos = await _dbocontext.RegistroActividad
+                .OrderByDescending(r => r.FechaHora)
+                .Take(50)
+                .ToListAsync();
+            ViewBag.Bitacora = ultimosMovimientos;
+            // --- FIN DEL CÓDIGO NUEVO ---
+
+            // Carga la lista de usuarios para la tabla principal
+            var usuarios = await _dbocontext.Usuarios
                 .Include(u => u.ClaveRolNavigation)
                 .Include(u => u.CatZona)
-                .ToList();
+                .ToListAsync();
 
-            ViewBag.Roles = _dbocontext.CatRols.ToList();
-            ViewBag.Zonas = _dbocontext.CatZonas.ToList();
-
-            return View(usuarios); // El nombre de la vista por defecto será Index.cshtml o puedes especificar "Configuracion"
+            return View(usuarios);
         }
 
         // --- ENDPOINTS PARA LA GESTIÓN DE USUARIOS (Llamados por AJAX) ---
@@ -130,20 +150,43 @@ namespace ProyectoMantenimientos.Controllers
             return Json(new { habilitado = estaHabilitado });
         }
 
+        // En /Controllers/ConfiguracionController.cs
+
         [HttpPost]
-        public IActionResult CambiarEstadoAgendarPreventivos([FromBody] bool habilitar)
+        [Authorize(Roles = "ADMINISTRADOR")]
+        public async Task<IActionResult> CambiarEstadoAgendarPreventivos([FromBody] bool habilitar)
         {
-            var config = _dbocontext.Configuraciones
-                .FirstOrDefault(c => c.ClaveConfiguracion == "AGENDAR_PREVENTIVOS");
-
-            if (config == null)
+            try
             {
-                return Json(new { success = false, message = "Clave de configuración no encontrada." });
-            }
+                var config = await _dbocontext.Configuraciones
+                    .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "AGENDAR_PREVENTIVOS");
 
-            config.Valor = habilitar ? "1" : "0";
-            _dbocontext.SaveChanges();
-            return Json(new { success = true });
+                if (config == null)
+                {
+                    config = new Configuracion { ClaveConfiguracion = "AGENDAR_PREVENTIVOS" };
+                    _dbocontext.Configuraciones.Add(config);
+                }
+
+                config.Valor = habilitar ? "1" : "0";
+
+                // Prepara el registro de bitácora
+                var usuario = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
+                var accion = habilitar ? BitacoraAcciones.HabilitarCargaCsv : BitacoraAcciones.DeshabilitarCargaCsv;
+                var descripcion = habilitar
+                    ? "Habilitó la función de carga masiva de mantenimientos."
+                    : "Deshabilitó la función de carga masiva de mantenimientos.";
+
+                _bitacora.RegistrarActividad(usuario, accion, descripcion);
+
+                // Guarda AMBOS cambios (configuración y bitácora) en una sola transacción
+                await _dbocontext.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al actualizar la configuración: " + ex.Message });
+            }
         }
 
 
