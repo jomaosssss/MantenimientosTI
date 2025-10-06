@@ -17,7 +17,7 @@ namespace ProyectoMantenimientos.Controllers
         [Authorize(Roles = "ADMINISTRADOR")]
         public IActionResult MonitoreoAdmin()
         {
-            // Última fecha de actualización
+            // Obtener la última fecha de actualización
             var ultimaActualizacion = _dbocontext.RegistroEventos
                 .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
 
@@ -143,7 +143,7 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { evento.Severidad, evento.ClaveFalla, evento.Importancia }
                 )
-                .Where(x => x.Importancia == 1) // ¡FILTRO AÑADIDO!
+                .Where(x => x.Importancia == 1)
                 .GroupBy(x => new { x.Severidad, x.ClaveFalla })
                 .Select(g => new {
                     Severidad = g.Key.Severidad,
@@ -183,7 +183,7 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { registro, evento }
                 )
-                .Where(x => x.evento.Importancia == 1) // ¡FILTRO AÑADIDO!
+                .Where(x => x.evento.Importancia == 1)
                 .OrderByDescending(x => x.registro.FechaEvento)
                 .Take(5)
                 .Select(x => new {
@@ -209,7 +209,7 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { registro, evento }
                 )
-                .Where(x => x.evento.Importancia == 1) // ¡FILTRO AÑADIDO!
+                .Where(x => x.evento.Importancia == 1)
                 .OrderBy(x => x.registro.FechaEvento)
                 .Select(x => new {
                     x.registro.FechaEvento,
@@ -269,7 +269,7 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { registro, evento }
                 )
-                .Where(x => x.evento.Importancia == 1 && x.evento.Severidad == severidad && x.evento.ClaveFalla == tipo) // ¡FILTRO AÑADIDO!
+                .Where(x => x.evento.Importancia == 1 && x.evento.Severidad == severidad && x.evento.ClaveFalla == tipo)
                 .OrderByDescending(x => x.registro.FechaEvento)
                 .Select(x => new {
                     fuente = x.evento.Fuente,
@@ -328,7 +328,6 @@ namespace ProyectoMantenimientos.Controllers
                 .GroupBy(x => x.Descripcion)
                 .Select(g => new {
                     descripcion = g.Key,
-                    // --- LÍNEAS CORREGIDAS ---
                     ene = g.Count(x => x.FechaEvento.Month == 1),
                     feb = g.Count(x => x.FechaEvento.Month == 2),
                     mar = g.Count(x => x.FechaEvento.Month == 3),
@@ -360,7 +359,7 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { registro, evento }
                 )
-                .Where(x => x.evento.Importancia == 1 && // ¡FILTRO AÑADIDO!
+                .Where(x => x.evento.Importancia == 1 &&
                               x.evento.Descripcion == descripcion &&
                               (string.IsNullOrEmpty(claveFalla) || x.evento.ClaveFalla == claveFalla));
 

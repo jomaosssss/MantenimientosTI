@@ -1,14 +1,14 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+    <title>ARGOS</title>
+    <link rel="icon" type="image/png" href="~/images/LOGO.png">
+
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <meta name="description" content="" />
     <meta name="author" content="" />
-
-    <title>ARGOS</title>
-    <link rel="icon" type="image/png" href="~/images/LOGO.png">
 
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -133,18 +133,10 @@
                             Bandeja de Entrada
                         </a>
 
-                        @* @if (User.IsInRole("ADMINISTRADOR"))
-                        {
-                            <a href="/Usuario/Administrar" class="nav-link text-white">
-                                <div class="sb-nav-link-icon"><i class="fas fa-user"></i></div>
-                                Administrar Usuarios
-                            </a>
-                        } *@
-
                         @if (User.IsInRole("ADMINISTRADOR"))
                         {
                             <a href="/Dashboard/Dashboard" class="nav-link ajax-link text-white">
-                                <div class="sb-nav-link-icon"><i class="fas fa-eye"></i></div>
+                                <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                                 Dashboard
                             </a>
                         }
@@ -188,7 +180,7 @@
                                     <nav class="sb-sidenav-menu-nested nav flex-column ps-3">
 
                                         <a class="nav-link text-white ajax-link" href="/Agenda/AgendarCorrectivos">
-                                            CFEmatico
+                                            CFEmático
                                         </a>
                                     </nav>
                                 </div>

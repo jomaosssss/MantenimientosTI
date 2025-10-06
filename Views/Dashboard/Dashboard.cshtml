@@ -3,67 +3,332 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 75vh;">
-    <div class="card shadow-sm" style="width: 100%; max-width: 600px;">
-        <div class="card-header bg-white text-center">
-            <h3 class="mb-0">Reportes</h3>
+<style>
+    /* Estilos para las tarjetas de conteo */
+    .hover-scale {
+        transition: all 0.3s ease;
+    }
+
+        .hover-scale:hover {
+            transform: translateY(-5px);
+        }
+
+    /* Efecto para tarjeta azul */
+    .card-bg-primary:hover {
+        box-shadow: 0 10px 20px rgba(13, 110, 253, 0.2) !important;
+    }
+
+    /* Efecto para tarjeta verde */
+    .card-bg-success:hover {
+        box-shadow: 0 10px 20px rgba(40, 167, 69, 0.2) !important;
+    }
+
+    /* Efecto para tarjeta amarilla */
+    .card-bg-warning:hover {
+        box-shadow: 0 10px 20px rgba(255, 193, 7, 0.2) !important;
+    }
+
+    /* Efecto para tarjeta gris */
+    .card-bg-secondary:hover {
+        box-shadow: 0 10px 20px rgba(108, 117, 125, 0.2) !important;
+    }
+
+    .icon-shape {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-count {
+        border-radius: 15px;
+        min-height: 120px;
+        border: none;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Dashboard</h3>
         </div>
 
-        <div class="card-body text-center">
-            <!-- Selector de Zona -->
-            <div class="mb-4">
-                <label for="selectZona" class="form-label fw-bold">Seleccionar Zona:</label>
-                <select id="selectZona" class="form-select">
-                    <option value="">-- Seleccione una zona --</option>
-                    @foreach (var zona in ViewBag.Zonas)
-                    {
-                        <option value="@zona.ClaveZona">@zona.NombreZona</option>
-                    }
-                </select>
+        <div class="card-body">
+            <!-- Primera fila: Tarjetas de conteo estilizadas -->
+            <div class="row g-3 mb-4">
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 h-100 hover-scale card-count card-bg-primary" style="background-color: #0d6efd;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-primary mb-1 fw-bold" style="font-size: 0.75rem;">TARJETA DE CONTEO #1</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">0</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-chart-line text-primary" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 h-100 hover-scale card-count card-bg-success" style="background-color: #28a745;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-success mb-1 fw-bold" style="font-size: 0.75rem;">TARJETA DE CONTEO #2</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">0</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-chart-bar text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 h-100 hover-scale card-count card-bg-warning" style="background-color: #ffc107;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-warning mb-1 fw-bold" style="font-size: 0.75rem;">TARJETA DE CONTEO #3</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">0</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-chart-pie text-warning" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 h-100 hover-scale card-count card-bg-secondary" style="background-color: #808080;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-black-50 mb-1 fw-bold" style="font-size: 0.75rem;">TARJETA DE CONTEO #4</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">0</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-calendar-alt text-black-50" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Botón de enviar -->
-            <button id="btnEnviarCorreo" class="btn btn-success btn-lg" disabled>
-                <i class="fas fa-paper-plane me-4"></i>Enviar
-            </button>
+            <!-- Segunda fila: Envío de reporte y gráfica de líneas -->
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">Envío de Reporte</h5>
+                        </div>
+                        <div class="card-body text-center d-flex flex-column justify-content-center">
+                            <div id="mensajeResultado" class="mt-3"></div>
+                            <button id="btnEnviarCorreo" class="btn btn-success btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Enviar Reporte
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-            <div id="mensajeResultado" class="mt-3"></div>
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header bg-light text-dark">
+                            <h5 class="mb-0">Gráfica de Líneas</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="chart-container" style="position: relative; height:300px;">
+                                <canvas id="lineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tercera fila: Gráficas de pastel y barras -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header bg-light text-dark">
+                            <h5 class="mb-0">Gráfica de Pastel</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="chart-container" style="position: relative; height:300px;">
+                                <canvas id="pieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header bg-light text-dark">
+                            <h5 class="mb-0">Gráfica de Barras</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="chart-container" style="position: relative; height:300px;">
+                                <canvas id="barChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
+    <!-- Incluir Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         $(document).ready(function() {
-            // Habilitar/deshabilitar botón según selección
-            $('#selectZona').change(function() {
-                const zonaSeleccionada = $(this).val();
-                $('#btnEnviarCorreo').prop('disabled', !zonaSeleccionada);
+            // Gráfica de Líneas
+            var lineCtx = document.getElementById('lineChart').getContext('2d');
+            var lineChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                    datasets: [{
+                        label: 'My First Dataset',
+                        data: [65, 59, 80, 81, 56, 55, 40],
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 40,
+                            max: 85,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Trend Data Over Time'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
             });
 
-            $('#btnEnviarCorreo').click(function() {
-                const zonaSeleccionada = $('#selectZona').val();
-
-                if (!zonaSeleccionada) {
-                    $('#mensajeResultado').html(
-                        '<div class="alert alert-warning alert-dismissible fade show" role="alert">' +
-                        '<i class="fas fa-exclamation-triangle me-2"></i>Por favor seleccione una zona' +
-                        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                        '</div>'
-                    );
-                    return;
+            // Gráfica de Pastel
+            var pieCtx = document.getElementById('pieChart').getContext('2d');
+            var pieChart = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Producto A', 'Producto B', 'Producto C', 'Producto D'],
+                    datasets: [{
+                        data: [30, 25, 20, 25],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Distribución de Ventas'
+                        }
+                    }
                 }
+            });
 
+            // Gráfica de Barras
+            var barCtx = document.getElementById('barChart').getContext('2d');
+            var barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                    datasets: [{
+                        label: 'Ventas 2023',
+                        data: [65, 59, 80, 81, 56, 55],
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Ventas 2024',
+                        data: [28, 48, 40, 19, 86, 27],
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Ventas Mensuales'
+                        }
+                    }
+                }
+            });
+
+            // Función para enviar correo (existente)
+            $('#btnEnviarCorreo').click(function() {
                 const btn = $(this);
-                const zonaTexto = $('#selectZona option:selected').text();
 
-                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Generando y Enviando...');
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Enviando...');
                 $('#mensajeResultado').html('');
 
                 $.ajax({
                     url: '@Url.Action("EnviarCorreoPrueba", "Dashboard")',
                     type: 'POST',
-                    data: { zonaSeleccionada: zonaSeleccionada },
+                    data: {},
                     success: function(response) {
                         if (response.success) {
                             $('#mensajeResultado').html(
@@ -90,7 +355,7 @@
                         );
                     },
                     complete: function() {
-                        btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Generar y Enviar Reporte');
+                        btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Enviar Reporte');
                     }
                 });
             });

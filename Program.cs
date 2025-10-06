@@ -1,10 +1,9 @@
 using Microsoft.Extensions.FileProviders;
 using MantenimientosTI.Models;
-using MantenimientosTI.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
-using MantenimientosTI.Models;
+using MantenimientosTI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +12,10 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<MantenimientosTIContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ConexionSQL")));
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
+
+// Registrar el servicio programado
+builder.Services.AddHostedService<ScheduledEmailService>();
+
 // Configuración de sesión
 builder.Services.AddSession(options =>
 {
@@ -53,7 +56,6 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseHttpsRedirection();
 app.UseRouting();
 
-// IMPORTANTE: El orden de estos middlewares es crucial
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -645,6 +645,10 @@ public partial class MantenimientosTIContext : DbContext
                 .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("nombre");
+            entity.Property(e => e.RecibirReporte)
+                .HasMaxLength(2)
+                .IsUnicode(false)
+                .HasColumnName("recibirReporte");
 
             entity.HasOne(d => d.ClaveRolNavigation).WithMany(p => p.Usuarios)
                 .HasForeignKey(d => d.ClaveRol)

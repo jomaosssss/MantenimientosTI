@@ -25,6 +25,8 @@ public partial class Usuario
 
     public string Estatus { get; set; } = null!;
 
+    public string RecibirReporte { get; set; } = null!;
+
     public virtual CatZona CatZona { get; set; } = null!;
 
     public virtual CatRol ClaveRolNavigation { get; set; } = null!;

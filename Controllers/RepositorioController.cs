@@ -65,7 +65,7 @@ namespace ProyectoMantenimientos.Controllers
 
                 // Determinar el tipo de equipo y obtener número de cajero si es CFEMÁTICO
                 string tipoEquipo = "CFEMÁTICO";
-                string numCajero = "N/A"; // Valor por defecto
+                string numCajero = "N/A";
 
                 var equipoAC = await _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
@@ -84,7 +84,7 @@ namespace ProyectoMantenimientos.Controllers
                     if (equipoCfematico != null)
                     {
                         tipoEquipo = "CFEMÁTICO";
-                        numCajero = equipoCfematico.NumCajero ?? "N/A"; // Asignar número de cajero
+                        numCajero = equipoCfematico.NumCajero ?? "N/A";
                     }
                 }
                 else if (equipoAC != null)
@@ -127,7 +127,7 @@ namespace ProyectoMantenimientos.Controllers
                         agencia = agencia?.NombreAgencia ?? "No especificado",
                         centro = centro?.NombreCentro ?? "No especificado",
                         estatus = agendaItem.Estatus,
-                        numCajero = numCajero // Agregar el número de cajero a la respuesta
+                        numCajero = numCajero
                     }
                 });
             }
@@ -141,7 +141,7 @@ namespace ProyectoMantenimientos.Controllers
         [HttpPost]
         public async Task<IActionResult> TerminarMantenimiento(
             [FromForm] int numOrden,
-            [FromForm] string fechaAtencion, // formato yyyy-MM-dd
+            [FromForm] string fechaAtencion,
             [FromForm] string problemas,
             [FromForm] string diagnostico,
             [FromForm] string observaciones,
@@ -200,10 +200,6 @@ namespace ProyectoMantenimientos.Controllers
 
                     _dbocontext.Mantenimientos.Add(mantenimiento);
                     await _dbocontext.SaveChangesAsync();
-
-                    // ===== CAMBIO EN EL CONTROLADOR =====
-                    // Se movió este bloque fuera de la condición if (agendaItem.ClaveTipoMtto == "C")
-                    // Ahora las fotos se procesan SIEMPRE que se envíen.
 
                     var foto = new Foto
                     {
@@ -325,7 +321,7 @@ namespace ProyectoMantenimientos.Controllers
             {
                 // Obtener el rol del usuario desde la sesión
                 var claveRolUsuario = HttpContext.Session.GetInt32("Rol");
-                var esAdministrador = claveRolUsuario == 1; // 1 = Administrador
+                var esAdministrador = claveRolUsuario == 1;
 
                 // Consulta base para mantenimientos terminados
                 var query = _dbocontext.Mantenimientos
@@ -504,7 +500,7 @@ namespace ProyectoMantenimientos.Controllers
             {
                 // Obtener el rol del usuario desde la sesión
                 var claveRolUsuario = HttpContext.Session.GetInt32("Rol");
-                var esAdministrador = claveRolUsuario == 1; // 1 = Administrador
+                var esAdministrador = claveRolUsuario == 1;
 
                 // Consulta base
                 var query = _dbocontext.Mantenimientos

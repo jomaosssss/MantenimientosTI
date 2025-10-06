@@ -72,7 +72,7 @@ namespace ProyectoMantenimientos.Controllers
             int claveRol = HttpContext.Session.GetInt32("Rol") ?? 0;
             var hoy = DateOnly.FromDateTime(DateTime.Now);
 
-            // Obtener primer y último día del mes actual
+            // Para obtener el primer y último día del mes actual
             var primerDiaMes = new DateOnly(hoy.Year, hoy.Month, 1);
             var ultimoDiaMes = new DateOnly(hoy.Year, hoy.Month, DateTime.DaysInMonth(hoy.Year, hoy.Month));
 
@@ -83,7 +83,7 @@ namespace ProyectoMantenimientos.Controllers
                 DateTime.DaysInMonth(primerDiaProximoMes.Year, primerDiaProximoMes.Month)
             );
 
-            // 1. CONSULTAS PARA LOS CONTADORES DE LAS TARJETAS
+            // Terminados de este mes
 
             var terminadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
@@ -93,22 +93,26 @@ namespace ProyectoMantenimientos.Controllers
                a.FechaProgramada >= primerDiaMes &&
                a.FechaProgramada <= ultimoDiaMes);
 
-            // Consulta para contar pendientes (SOLO de este mes)
+            // Pendientes de este mes
+
             var pendientesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.Estatus == "PENDIENTE" &&
-                       a.FechaProgramada >= primerDiaMes && // <-- AÑADE ESTA LÍNEA
+                       a.FechaProgramada >= primerDiaMes &&
                        a.FechaProgramada <= ultimoDiaMes);
 
-            // NUEVA CONSULTA: Todos los programados este mes (sin importar estatus)
+            // Programados de este mes
+
             var programadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
+
+            // Programados el proximo mes
 
             var proximoMesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
@@ -117,7 +121,8 @@ namespace ProyectoMantenimientos.Controllers
                 .Where(a => a.FechaProgramada >= primerDiaProximoMes &&
                         a.FechaProgramada <= ultimoDiaProximoMes);
 
-            // Aplicar filtro por zona SOLO si NO es administrador (Rol = 1)
+            // Filtro para mostrar conteos por zona si no es tecnico de zona
+
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 terminadosQuery = terminadosQuery
@@ -137,12 +142,14 @@ namespace ProyectoMantenimientos.Controllers
             }
 
             // Obtener los conteos
+
             int terminadosCount = terminadosQuery.Count();
             int pendientesCount = pendientesQuery.Count();
             int programadosCount = programadosQuery.Count();
             int proximoMesCount = proximoMesQuery.Count();
 
-            // 2. CONSULTA PARA LAS TABLAS (SOLO PENDIENTES - mantiene el filtro original)
+            // Consulta de registros con estatus PENDIENTE para las tablas
+
             var agendaQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -151,7 +158,8 @@ namespace ProyectoMantenimientos.Controllers
                 .Include(a => a.ClaveTipoMttoNavigation)
                 .Where(a => a.Estatus == "PENDIENTE");
 
-            // Filtro por zona si no es administrador
+            // Filtro para mostrar registros por zona si es tecnico de zona
+
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 agendaQuery = agendaQuery
@@ -161,7 +169,8 @@ namespace ProyectoMantenimientos.Controllers
 
             var agenda = agendaQuery.ToList();
 
-            // 3. CLASIFICAR LOS EQUIPOS EN LAS LISTAS CORRESPONDIENTES
+            // Clasificar los registros en las listas correspondientes
+
             var cfematicos = new List<VMAgendaVista>();
             var atencionClientes = new List<VMAgendaVista>();
             var computo = new List<VMAgendaVista>();
@@ -171,6 +180,7 @@ namespace ProyectoMantenimientos.Controllers
                 string tipo = "CFEMÁTICO";
 
                 // Determinar el tipo de equipo
+
                 var equipoAc = _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
@@ -187,18 +197,21 @@ namespace ProyectoMantenimientos.Controllers
                 }
 
                 // Actualizar tipo según el equipo encontrado
+
                 if (equipoAc?.ClaveTipoEquipoNavigation != null)
                     tipo = equipoAc.ClaveTipoEquipoNavigation.NombreTipoEquipo;
                 else if (equipoComputo?.ClaveTipoEquipoNavigation != null)
                     tipo = equipoComputo.ClaveTipoEquipoNavigation.NombreTipoEquipo;
 
                 // Obtener datos de ubicación
+
                 var centro = item.NumActFijoNavigation?.CatCentro;
                 var nombreCentro = item.NumActFijoNavigation?.CatCentro?.NombreCentro ?? "Sin centro";
                 var nombreAgencia = centro?.CatAgencium?.NombreAgencia ?? "Sin agencia";
                 var nombreZona = centro?.CatAgencium?.CatZona?.NombreZona ?? "Sin zona";
 
                 // Crear ViewModel
+
                 var viewModel = new VMAgendaVista
                 {
                     NumActFijo = item.NumActFijo,
@@ -214,16 +227,19 @@ namespace ProyectoMantenimientos.Controllers
                 };
 
                 // Clasificar en las listas correspondientes
+
                 if (equipoAc != null)
                     atencionClientes.Add(viewModel);
                 else if (equipoComputo != null)
                 {
-                    // --- LÍNEAS NUEVAS ---
-                    // Si el equipo es de cómputo, preparamos la cadena del usuario.
+
+                    // Si el equipo es de cómputo, preparamos la cadena del usuario para mostrar en la tabla
+
                     string rpe = equipoComputo.Rpe;
                     string nombre = equipoComputo.NombreRpe;
 
-                    // Verificamos si los datos existen para evitar mostrar "- "
+                    // Verificamos si los datos existen
+
                     if (!string.IsNullOrEmpty(rpe) && !string.IsNullOrEmpty(nombre))
                     {
                         viewModel.UsuarioAsignado = $"{rpe} - {nombre}";
@@ -233,13 +249,14 @@ namespace ProyectoMantenimientos.Controllers
                         viewModel.UsuarioAsignado = "No asignado";
                     }
 
-                    computo.Add(viewModel); // <-- Ahora el viewModel lleva el dato extra
+                    computo.Add(viewModel);
                 }
                 else
                     cfematicos.Add(viewModel);
             }
 
-            // 4. CREAR EL VIEWMODEL FINAL
+            // Crear el ViewModel final
+
             var vmInicio = new VMAgendaInicio
             {
                 Cfematicos = cfematicos.OrderBy(vm => vm.FechaProgramada).ToList(),
@@ -247,24 +264,18 @@ namespace ProyectoMantenimientos.Controllers
                 Computo = computo.OrderBy(vm => vm.FechaProgramada).ToList(),
                 TerminadosCount = terminadosCount,
                 PendientesCount = pendientesCount,
-                ProgramadosCount = programadosCount, // Nueva propiedad
+                ProgramadosCount = programadosCount,
                 ProgramadosProximoMesCount = proximoMesCount
             };
 
             return View(vmInicio);
         }
 
-        // En el archivo: /Controllers/HomeController.cs
-
-        // --- REEMPLAZA TU MÉTODO CON ESTE ---
         [HttpGet]
-        // 1. Añadimos 'int claveAgenda' para recibir el dato del JavaScript.
         public IActionResult ObtenerDetallesEquipo(string numActFijo, int claveAgenda)
         {
-            // 2. Guardamos el valor recibido en el ViewBag para que las vistas parciales lo usen.
             ViewBag.NumeroDeOrden = claveAgenda;
 
-            // El resto de tu código para buscar el equipo está perfecto y no cambia.
             var cfematico = _dbocontext.EquipoCfematicos
                 .Include(e => e.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -320,6 +331,7 @@ namespace ProyectoMantenimientos.Controllers
                 var fecha = DateOnly.Parse(fechaProgramada);
 
                 // 1) Buscar en CFEmáticos
+
                 var cfData = (
                     from a in _dbocontext.Agenda
                     join b in _dbocontext.EquipoCfematicos
@@ -361,6 +373,7 @@ namespace ProyectoMantenimientos.Controllers
                 }
 
                 // 2) Buscar en Equipos de Atención a Clientes
+
                 var acData = (
                     from a in _dbocontext.Agenda
                     join ac in _dbocontext.EquipoAcs
@@ -384,6 +397,7 @@ namespace ProyectoMantenimientos.Controllers
                     string fileNamePrefix;
 
                     // Determinar qué plantilla usar según el tipo de equipo
+
                     if (acData.TipoEquipo.ToUpper() == "CFETURNO")
                     {
                         pdf = GenerarPdfCFETURNO(
@@ -412,7 +426,8 @@ namespace ProyectoMantenimientos.Controllers
                     }
                     else
                     {
-                        // Para otros tipos de equipo AC (MONIVENT), usar CFETURNO como default
+                        // Para monivent se usa la plantilla de CFETURNO
+
                         pdf = GenerarPdfCFETURNO(
                             acData.Division,
                             acData.Zona,
@@ -429,6 +444,7 @@ namespace ProyectoMantenimientos.Controllers
                 }
 
                 // 3) Buscar en Equipos de Cómputo
+
                 var compData = (
                     from a in _dbocontext.Agenda
                     join pc in _dbocontext.EquipoComputos
@@ -516,11 +532,11 @@ namespace ProyectoMantenimientos.Controllers
             EscribirTexto(cb, bf, 10, 78f, 60f, responsable);
             EscribirTexto(cb, bf, 7, 445f, 110f, $"Fecha de Impresión: {fechaImpresion}");
 
-            if (tipoMantenimiento == "C") // Correctivo
+            if (tipoMantenimiento == "C")
             {
                 EscribirTexto(cb, bf, 10, 453.5f, 581f, "X");
             }
-            else // Preventivo
+            else
             {
                 EscribirTexto(cb, bf, 10, 280.5f, 581f, "X");
             }
@@ -638,8 +654,7 @@ namespace ProyectoMantenimientos.Controllers
             using var ms = new MemoryStream();
             using var stamper = new PdfStamper(reader, ms);
             var cb = stamper.GetOverContent(1);
-            // --- LÍNEA MEJORADA ---
-            // Construye la ruta a la fuente de forma robusta, sin depender del disco C:
+
             string fontPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
             var bf = BaseFont.CreateFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
 
@@ -702,7 +717,6 @@ namespace ProyectoMantenimientos.Controllers
         {
             try
             {
-                // El nombre del técnico ahora viene del usuario logueado
                 string nombreResponsable = nombreTecnico ?? "Técnico de Zona";
                 var fecha = DateOnly.Parse(fechaProgramada);
 

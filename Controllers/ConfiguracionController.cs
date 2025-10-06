@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MantenimientosTI.Models;
-using Microsoft.AspNetCore.Identity; // Necesario para PasswordHasher
+using Microsoft.AspNetCore.Identity; // Se ocupa para PasswordHasher
 
 namespace ProyectoMantenimientos.Controllers
 {
-    [Authorize(Roles = "ADMINISTRADOR")] // Protegemos todo el controlador para que solo los admins entren
+    [Authorize(Roles = "ADMINISTRADOR")]
     public class ConfiguracionController : Controller
     {
         private readonly MantenimientosTIContext _dbocontext;
@@ -16,10 +16,8 @@ namespace ProyectoMantenimientos.Controllers
             _dbocontext = context;
         }
 
-        // --- ACCIÓN PRINCIPAL PARA MOSTRAR LA VISTA ---
         public IActionResult Configuracion()
         {
-            // Carga todos los datos necesarios para la vista (usuarios, roles, zonas)
             var usuarios = _dbocontext.Usuarios
                 .Include(u => u.ClaveRolNavigation)
                 .Include(u => u.CatZona)
@@ -28,10 +26,8 @@ namespace ProyectoMantenimientos.Controllers
             ViewBag.Roles = _dbocontext.CatRols.ToList();
             ViewBag.Zonas = _dbocontext.CatZonas.ToList();
 
-            return View(usuarios); // El nombre de la vista por defecto será Index.cshtml o puedes especificar "Configuracion"
+            return View(usuarios);
         }
-
-        // --- ENDPOINTS PARA LA GESTIÓN DE USUARIOS (Llamados por AJAX) ---
 
         [HttpGet]
         public IActionResult ObtenerUsuarioPorRpe(string rpe)
@@ -101,7 +97,7 @@ namespace ProyectoMantenimientos.Controllers
             {
                 Rpe = model.Rpe,
                 ClaveRol = model.ClaveRol,
-                ClaveDivision = "DK", // Valor por defecto
+                ClaveDivision = "DK",
                 ClaveZona = model.ClaveZona,
                 Nombre = model.Nombre,
                 ApellidoP = model.ApellidoP,
@@ -116,8 +112,6 @@ namespace ProyectoMantenimientos.Controllers
 
             return Json(new { success = true });
         }
-
-        // --- ENDPOINTS PARA LA CONFIGURACIÓN DEL SISTEMA (Llamados por AJAX) ---
 
         [HttpGet]
         public IActionResult ObtenerEstadoAgendarPreventivos()
@@ -146,8 +140,32 @@ namespace ProyectoMantenimientos.Controllers
             return Json(new { success = true });
         }
 
+        [HttpPost]
+        public IActionResult ActualizarRecibirReporte([FromBody] ActualizarRecibirReporteModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
-        // --- MODELOS INTERNOS PARA LAS ACCIONES ---
+            var usuario = _dbocontext.Usuarios.FirstOrDefault(u => u.Rpe == model.Rpe);
+            if (usuario == null)
+            {
+                return NotFound(new { success = false, message = "Usuario no encontrado" });
+            }
+
+            usuario.RecibirReporte = model.RecibirReporte;
+            _dbocontext.SaveChanges();
+
+            return Json(new { success = true });
+        }
+
+        public class ActualizarRecibirReporteModel
+        {
+            public string Rpe { get; set; }
+            public string RecibirReporte { get; set; }
+        }
+
         public class UsuarioEditModel
         {
             public string Rpe { get; set; }

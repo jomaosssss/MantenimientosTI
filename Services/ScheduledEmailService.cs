@@ -1,80 +1,148 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using System.Net.Mail;
-using System.Net;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using MantenimientosTI.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Mail;
+using System.Net;
 using ClosedXML.Excel;
 using System.Text;
-using Microsoft.Extensions.Logging;
 
-namespace MantenimientosTI.Controllers
+namespace MantenimientosTI.Services
 {
-    [Authorize]
-    public class DashboardController : Controller
+    public class ScheduledEmailService : BackgroundService
     {
+        private readonly ILogger<ScheduledEmailService> _logger;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IConfiguration _configuration;
-        private readonly MantenimientosTIContext _context;
-        private readonly ILogger<DashboardController> _logger; // Para el envio de correos programados
 
-        public DashboardController(IConfiguration configuration, MantenimientosTIContext context, ILogger<DashboardController> logger = null)
+        public ScheduledEmailService(
+            ILogger<ScheduledEmailService> logger,
+            IServiceProvider serviceProvider,
+            IConfiguration configuration)
         {
-            _configuration = configuration;
-            _context = context;
             _logger = logger;
+            _serviceProvider = serviceProvider;
+            _configuration = configuration;
         }
 
-        public IActionResult Dashboard()
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            return View();
+            // Leer configuración
+            var scheduleConfig = _configuration.GetSection("ReportSchedule");
+            var enabled = scheduleConfig.GetValue<bool>("Enabled");
+            var dayOfWeek = scheduleConfig.GetValue<string>("DayOfWeek") ?? "Friday";
+            var hour = scheduleConfig.GetValue<int>("Hour");
+            var minute = scheduleConfig.GetValue<int>("Minute");
+
+            if (!enabled)
+            {
+                _logger.LogInformation("Servicio de correo programado DESHABILITADO.");
+                return;
+            }
+
+            _logger.LogInformation($"Servicio de correo programado iniciado. Configuración: {dayOfWeek} a las {hour:00}:{minute:00}");
+
+            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    var now = DateTime.Now;
+                    var nextRun = CalculateNextRun(now, dayOfWeek, hour, minute);
+
+                    if (now > nextRun)
+                    {
+                        nextRun = nextRun.AddDays(7);
+                    }
+
+                    var delay = nextRun - now;
+
+                    _logger.LogInformation($"Próximo envío programado para: {nextRun:dd/MM/yyyy HH:mm:ss}");
+                    _logger.LogInformation($"Tiempo de espera: {delay.TotalHours:F2} horas");
+
+                    await Task.Delay(delay, stoppingToken);
+
+                    if (!stoppingToken.IsCancellationRequested)
+                    {
+                        _logger.LogInformation("Ejecutando envío programado de reporte...");
+                        await EnviarReporteProgramado();
+                        _logger.LogInformation("Envío programado completado.");
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    _logger.LogInformation("Servicio de correo programado cancelado.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error en el servicio de correo programado.");
+                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                }
+            }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> EnviarCorreoPrueba()
+        private DateTime CalculateNextRun(DateTime now, string dayOfWeek, int hour, int minute)
         {
+            DayOfWeek targetDay = dayOfWeek.ToLower() switch
+            {
+                "monday" => DayOfWeek.Monday,
+                "tuesday" => DayOfWeek.Tuesday,
+                "wednesday" => DayOfWeek.Wednesday,
+                "thursday" => DayOfWeek.Thursday,
+                "friday" => DayOfWeek.Friday,
+                "saturday" => DayOfWeek.Saturday,
+                "sunday" => DayOfWeek.Sunday,
+                _ => DayOfWeek.Friday
+            };
+
+            var nextRun = now.Date.AddDays(((int)targetDay - (int)now.DayOfWeek + 7) % 7)
+                                .AddHours(hour)
+                                .AddMinutes(minute);
+
+            return nextRun;
+        }
+
+        private async Task EnviarReporteProgramado()
+        {
+            using var scope = _serviceProvider.CreateScope();
             try
             {
-                var resultado = await EnviarCorreoConExcel();
+                var context = scope.ServiceProvider.GetRequiredService<MantenimientosTIContext>();
+                var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<ScheduledEmailService>>();
+
+                var resultado = await EnviarCorreoConExcelProgramado(context, configuration, logger);
 
                 if (resultado)
                 {
-                    return Json(new
-                    {
-                        success = true,
-                        message = "El reporte ha sido enviado exitosamente"
-                    });
+                    _logger.LogInformation("Reporte programado enviado exitosamente.");
                 }
                 else
                 {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Error al enviar el correo"
-                    });
+                    _logger.LogError("Error al enviar el reporte programado.");
                 }
             }
             catch (Exception ex)
             {
-                return Json(new
-                {
-                    success = false,
-                    message = $"Error: {ex.Message}"
-                });
+                _logger.LogError(ex, "Error crítico al enviar reporte programado.");
             }
         }
 
-        private async Task<bool> EnviarCorreoConExcel()
+        private async Task<bool> EnviarCorreoConExcelProgramado(MantenimientosTIContext context, IConfiguration configuration, ILogger<ScheduledEmailService> logger)
         {
             try
             {
-                var smtpServer = _configuration["EmailSettings:SmtpServer"];
-                var port = int.Parse(_configuration["EmailSettings:Port"]);
-                var username = _configuration["EmailSettings:Username"];
-                var password = _configuration["EmailSettings:Password"];
-                var fromAddress = _configuration["EmailSettings:FromAddress"];
+                var smtpServer = configuration["EmailSettings:SmtpServer"];
+                var port = int.Parse(configuration["EmailSettings:Port"]);
+                var username = configuration["EmailSettings:Username"];
+                var password = configuration["EmailSettings:Password"];
+                var fromAddress = configuration["EmailSettings:FromAddress"];
 
                 // OBTENER CORREOS DE USUARIOS CON ClaveRol = 1 Y RecibirReporte = "SI"
-                var correosDestinatarios = await _context.Usuarios
+                var correosDestinatarios = await context.Usuarios
                     .Where(u => u.ClaveRol == 1 &&
                                u.RecibirReporte == "SI" &&
                                u.Estatus.ToLower() == "activo")
@@ -84,18 +152,18 @@ namespace MantenimientosTI.Controllers
                 // Verificar que haya destinatarios
                 if (!correosDestinatarios.Any())
                 {
-                    _logger?.LogWarning("No se encontraron usuarios con ClaveRol=1 y RecibirReporte=SI para enviar el reporte");
+                    logger.LogWarning("No se encontraron usuarios con ClaveRol=1 y RecibirReporte=SI para enviar el reporte programado");
                     return false;
                 }
 
-                var excelBytes = await GenerarExcelReporte();
+                var excelBytes = await GenerarExcelReporteProgramado(context);
                 var mesActual = DateTime.Now.ToString("MMMM yyyy");
 
-                var reporteCFE = await ObtenerReporteCFE();
-                var reporteAC = await ObtenerReporteAC();
-                var reporteComputo = await ObtenerReporteComputo();
+                var reporteCFE = await ObtenerReporteCFEProgramado(context);
+                var reporteAC = await ObtenerReporteACProgramado(context);
+                var reporteComputo = await ObtenerReporteComputoProgramado(context);
 
-                var cuerpoHTML = GenerarCuerpoCorreoHTML(mesActual, reporteCFE, reporteAC, reporteComputo);
+                var cuerpoHTML = GenerarCuerpoCorreoHTMLProgramado(mesActual, reporteCFE, reporteAC, reporteComputo);
 
                 using var client = new SmtpClient(smtpServer, port)
                 {
@@ -122,7 +190,7 @@ namespace MantenimientosTI.Controllers
 
                 if (message.Bcc.Count == 0)
                 {
-                    _logger?.LogWarning("No hay correos válidos para usuarios con ClaveRol=1 y RecibirReporte=SI");
+                    logger.LogWarning("No hay correos válidos para usuarios con ClaveRol=1 y RecibirReporte=SI en el reporte programado");
                     return false;
                 }
 
@@ -135,17 +203,17 @@ namespace MantenimientosTI.Controllers
 
                 await client.SendMailAsync(message);
 
-                _logger?.LogInformation($"Reporte enviado exitosamente a {message.Bcc.Count} destinatarios con ClaveRol=1 y RecibirReporte=SI");
+                logger.LogInformation($"Reporte programado enviado exitosamente a {message.Bcc.Count} destinatarios con ClaveRol=1 y RecibirReporte=SI");
                 return true;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error enviando correo: {Message}", ex.Message);
+                logger.LogError(ex, "Error enviando correo programado: {Message}", ex.Message);
                 return false;
             }
         }
 
-        private string GenerarCuerpoCorreoHTML(string mesActual,
+        private string GenerarCuerpoCorreoHTMLProgramado(string mesActual,
             List<ReporteResumen> reporteCFE, List<ReporteResumen> reporteAC, List<ReporteResumen> reporteComputo)
         {
             var sb = new StringBuilder();
@@ -197,11 +265,11 @@ namespace MantenimientosTI.Controllers
                     
                     <h3>AVANCE DE MANTENIMIENTOS DE CFEMÁTICOS - {mesActual.ToUpper()}</h3>");
 
-            sb.AppendLine(GenerarTablaHTML(reporteCFE, "CFEmáticos"));
+            sb.AppendLine(GenerarTablaHTMLProgramado(reporteCFE, "CFEmáticos"));
             sb.AppendLine($@"<br><h3>AVANCE DE MANTENIMIENTOS DE EQUIPOS DE ATENCIÓN A CLIENTES - {mesActual.ToUpper()}</h3>");
-            sb.AppendLine(GenerarTablaHTML(reporteAC, "Equipos AC"));
+            sb.AppendLine(GenerarTablaHTMLProgramado(reporteAC, "Equipos AC"));
             sb.AppendLine($@"<br><h3>AVANCE DE MANTENIMIENTOS DE EQUIPOS DE CÓMPUTO - {mesActual.ToUpper()}</h3>");
-            sb.AppendLine(GenerarTablaHTML(reporteComputo, "Equipos Computo"));
+            sb.AppendLine(GenerarTablaHTMLProgramado(reporteComputo, "Equipos Computo"));
 
             sb.AppendLine(@"
                     <p><em>Se adjunta el archivo Excel con el detalle completo de los mantenimientos de todas la zonas.</em></p>
@@ -213,7 +281,7 @@ namespace MantenimientosTI.Controllers
             return sb.ToString();
         }
 
-        private string GenerarTablaHTML(List<ReporteResumen> datos, string tipoEquipo)
+        private string GenerarTablaHTMLProgramado(List<ReporteResumen> datos, string tipoEquipo)
         {
             var sb = new StringBuilder();
 
@@ -244,12 +312,12 @@ namespace MantenimientosTI.Controllers
             return sb.ToString();
         }
 
-        private async Task<List<ReporteResumen>> ObtenerReporteCFE()
+        private async Task<List<ReporteResumen>> ObtenerReporteCFEProgramado(MantenimientosTIContext context)
         {
             var mesActual = DateTime.Now.Month;
             var añoActual = DateTime.Now.Year;
 
-            var todasLasZonas = await _context.CatZonas
+            var todasLasZonas = await context.CatZonas
                 .OrderBy(z => z.ClaveZona)
                 .Select(z => new { z.ClaveZona, z.NombreZona })
                 .ToListAsync();
@@ -258,18 +326,18 @@ namespace MantenimientosTI.Controllers
 
             foreach (var zona in todasLasZonas)
             {
-                var datosZona = await (from z in _context.CatZonas
-                                       join agen in _context.CatAgencia on
+                var datosZona = await (from z in context.CatZonas
+                                       join agen in context.CatAgencia on
                                            new { z.ClaveDivision, z.ClaveZona } equals
                                            new { agen.ClaveDivision, agen.ClaveZona }
-                                       join c in _context.CatCentros on
+                                       join c in context.CatCentros on
                                            new { agen.ClaveDivision, agen.ClaveZona, agen.ClaveAgencia } equals
                                            new { c.ClaveDivision, c.ClaveZona, c.ClaveAgencia }
-                                       join eq in _context.Equipos on
+                                       join eq in context.Equipos on
                                            new { c.ClaveDivision, c.ClaveZona, c.ClaveAgencia, c.ClaveCentro } equals
                                            new { eq.ClaveDivision, eq.ClaveZona, eq.ClaveAgencia, eq.ClaveCentro }
-                                       join ecfe in _context.EquipoCfematicos on eq.NumActFijo equals ecfe.NumActFijo
-                                       join ag in _context.Agenda on eq.NumActFijo equals ag.NumActFijo
+                                       join ecfe in context.EquipoCfematicos on eq.NumActFijo equals ecfe.NumActFijo
+                                       join ag in context.Agenda on eq.NumActFijo equals ag.NumActFijo
                                        where z.ClaveZona == zona.ClaveZona &&
                                              ag.FechaProgramada.Month == mesActual &&
                                              ag.FechaProgramada.Year == añoActual
@@ -305,12 +373,12 @@ namespace MantenimientosTI.Controllers
             return resultados;
         }
 
-        private async Task<List<ReporteResumen>> ObtenerReporteAC()
+        private async Task<List<ReporteResumen>> ObtenerReporteACProgramado(MantenimientosTIContext context)
         {
             var mesActual = DateTime.Now.Month;
             var añoActual = DateTime.Now.Year;
 
-            var todasLasZonas = await _context.CatZonas
+            var todasLasZonas = await context.CatZonas
                 .OrderBy(z => z.ClaveZona)
                 .Select(z => new { z.ClaveZona, z.NombreZona })
                 .ToListAsync();
@@ -319,18 +387,18 @@ namespace MantenimientosTI.Controllers
 
             foreach (var zona in todasLasZonas)
             {
-                var datosZona = await (from z in _context.CatZonas
-                                       join agen in _context.CatAgencia on
+                var datosZona = await (from z in context.CatZonas
+                                       join agen in context.CatAgencia on
                                            new { z.ClaveDivision, z.ClaveZona } equals
                                            new { agen.ClaveDivision, agen.ClaveZona }
-                                       join c in _context.CatCentros on
+                                       join c in context.CatCentros on
                                            new { agen.ClaveDivision, agen.ClaveZona, agen.ClaveAgencia } equals
                                            new { c.ClaveDivision, c.ClaveZona, c.ClaveAgencia }
-                                       join eq in _context.Equipos on
+                                       join eq in context.Equipos on
                                            new { c.ClaveDivision, c.ClaveZona, c.ClaveAgencia, c.ClaveCentro } equals
                                            new { eq.ClaveDivision, eq.ClaveZona, eq.ClaveAgencia, eq.ClaveCentro }
-                                       join eac in _context.EquipoAcs on eq.NumActFijo equals eac.NumActFijo
-                                       join ag in _context.Agenda on eq.NumActFijo equals ag.NumActFijo
+                                       join eac in context.EquipoAcs on eq.NumActFijo equals eac.NumActFijo
+                                       join ag in context.Agenda on eq.NumActFijo equals ag.NumActFijo
                                        where z.ClaveZona == zona.ClaveZona &&
                                              ag.FechaProgramada.Month == mesActual &&
                                              ag.FechaProgramada.Year == añoActual
@@ -366,12 +434,12 @@ namespace MantenimientosTI.Controllers
             return resultados;
         }
 
-        private async Task<List<ReporteResumen>> ObtenerReporteComputo()
+        private async Task<List<ReporteResumen>> ObtenerReporteComputoProgramado(MantenimientosTIContext context)
         {
             var mesActual = DateTime.Now.Month;
             var añoActual = DateTime.Now.Year;
 
-            var todasLasZonas = await _context.CatZonas
+            var todasLasZonas = await context.CatZonas
                 .OrderBy(z => z.ClaveZona)
                 .Select(z => new { z.ClaveZona, z.NombreZona })
                 .ToListAsync();
@@ -380,18 +448,18 @@ namespace MantenimientosTI.Controllers
 
             foreach (var zona in todasLasZonas)
             {
-                var datosZona = await (from z in _context.CatZonas
-                                       join agen in _context.CatAgencia on
+                var datosZona = await (from z in context.CatZonas
+                                       join agen in context.CatAgencia on
                                            new { z.ClaveDivision, z.ClaveZona } equals
                                            new { agen.ClaveDivision, agen.ClaveZona }
-                                       join c in _context.CatCentros on
+                                       join c in context.CatCentros on
                                            new { agen.ClaveDivision, agen.ClaveZona, agen.ClaveAgencia } equals
                                            new { c.ClaveDivision, c.ClaveZona, c.ClaveAgencia }
-                                       join eq in _context.Equipos on
+                                       join eq in context.Equipos on
                                            new { c.ClaveDivision, c.ClaveZona, c.ClaveAgencia, c.ClaveCentro } equals
                                            new { eq.ClaveDivision, eq.ClaveZona, eq.ClaveAgencia, eq.ClaveCentro }
-                                       join ec in _context.EquipoComputos on eq.NumActFijo equals ec.NumActFijo
-                                       join ag in _context.Agenda on eq.NumActFijo equals ag.NumActFijo
+                                       join ec in context.EquipoComputos on eq.NumActFijo equals ec.NumActFijo
+                                       join ag in context.Agenda on eq.NumActFijo equals ag.NumActFijo
                                        where z.ClaveZona == zona.ClaveZona &&
                                              ag.FechaProgramada.Month == mesActual &&
                                              ag.FechaProgramada.Year == añoActual
@@ -427,33 +495,33 @@ namespace MantenimientosTI.Controllers
             return resultados;
         }
 
-        private async Task<byte[]> GenerarExcelReporte()
+        private async Task<byte[]> GenerarExcelReporteProgramado(MantenimientosTIContext context)
         {
             using var workbook = new XLWorkbook();
 
             var wsCFE = workbook.Worksheets.Add("CFEMÁTICOS");
-            await GenerarHojaCFE(wsCFE);
+            await GenerarHojaCFEProgramado(wsCFE, context);
 
             var wsAC = workbook.Worksheets.Add("EQUIPOS DE ATENCIÓN A CLIENTES");
-            await GenerarHojaAC(wsAC);
+            await GenerarHojaACProgramado(wsAC, context);
 
             var wsComputo = workbook.Worksheets.Add("EQUIPOS DE CÓMPUTO");
-            await GenerarHojaComputo(wsComputo);
+            await GenerarHojaComputoProgramado(wsComputo, context);
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
             return stream.ToArray();
         }
 
-        private async Task GenerarHojaCFE(IXLWorksheet worksheet)
+        private async Task GenerarHojaCFEProgramado(IXLWorksheet worksheet, MantenimientosTIContext context)
         {
             var mesActual = DateTime.Now.Month;
             var añoActual = DateTime.Now.Year;
 
-            var datos = await (from ag in _context.Agenda
-                               join eq in _context.Equipos on ag.NumActFijo equals eq.NumActFijo
-                               join ecfe in _context.EquipoCfematicos on ag.NumActFijo equals ecfe.NumActFijo
-                               join c in _context.CatCentros on new
+            var datos = await (from ag in context.Agenda
+                               join eq in context.Equipos on ag.NumActFijo equals eq.NumActFijo
+                               join ecfe in context.EquipoCfematicos on ag.NumActFijo equals ecfe.NumActFijo
+                               join c in context.CatCentros on new
                                {
                                    eq.ClaveDivision,
                                    eq.ClaveZona,
@@ -466,7 +534,7 @@ namespace MantenimientosTI.Controllers
                                    c.ClaveAgencia,
                                    c.ClaveCentro
                                }
-                               join agen in _context.CatAgencia on new
+                               join agen in context.CatAgencia on new
                                {
                                    c.ClaveDivision,
                                    c.ClaveZona,
@@ -477,7 +545,7 @@ namespace MantenimientosTI.Controllers
                                    agen.ClaveZona,
                                    agen.ClaveAgencia
                                }
-                               join z in _context.CatZonas on new
+                               join z in context.CatZonas on new
                                {
                                    agen.ClaveDivision,
                                    agen.ClaveZona
@@ -486,7 +554,7 @@ namespace MantenimientosTI.Controllers
                                    z.ClaveDivision,
                                    z.ClaveZona
                                }
-                               join m in _context.Mantenimientos on
+                               join m in context.Mantenimientos on
                                    new { ag.ClaveAgenda, ag.NumActFijo }
                                    equals new { m.ClaveAgenda, m.NumActFijo } into mantenimientos
                                from m in mantenimientos.DefaultIfEmpty()
@@ -572,16 +640,16 @@ namespace MantenimientosTI.Controllers
             worksheet.Columns().AdjustToContents();
         }
 
-        private async Task GenerarHojaAC(IXLWorksheet worksheet)
+        private async Task GenerarHojaACProgramado(IXLWorksheet worksheet, MantenimientosTIContext context)
         {
             var mesActual = DateTime.Now.Month;
             var añoActual = DateTime.Now.Year;
 
-            var datos = await (from ag in _context.Agenda
-                               join eq in _context.Equipos on ag.NumActFijo equals eq.NumActFijo
-                               join eac in _context.EquipoAcs on ag.NumActFijo equals eac.NumActFijo
-                               join ct in _context.CatTipoEquipos on eac.ClaveTipoEquipo equals ct.ClaveTipoEquipo
-                               join c in _context.CatCentros on new
+            var datos = await (from ag in context.Agenda
+                               join eq in context.Equipos on ag.NumActFijo equals eq.NumActFijo
+                               join eac in context.EquipoAcs on ag.NumActFijo equals eac.NumActFijo
+                               join ct in context.CatTipoEquipos on eac.ClaveTipoEquipo equals ct.ClaveTipoEquipo
+                               join c in context.CatCentros on new
                                {
                                    eq.ClaveDivision,
                                    eq.ClaveZona,
@@ -594,7 +662,7 @@ namespace MantenimientosTI.Controllers
                                    c.ClaveAgencia,
                                    c.ClaveCentro
                                }
-                               join agen in _context.CatAgencia on new
+                               join agen in context.CatAgencia on new
                                {
                                    c.ClaveDivision,
                                    c.ClaveZona,
@@ -605,7 +673,7 @@ namespace MantenimientosTI.Controllers
                                    agen.ClaveZona,
                                    agen.ClaveAgencia
                                }
-                               join z in _context.CatZonas on new
+                               join z in context.CatZonas on new
                                {
                                    agen.ClaveDivision,
                                    agen.ClaveZona
@@ -614,7 +682,7 @@ namespace MantenimientosTI.Controllers
                                    z.ClaveDivision,
                                    z.ClaveZona
                                }
-                               join m in _context.Mantenimientos on
+                               join m in context.Mantenimientos on
                                    new { ag.ClaveAgenda, ag.NumActFijo }
                                    equals new { m.ClaveAgenda, m.NumActFijo } into mantenimientos
                                from m in mantenimientos.DefaultIfEmpty()
@@ -704,16 +772,16 @@ namespace MantenimientosTI.Controllers
             worksheet.Columns().AdjustToContents();
         }
 
-        private async Task GenerarHojaComputo(IXLWorksheet worksheet)
+        private async Task GenerarHojaComputoProgramado(IXLWorksheet worksheet, MantenimientosTIContext context)
         {
             var mesActual = DateTime.Now.Month;
             var añoActual = DateTime.Now.Year;
 
-            var datos = await (from ag in _context.Agenda
-                               join eq in _context.Equipos on ag.NumActFijo equals eq.NumActFijo
-                               join ec in _context.EquipoComputos on ag.NumActFijo equals ec.NumActFijo
-                               join ct in _context.CatTipoEquipos on ec.ClaveTipoEquipo equals ct.ClaveTipoEquipo
-                               join c in _context.CatCentros on new
+            var datos = await (from ag in context.Agenda
+                               join eq in context.Equipos on ag.NumActFijo equals eq.NumActFijo
+                               join ec in context.EquipoComputos on ag.NumActFijo equals ec.NumActFijo
+                               join ct in context.CatTipoEquipos on ec.ClaveTipoEquipo equals ct.ClaveTipoEquipo
+                               join c in context.CatCentros on new
                                {
                                    eq.ClaveDivision,
                                    eq.ClaveZona,
@@ -726,7 +794,7 @@ namespace MantenimientosTI.Controllers
                                    c.ClaveAgencia,
                                    c.ClaveCentro
                                }
-                               join agen in _context.CatAgencia on new
+                               join agen in context.CatAgencia on new
                                {
                                    c.ClaveDivision,
                                    c.ClaveZona,
@@ -737,7 +805,7 @@ namespace MantenimientosTI.Controllers
                                    agen.ClaveZona,
                                    agen.ClaveAgencia
                                }
-                               join z in _context.CatZonas on new
+                               join z in context.CatZonas on new
                                {
                                    agen.ClaveDivision,
                                    agen.ClaveZona
@@ -746,7 +814,7 @@ namespace MantenimientosTI.Controllers
                                    z.ClaveDivision,
                                    z.ClaveZona
                                }
-                               join m in _context.Mantenimientos on
+                               join m in context.Mantenimientos on
                                    new { ag.ClaveAgenda, ag.NumActFijo }
                                    equals new { m.ClaveAgenda, m.NumActFijo } into mantenimientos
                                from m in mantenimientos.DefaultIfEmpty()
@@ -843,33 +911,12 @@ namespace MantenimientosTI.Controllers
             worksheet.Columns().AdjustToContents();
         }
 
-        public async Task<bool> EnviarCorreoProgramado()
+        public override async Task StopAsync(CancellationToken stoppingToken)
         {
-            try
-            {
-                _logger?.LogInformation("Iniciando envío programado de reporte...");
-
-                var resultado = await EnviarCorreoConExcel();
-
-                if (resultado)
-                {
-                    _logger?.LogInformation("Reporte programado enviado exitosamente.");
-                    return true;
-                }
-                else
-                {
-                    _logger?.LogError("Error al enviar reporte programado.");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Excepción al enviar reporte programado.");
-                return false;
-            }
+            _logger.LogInformation("Servicio de correo programado está deteniéndose...");
+            await base.StopAsync(stoppingToken);
         }
     }
-
 
     public class ReporteResumen
     {

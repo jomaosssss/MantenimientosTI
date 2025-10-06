@@ -166,7 +166,6 @@
     </style>
     <script>
         $(document).ready(function() {
-            // No es necesario bloquear campos al inicio, ya que están ocultos
             inicializarContadoresCaracteres();
 
             // Eventos de búsqueda
@@ -186,7 +185,6 @@
         });
 
         function inicializarContadoresCaracteres() {
-            // ... (Esta función permanece sin cambios)
             $('#problemas').on('input', () => limitarCaracteres('problemas', 300));
             $('#diagnostico').on('input', () => limitarCaracteres('diagnostico', 300));
             $('#observaciones').on('input', () => limitarCaracteres('observaciones', 300));
@@ -205,7 +203,6 @@
         }
 
         function limitarCaracteres(campoId, maxCaracteres) {
-            // ... (Esta función permanece sin cambios)
             const textarea = $('#' + campoId);
             const contador = $('#contador-' + campoId);
             let texto = textarea.val();
@@ -318,8 +315,7 @@
         }
 
         function confirmarTerminacion() {
-            // ... (Esta función permanece sin cambios)
-             Swal.fire({
+            Swal.fire({
                 title: '¿Desea terminar este mantenimiento?',
                 text: "Esta acción no se puede deshacer.",
                 icon: 'question',
@@ -337,8 +333,7 @@
         }
 
         function terminarMantenimiento() {
-            // ... (Esta función permanece sin cambios)
-             const formData = new FormData();
+            const formData = new FormData();
             formData.append('numOrden', $('#numeroOrden').val());
             formData.append('fechaAtencion', $('#fechaAtencion').val());
             formData.append('problemas', $('#problemas').val());
@@ -378,7 +373,6 @@
             });
         }
 
-        // ... (mostrarAlerta y mostrarAlertaExito permanecen sin cambios)
          function mostrarAlerta(titulo, mensaje, tipo) {
              Swal.fire({
                  title: titulo,

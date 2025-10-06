@@ -348,7 +348,6 @@ namespace ProyectoMantenimientos.Controllers
                         detallesErrores = errores,
                         lineasProcesadasDetalle = lineasProcesadasDetalle,
                         totalErrores = errores.Count,
-                        // Añadimos el resumen incluso cuando no hay registros válidos
                         resumen = new
                         {
                             totalLineas = lineasProcesadas + lineasConError + lineasDuplicadasBD +
@@ -472,7 +471,7 @@ namespace ProyectoMantenimientos.Controllers
             try
             {
                 var cajeros = _dbocontext.EquipoCfematicos
-                    .Include(c => c.NumActFijoNavigation) // Incluimos la relación con Equipo
+                    .Include(c => c.NumActFijoNavigation)
                     .Where(c => c.NumActFijoNavigation.ClaveDivision == division &&
                                c.NumActFijoNavigation.ClaveZona == zona &&
                                c.NumActFijoNavigation.ClaveAgencia == agencia &&

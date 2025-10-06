@@ -140,28 +140,12 @@
                 <div class="text-muted small me-3">
                     Última actualización @ViewBag.UltimaActualizacion
                 </div>
-@*                 <div class="d-flex align-items-center gap-2">
-                    <div class="d-flex align-items-center">
-                        <div class="status-btn bg-success me-1"></div>
-                        <small class="text-muted">Normal</small>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <div class="status-btn bg-warning me-1"></div>
-                        <small class="text-muted">Preventivo</small>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <div class="status-btn bg-danger me-1"></div>
-                        <small class="text-muted">Crítico</small>
-                    </div>
-                </div> *@
             </div>
         </div>
 
         <div class="card-body">
             <div class="row">
-                <!-- Columna izquierda - Botones circulares y secciones -->
                 <div class="col-md-6">
-                    <!-- Contenedor de botones circulares -->
                     <div class="border p-2 rounded cfematicos-container">
                         <div class="d-flex flex-wrap justify-content-center">
                             @foreach (var cfematico in Model)
@@ -244,7 +228,6 @@
                     </div>
                 </div>
 
-                <!-- Columna derecha - Información del CFEmático y gráficas -->
                 <div class="col-md-6">
                     <!-- Información del CFEmático -->
                     <div class="info-card">
@@ -487,9 +470,6 @@
                 if (!wasSelected) {
                     $clickedButton.addClass('selected');
                     selectedCfematico = numCajero;
-
-                    // --- SE ELIMINÓ LA LLAMADA REDUNDANTE A ObtenerEstadoCfematico ---
-                    // El estado ya fue establecido por cargarEstadosEnLote() y es válido.
 
                     // Cargar detalles del CFEmático
                     cargarDetallesCfematico(numCajero);
@@ -736,7 +716,6 @@
         }
 
         // Función para cargar los eventos recientes
-        // Función para cargar los eventos recientes (Versión Corregida)
         function cargarEventos(numCajero) {
             var dias = $('#rangoTiempo').val();
 
@@ -744,12 +723,11 @@
                 numCajero: numCajero,
                 dias: dias
             }, function(data) {
-                // --- VERIFICACIÓN CRÍTICA AÑADIDA ---
                 // Buscar el contenedor, si no existe, salir silenciosamente.
                 var $lista = $('#listaEventos');
                 if ($lista.length === 0) {
                     console.log("El contenedor #listaEventos no existe en esta vista. Saltando carga de eventos.");
-                    return; // Sale de la función sin hacer nada más.
+                    return;
                 }
                 // --- FIN DE LA VERIFICACIÓN ---
 

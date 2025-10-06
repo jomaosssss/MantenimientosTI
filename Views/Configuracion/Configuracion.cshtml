@@ -50,6 +50,7 @@
                                     <th>Zona</th>
                                     <th>Correo</th>
                                     <th class="text-center">Estatus</th>
+                                    <th class="text-center">Reportes</th>
                                     <th class="text-center">Editar</th>
                                 </tr>
                             </thead>
@@ -71,6 +72,13 @@
                                             {
                                                 <span class="badge bg-secondary">Inactivo</span>
                                             }
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check form-switch d-inline-block">
+                                                <input class="form-check-input toggle-reporte" type="checkbox" role="switch"
+                                                       data-rpe="@usuario.Rpe"
+                                                       @(usuario.RecibirReporte == "SI" ? "checked" : "")>
+                                            </div>
                                         </td>
                                         <td class="text-center">
                                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario"
@@ -280,7 +288,7 @@
 
 
             // 1. Obtener el estado inicial de la configuración al cargar la página
-            $.get('/Usuario/ObtenerEstadoAgendarPreventivos')
+            $.get('/Configuracion/ObtenerEstadoAgendarPreventivos')
                 .done(function (data) {
                     $('#toggleAgendarPreventivos').prop('checked', data.habilitado);
                 })
@@ -293,7 +301,7 @@
                 const habilitar = $(this).is(':checked');
 
                 $.ajax({
-                    url: '/Usuario/CambiarEstadoAgendarPreventivos',
+                    url: '/Configuracion/CambiarEstadoAgendarPreventivos',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(habilitar), // Enviamos true o false
@@ -339,6 +347,33 @@
                     this.setCustomValidity('La contraseña debe tener entre 8 y 20 caracteres');
                 } else {
                     this.setCustomValidity('');
+                }
+            });
+        });
+
+        // Manejar el cambio en el switch de reportes
+        $(document).on('change', '.toggle-reporte', function() {
+            const rpe = $(this).data('rpe');
+            const recibirReporte = $(this).is(':checked') ? 'SI' : 'NO';
+
+            $.ajax({
+                url: '/Configuracion/ActualizarRecibirReporte',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ rpe: rpe, recibirReporte: recibirReporte }),
+                success: function(response) {
+                    if (response.success) {
+                        mostrarAlerta('Preferencia de reporte actualizada correctamente.', 'success');
+                    } else {
+                        mostrarAlerta(response.message || 'Error al actualizar la preferencia de reporte.', 'danger');
+                        // Revertir el cambio en el switch si falla
+                        $(this).prop('checked', !$(this).is(':checked'));
+                    }
+                },
+                error: function() {
+                    mostrarAlerta('Error de conexión al actualizar la preferencia de reporte.', 'danger');
+                    // Revertir el cambio en el switch si hay error
+                    $(this).prop('checked', !$(this).is(':checked'));
                 }
             });
         });

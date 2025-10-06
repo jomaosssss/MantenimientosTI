@@ -408,29 +408,26 @@
                 }
             });
 
-            // --- CÓDIGO FINAL PARA MANEJAR EL MODAL ---
+            // Modal
             $('[data-bs-target="#modalInfo"]').on('click', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');
-                var claveAgenda = fila.data('clave-agenda'); // Leemos el número de orden
+                var claveAgenda = fila.data('clave-agenda');
 
                 $('#modalInfoBody').html('<div class="text-center p-4"><div class="spinner-border" role="status"></div></div>');
 
-                // Ahora enviamos AMBOS datos al controlador
                 $.get('/Home/ObtenerDetallesEquipo', { numActFijo: numActFijo, claveAgenda: claveAgenda }, function(data) {
-                    // La respuesta (data) ya vendrá con el número de orden incluido,
-                    // así que solo tenemos que mostrarla.
                     $('#modalInfoBody').html(data);
                 });
             });
 
-            // Código para resetear el modal al cerrar
+            // Para resetear el modal al cerrar
             $('#modalInfo').on('hidden.bs.modal', function (e) {
                 $('#modalInfoLabel').text('Información del Equipo');
                 $('#modalInfoBody').html('');
             });
 
-            // --- CÓDIGO ORIGINAL PARA LOS PDFs (SE MANTIENE) ---
+            // Para generar los PDFs
             $('#tablaCFEmaticos').on('click', '[data-bs-target="#modalPdf"]', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');

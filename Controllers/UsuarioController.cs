@@ -119,7 +119,8 @@ namespace ProyectoMantenimientos.Controllers
                     new Claim("RolId", usuarioAdmin.ClaveRol.ToString()),
                     new Claim("Zona", usuarioAdmin.ClaveZona),
                     new Claim("ZonaNombre", usuarioAdmin.CatZona?.NombreZona ?? "Sin zona"),
-                    new Claim("Division", usuarioAdmin.ClaveDivision)
+                    new Claim("Division", usuarioAdmin.ClaveDivision),
+                    new Claim("Correo", usuarioAdmin.Correo)
                 };
 
                     var claimsIdentityAdmin = new ClaimsIdentity(claimsAdmin, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -132,6 +133,7 @@ namespace ProyectoMantenimientos.Controllers
                     HttpContext.Session.SetString("ClaveZona", usuarioAdmin.ClaveZona);
                     HttpContext.Session.SetString("NombreZona", usuarioAdmin.CatZona?.NombreZona ?? "Sin zona");
                     HttpContext.Session.SetString("ClaveDivision", usuarioAdmin.ClaveDivision);
+                    HttpContext.Session.SetString("Correo", usuarioAdmin.Correo);
 
                     return RedirectToAction("Inicio", "Home");
                 }
@@ -197,7 +199,9 @@ namespace ProyectoMantenimientos.Controllers
                         new Claim("RolId", usuario.ClaveRol.ToString()),
                         new Claim("Zona", usuario.ClaveZona),
                         new Claim("ZonaNombre", usuario.CatZona?.NombreZona ?? "Sin zona"),
-                        new Claim("Division", usuario.ClaveDivision)
+                        new Claim("Division", usuario.ClaveDivision),
+                        new Claim("Correo", usuario.Correo)
+
                     };
 
                             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -210,6 +214,8 @@ namespace ProyectoMantenimientos.Controllers
                             HttpContext.Session.SetString("ClaveZona", usuario.ClaveZona);
                             HttpContext.Session.SetString("NombreZona", usuario.CatZona?.NombreZona ?? "Sin zona");
                             HttpContext.Session.SetString("ClaveDivision", usuario.ClaveDivision);
+                            HttpContext.Session.SetString("Correo", usuario.Correo);
+
 
                             return RedirectToAction("Inicio", "Home");
                         }
@@ -349,7 +355,8 @@ namespace ProyectoMantenimientos.Controllers
                     ApellidoM = model.ApellidoM,
                     Correo = model.Correo,
                     Contrasenia = hasher.HashPassword(null, model.Contrasenia), // Hashear aquí
-                    Estatus = "Activo"
+                    Estatus = "Activo",
+                    RecibirReporte = "SI"
                 };
 
                 _dbocontext.Usuarios.Add(nuevoUsuario);
