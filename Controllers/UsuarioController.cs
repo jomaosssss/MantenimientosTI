@@ -11,7 +11,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
-namespace ProyectoMantenimientos.Controllers
+namespace MantenimientosTI.Controllers
 {
     public class UsuarioController : Controller
     {

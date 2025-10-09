@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using MantenimientosTI.Models;
 using Microsoft.AspNetCore.Identity; // Se ocupa para PasswordHasher
 
-namespace ProyectoMantenimientos.Controllers
+namespace MantenimientosTI.Controllers
 {
     [Authorize(Roles = "ADMINISTRADOR")]
     public class ConfiguracionController : Controller

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using ClosedXML.Excel;
 
-namespace ProyectoMantenimientos.Controllers
+namespace MantenimientosTI.Controllers
 {
     public class RepositorioController : Controller
     {
