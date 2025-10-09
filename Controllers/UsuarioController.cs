@@ -11,7 +11,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
-namespace ProyectoMantenimientos.Controllers
+namespace MantenimientosTI.Controllers
 {
     public class UsuarioController : Controller
     {
@@ -81,7 +81,7 @@ namespace ProyectoMantenimientos.Controllers
                 return View(model);
             }
 
-            if (model.Rpe.ToUpper() == "OISM0" || model.Rpe.ToUpper() == "ADMIN")
+            if (model.Rpe.ToUpper() == "ADMIN" || model.Rpe.ToUpper() == "OISM0" || model.Rpe.ToUpper() == "FER01")
             {
                 try
                 {

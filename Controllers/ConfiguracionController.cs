@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using MantenimientosTI.Models;
 using Microsoft.AspNetCore.Identity; // Se ocupa para PasswordHasher
 
-namespace ProyectoMantenimientos.Controllers
+namespace MantenimientosTI.Controllers
 {
     [Authorize(Roles = "ADMINISTRADOR")]
     public class ConfiguracionController : Controller
@@ -152,6 +152,12 @@ namespace ProyectoMantenimientos.Controllers
             if (usuario == null)
             {
                 return NotFound(new { success = false, message = "Usuario no encontrado" });
+            }
+
+            // Validar que solo los administradores pueden recibir reportes
+            if (usuario.ClaveRol != 1)
+            {
+                return Json(new { success = false, message = "Solo los usuarios administradores pueden recibir reportes" });
             }
 
             usuario.RecibirReporte = model.RecibirReporte;

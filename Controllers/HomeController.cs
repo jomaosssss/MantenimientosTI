@@ -6,7 +6,7 @@ using iTextSharp.text.pdf;
 using Microsoft.AspNetCore.Authorization;
 using MantenimientosTI.Models;
 
-namespace ProyectoMantenimientos.Controllers
+namespace MantenimientosTI.Controllers
 {
     public class HomeController : Controller
     {

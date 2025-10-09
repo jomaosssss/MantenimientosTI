@@ -73,7 +73,7 @@ namespace MantenimientosTI.Controllers
                 var password = _configuration["EmailSettings:Password"];
                 var fromAddress = _configuration["EmailSettings:FromAddress"];
 
-                // OBTENER CORREOS DE USUARIOS CON ClaveRol = 1 Y RecibirReporte = "SI"
+                // Obtener correos de usuarios con ClaveRol = 1 Y RecibirReporte = "SI"
                 var correosDestinatarios = await _context.Usuarios
                     .Where(u => u.ClaveRol == 1 &&
                                u.RecibirReporte == "SI" &&
@@ -111,7 +111,7 @@ namespace MantenimientosTI.Controllers
                     IsBodyHtml = true
                 };
 
-                // AGREGAR TODOS LOS DESTINATARIOS CON ClaveRol = 1 Y RecibirReporte = "SI"
+                // Agrega todos loc correos de usuarios con ClaveRol = 1 Y RecibirReporte = "SI"
                 foreach (var correo in correosDestinatarios)
                 {
                     if (!string.IsNullOrWhiteSpace(correo))
