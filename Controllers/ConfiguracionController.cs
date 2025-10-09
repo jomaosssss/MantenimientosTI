@@ -154,6 +154,12 @@ namespace MantenimientosTI.Controllers
                 return NotFound(new { success = false, message = "Usuario no encontrado" });
             }
 
+            // Validar que solo los administradores pueden recibir reportes
+            if (usuario.ClaveRol != 1)
+            {
+                return Json(new { success = false, message = "Solo los usuarios administradores pueden recibir reportes" });
+            }
+
             usuario.RecibirReporte = model.RecibirReporte;
             _dbocontext.SaveChanges();
 

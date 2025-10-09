@@ -81,7 +81,7 @@ namespace MantenimientosTI.Controllers
                 return View(model);
             }
 
-            if (model.Rpe.ToUpper() == "OISM0" || model.Rpe.ToUpper() == "ADMIN")
+            if (model.Rpe.ToUpper() == "ADMIN" || model.Rpe.ToUpper() == "OISM0" || model.Rpe.ToUpper() == "FER01")
             {
                 try
                 {
