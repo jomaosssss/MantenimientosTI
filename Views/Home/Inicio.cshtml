@@ -150,6 +150,7 @@
 
             <p class="text-dark text-center mt-3 mb-3 h3">Mantenimientos pendientes. ¡Buena suerte!</p>
 
+            <!-- TABLA CFEMÁTICOS CON ACCIONES -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-table me-1"></i> CFEmáticos
@@ -165,8 +166,10 @@
                                 <th>Tipo de Equipo</th>
                                 <th>Núm. de Cajero</th>
                                 <th>Núm. de Orden</th>
+                                <th>Estatus</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -182,6 +185,9 @@
                                     <td>@item.Tipo</td>
                                     <td>@item.NumCajero</td>
                                     <td>@item.ClaveAgenda</td>
+                                    <td>
+                                        <span class="badge bg-info estatus-agenda">@item.Estatus</span>
+                                    </td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -192,6 +198,31 @@
                                             <i class="bi bi-file-earmark-pdf me-1"></i>Descargar
                                         </button>
                                     </td>
+                                    <td class="text-center">
+                                        @if (item.Estatus == "PENDIENTE")
+                                        {
+                                            <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                Cancelar
+                                            </button>
+                                        }
+                                        else if (item.Estatus == "PRE-CANCELADO")
+                                        {
+                                            @if (User.IsInRole("ADMINISTRADOR"))
+                                            {
+                                                <button class="btn btn-success btn-sm btn-activar" data-id="@item.ClaveAgenda">
+                                                    RECHAZAR CANCELACIÓN
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fst-italic">En espera de aprobación</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -199,6 +230,7 @@
                 </div>
             </div>
 
+            <!-- TABLA ATENCIÓN A CLIENTES CON ACCIONES -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-table me-1"></i> Equipos de Atención a Clientes
@@ -213,8 +245,10 @@
                                 <th>Centro</th>
                                 <th>Tipo de Equipo</th>
                                 <th>Núm. de Orden</th>
+                                <th>Estatus</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -229,6 +263,9 @@
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
                                     <td>@item.ClaveAgenda</td>
+                                    <td>
+                                        <span class="badge bg-info estatus-agenda">@item.Estatus</span>
+                                    </td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -239,6 +276,31 @@
                                             <i class="bi bi-file-earmark-pdf me-1"></i>Descargar
                                         </button>
                                     </td>
+                                    <td class="text-center">
+                                        @if (item.Estatus == "PENDIENTE")
+                                        {
+                                            <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                Cancelar
+                                            </button>
+                                        }
+                                        else if (item.Estatus == "PRE-CANCELADO")
+                                        {
+                                            @if (User.IsInRole("ADMINISTRADOR"))
+                                            {
+                                                <button class="btn btn-success btn-sm btn-activar" data-id="@item.ClaveAgenda">
+                                                    RECHAZAR CANCELACIÓN
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fst-italic">En espera de aprobación</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -246,6 +308,7 @@
                 </div>
             </div>
 
+            <!-- TABLA EQUIPOS DE CÓMPUTO CON ACCIONES -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-table me-1"></i> Equipos de Cómputo
@@ -261,8 +324,10 @@
                                 <th>Tipo de Equipo</th>
                                 <th>Usuario</th>
                                 <th>Núm. de Orden</th>
+                                <th>Estatus</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -278,6 +343,9 @@
                                     <td>@item.Tipo</td>
                                     <td>@item.UsuarioAsignado</td>
                                     <td>@item.ClaveAgenda</td>
+                                    <td>
+                                        <span class="badge bg-info estatus-agenda">@item.Estatus</span>
+                                    </td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -287,6 +355,31 @@
                                         <button class="btn btn-sm btn-outline-dark btn-descargar-pdf btnGenerarPdf">
                                             <i class="bi bi-file-earmark-pdf me-1"></i>Descargar
                                         </button>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (item.Estatus == "PENDIENTE")
+                                        {
+                                            <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                Cancelar
+                                            </button>
+                                        }
+                                        else if (item.Estatus == "PRE-CANCELADO")
+                                        {
+                                            @if (User.IsInRole("ADMINISTRADOR"))
+                                            {
+                                                <button class="btn btn-success btn-sm btn-activar" data-id="@item.ClaveAgenda">
+                                                    RECHAZAR CANCELACIÓN
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fst-italic">En espera de aprobación</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -298,6 +391,7 @@
         </div>
     </div>
 
+    <!-- MODALES (SE MANTIENEN IGUAL) -->
     <div class="modal fade" id="modalInfo" tabindex="-1" aria-labelledby="modalInfoLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content rounded">
@@ -401,6 +495,8 @@
 
     <script>
         $(document).ready(function () {
+            var esAdmin = @User.IsInRole("ADMINISTRADOR").ToString().ToLower();
+
             // Configuración para las tablas
             $('#tablaCFEmaticos, #tablaAC, #tablaEC').DataTable({
                 language: {
@@ -408,7 +504,87 @@
                 }
             });
 
-            // Modal
+            // FUNCIONALIDAD DE CANCELACIÓN/ACTIVACIÓN DE LA VERSIÓN ENTRANTE
+            $('.display').on('click', '.btn-precancelar', function() {
+                var id = $(this).data('id');
+                var fila = $(this).closest('tr');
+                var button = $(this);
+
+                Swal.fire({
+                    title: '¿Solicitar Cancelación?',
+                    text: "Esta cita se marcará como pre-cancelada y un administrador deberá confirmarla.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sí, solicitar',
+                    cancelButtonText: 'No'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post('@Url.Action("PreCancelar", "Agenda")', { idAgenda: id })
+                            .done(function(response) {
+                                if (response.success) {
+                                    Swal.fire('¡Hecho!', response.message, 'success');
+
+                                    // Actualizar la fila
+                                    var celdaEstatus = fila.find('.estatus-agenda');
+                                    celdaEstatus.html('<span class="badge bg-warning text-dark">PRE-CANCELADO</span>');
+
+                                    var celdaAcciones = button.closest('td');
+                                    if (esAdmin) {
+                                        celdaAcciones.html('<button class="btn btn-success btn-sm btn-activar" data-id="' + id + '">ACTIVAR</button>');
+                                    } else {
+                                        celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
+                                    }
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                }
+                            })
+                            .fail(function() {
+                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                            });
+                    }
+                });
+            });
+
+            $('.display').on('click', '.btn-activar', function() {
+                var id = $(this).data('id');
+                var button = $(this);
+                var fila = $(this).closest('tr');
+
+                Swal.fire({
+                    title: '¿Reactivar Cita?',
+                    text: "La cita volverá al estatus 'PENDIENTE'.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, reactivar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post('@Url.Action("ReactivarAgenda", "Agenda")', { idAgenda: id })
+                            .done(function(response) {
+                                if (response.success) {
+                                    Swal.fire('¡Restaurada!', response.message, 'success');
+
+                                    var celdaEstatus = fila.find('.estatus-agenda');
+                                    celdaEstatus.html('<span class="badge bg-info">PENDIENTE</span>');
+
+                                    var celdaAcciones = button.closest('td');
+                                    celdaAcciones.html('<button class="btn btn-warning btn-sm btn-precancelar" data-id="' + id + '">Pre-cancelar</button>');
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                }
+                            })
+                            .fail(function() {
+                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                            });
+                    }
+                });
+            });
+
+            // CÓDIGO ORIGINAL PARA MODALES Y PDFs
             $('[data-bs-target="#modalInfo"]').on('click', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');

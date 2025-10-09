@@ -51,6 +51,10 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<RegistroEvento> RegistroEventos { get; set; }
 
+    public virtual DbSet<RegistroActividad> RegistroActividad { get; set; }
+
+    public virtual DbSet<CatAccion> CatAcciones { get; set; } 
+
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
 //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -88,6 +92,24 @@ public partial class MantenimientosTIContext : DbContext
             entity.HasOne(d => d.NumActFijoNavigation).WithMany(p => p.Agenda)
                 .HasForeignKey(d => d.NumActFijo)
                 .HasConstraintName("FK_Agenda_numActF1_02FC7413");
+        });
+
+        modelBuilder.Entity<CatAccion>(entity =>
+        {
+            entity.ToTable("CatAcciones");
+
+            entity.HasKey(e => e.IdAccion);
+
+            // Define la columna ClaveAccion como única para evitar duplicados
+            entity.HasIndex(e => e.ClaveAccion).IsUnique();
+
+            entity.Property(e => e.ClaveAccion)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Descripcion)
+                .HasMaxLength(255)
+                .IsRequired();
         });
 
         modelBuilder.Entity<CatAgencium>(entity =>
@@ -198,11 +220,11 @@ public partial class MantenimientosTIContext : DbContext
                 .HasMaxLength(256)
                 .IsUnicode(false)
                 .HasColumnName("fuente");
-            entity.Property(e => e.Severidad)
-                .HasColumnName("severidad");
+            entity.Property(e => e.Severidad).HasColumnName("severidad");
+            
+            // PROPIEDAD IMPORTANCIA AGREGADA COMO int
             entity.Property(e => e.Importancia)
                 .HasColumnName("importancia");
-
 
             entity.HasOne(d => d.ClaveFallaNavigation).WithMany(p => p.CatEventos)
                 .HasForeignKey(d => d.ClaveFalla)
@@ -569,6 +591,44 @@ public partial class MantenimientosTIContext : DbContext
                 .HasForeignKey(d => d.NumOrden)
                 .HasConstraintName("FK_Foto_Mantenimiento");
         });
+
+        modelBuilder.Entity<RegistroActividad>(entity =>
+        {
+            entity.ToTable("RegistroActividad");
+
+            entity.HasKey(e => e.IdRegistroActividad);
+
+            entity.Property(e => e.IdRegistroActividad)
+                .HasColumnName("IdRegistroActividad")
+                .ValueGeneratedOnAdd(); // Importante para indicar que es autoincremental (IDENTITY)
+
+            entity.Property(e => e.FechaHora)
+                .HasColumnName("FechaHora")
+                .HasColumnType("datetime");
+
+            entity.Property(e => e.Usuario)
+                .HasColumnName("Usuario")
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .IsRequired();
+
+            entity.Property(e => e.Accion)
+                .HasColumnName("Accion")
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .IsRequired();
+
+            entity.Property(e => e.Descripcion)
+                .HasColumnName("Descripcion")
+                .HasMaxLength(500)
+                .IsUnicode(false)
+                .IsRequired(false); // Le decimos que permite nulos
+
+            entity.Property(e => e.IdEntidadAfectada)
+                .HasColumnName("IdEntidadAfectada")
+                .IsRequired(false); // Le decimos que permite nulos
+        });
+
 
         modelBuilder.Entity<RegistroEvento>(entity =>
         {

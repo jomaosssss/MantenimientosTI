@@ -202,6 +202,22 @@
                             Inventario de Equipos
                         </a>
 
+                        @if (User.IsInRole("ADMINISTRADOR"))
+                        {
+                            <a href="@Url.Action("AprobarCancelaciones", "Agenda")" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-check-to-slot"></i></div>
+                                Aprobar Cancelaciones
+                            </a>
+                        }
+
+                        @if (User.IsInRole("ADMINISTRADOR"))
+                        {
+                            <a href="@Url.Action("Index", "Bitacora")" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-history"></i></div>
+                                Bitácora de Actividad
+                            </a>
+                        }
+
                     </div>
                 </div>
 

@@ -4,14 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using MantenimientosTI.Models.ViewModels;
 using iTextSharp.text.pdf;
 using Microsoft.AspNetCore.Authorization;
-using MantenimientosTI.Models;
 
-namespace MantenimientosTI.Controllers
+namespace ProyectoMantenimientos.Controllers
 {
     public class HomeController : Controller
     {
         private readonly MantenimientosTIContext _dbocontext;
-
         private readonly IWebHostEnvironment _env;
 
         private readonly string _rutaPlantillaCFE = Path.Combine(
@@ -37,6 +35,7 @@ namespace MantenimientosTI.Controllers
             "wwwroot",
             "Plantillas",
             "EQUIPODECOMPUTO.pdf");
+
         public HomeController(MantenimientosTIContext context, IWebHostEnvironment env)
         {
             _dbocontext = context;
@@ -72,7 +71,7 @@ namespace MantenimientosTI.Controllers
             int claveRol = HttpContext.Session.GetInt32("Rol") ?? 0;
             var hoy = DateOnly.FromDateTime(DateTime.Now);
 
-            // Para obtener el primer y último día del mes actual
+            // Obtener primer y último día del mes actual
             var primerDiaMes = new DateOnly(hoy.Year, hoy.Month, 1);
             var ultimoDiaMes = new DateOnly(hoy.Year, hoy.Month, DateTime.DaysInMonth(hoy.Year, hoy.Month));
 
@@ -83,8 +82,7 @@ namespace MantenimientosTI.Controllers
                 DateTime.DaysInMonth(primerDiaProximoMes.Year, primerDiaProximoMes.Month)
             );
 
-            // Terminados de este mes
-
+            // 1. CONSULTAS PARA LOS CONTADORES DE LAS TARJETAS
             var terminadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                 .ThenInclude(e => e.CatCentro)
@@ -93,8 +91,7 @@ namespace MantenimientosTI.Controllers
                a.FechaProgramada >= primerDiaMes &&
                a.FechaProgramada <= ultimoDiaMes);
 
-            // Pendientes de este mes
-
+            // Consulta para contar pendientes (SOLO de este mes)
             var pendientesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -103,16 +100,13 @@ namespace MantenimientosTI.Controllers
                        a.FechaProgramada >= primerDiaMes &&
                        a.FechaProgramada <= ultimoDiaMes);
 
-            // Programados de este mes
-
+            // NUEVA CONSULTA: Todos los programados este mes (sin importar estatus)
             var programadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
-
-            // Programados el proximo mes
 
             var proximoMesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
@@ -121,8 +115,7 @@ namespace MantenimientosTI.Controllers
                 .Where(a => a.FechaProgramada >= primerDiaProximoMes &&
                         a.FechaProgramada <= ultimoDiaProximoMes);
 
-            // Filtro para mostrar conteos por zona si no es tecnico de zona
-
+            // Aplicar filtro por zona SOLO si NO es administrador (Rol = 1)
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 terminadosQuery = terminadosQuery
@@ -142,24 +135,21 @@ namespace MantenimientosTI.Controllers
             }
 
             // Obtener los conteos
-
             int terminadosCount = terminadosQuery.Count();
             int pendientesCount = pendientesQuery.Count();
             int programadosCount = programadosQuery.Count();
             int proximoMesCount = proximoMesQuery.Count();
 
-            // Consulta de registros con estatus PENDIENTE para las tablas
-
+            // 2. CONSULTA PARA LAS TABLAS (SOLO PENDIENTES - mantiene el filtro original)
             var agendaQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                             .ThenInclude(a => a.CatZona)
                 .Include(a => a.ClaveTipoMttoNavigation)
-                .Where(a => a.Estatus == "PENDIENTE");
+                .Where(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
 
-            // Filtro para mostrar registros por zona si es tecnico de zona
-
+            // Filtro por zona si no es administrador
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 agendaQuery = agendaQuery
@@ -169,8 +159,7 @@ namespace MantenimientosTI.Controllers
 
             var agenda = agendaQuery.ToList();
 
-            // Clasificar los registros en las listas correspondientes
-
+            // 3. CLASIFICAR LOS EQUIPOS EN LAS LISTAS CORRESPONDIENTES
             var cfematicos = new List<VMAgendaVista>();
             var atencionClientes = new List<VMAgendaVista>();
             var computo = new List<VMAgendaVista>();
@@ -180,7 +169,6 @@ namespace MantenimientosTI.Controllers
                 string tipo = "CFEMÁTICO";
 
                 // Determinar el tipo de equipo
-
                 var equipoAc = _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
@@ -197,21 +185,18 @@ namespace MantenimientosTI.Controllers
                 }
 
                 // Actualizar tipo según el equipo encontrado
-
                 if (equipoAc?.ClaveTipoEquipoNavigation != null)
                     tipo = equipoAc.ClaveTipoEquipoNavigation.NombreTipoEquipo;
                 else if (equipoComputo?.ClaveTipoEquipoNavigation != null)
                     tipo = equipoComputo.ClaveTipoEquipoNavigation.NombreTipoEquipo;
 
                 // Obtener datos de ubicación
-
                 var centro = item.NumActFijoNavigation?.CatCentro;
                 var nombreCentro = item.NumActFijoNavigation?.CatCentro?.NombreCentro ?? "Sin centro";
                 var nombreAgencia = centro?.CatAgencium?.NombreAgencia ?? "Sin agencia";
                 var nombreZona = centro?.CatAgencium?.CatZona?.NombreZona ?? "Sin zona";
 
                 // Crear ViewModel
-
                 var viewModel = new VMAgendaVista
                 {
                     NumActFijo = item.NumActFijo,
@@ -227,19 +212,15 @@ namespace MantenimientosTI.Controllers
                 };
 
                 // Clasificar en las listas correspondientes
-
                 if (equipoAc != null)
                     atencionClientes.Add(viewModel);
                 else if (equipoComputo != null)
                 {
-
-                    // Si el equipo es de cómputo, preparamos la cadena del usuario para mostrar en la tabla
-
+                    // Si el equipo es de cómputo, preparamos la cadena del usuario
                     string rpe = equipoComputo.Rpe;
                     string nombre = equipoComputo.NombreRpe;
 
-                    // Verificamos si los datos existen
-
+                    // Verificamos si los datos existen para evitar mostrar "- "
                     if (!string.IsNullOrEmpty(rpe) && !string.IsNullOrEmpty(nombre))
                     {
                         viewModel.UsuarioAsignado = $"{rpe} - {nombre}";
@@ -255,8 +236,7 @@ namespace MantenimientosTI.Controllers
                     cfematicos.Add(viewModel);
             }
 
-            // Crear el ViewModel final
-
+            // 4. CREAR EL VIEWMODEL FINAL
             var vmInicio = new VMAgendaInicio
             {
                 Cfematicos = cfematicos.OrderBy(vm => vm.FechaProgramada).ToList(),
@@ -331,7 +311,6 @@ namespace MantenimientosTI.Controllers
                 var fecha = DateOnly.Parse(fechaProgramada);
 
                 // 1) Buscar en CFEmáticos
-
                 var cfData = (
                     from a in _dbocontext.Agenda
                     join b in _dbocontext.EquipoCfematicos
@@ -373,7 +352,6 @@ namespace MantenimientosTI.Controllers
                 }
 
                 // 2) Buscar en Equipos de Atención a Clientes
-
                 var acData = (
                     from a in _dbocontext.Agenda
                     join ac in _dbocontext.EquipoAcs
@@ -397,7 +375,6 @@ namespace MantenimientosTI.Controllers
                     string fileNamePrefix;
 
                     // Determinar qué plantilla usar según el tipo de equipo
-
                     if (acData.TipoEquipo.ToUpper() == "CFETURNO")
                     {
                         pdf = GenerarPdfCFETURNO(
@@ -426,8 +403,7 @@ namespace MantenimientosTI.Controllers
                     }
                     else
                     {
-                        // Para monivent se usa la plantilla de CFETURNO
-
+                        // Para otros tipos de equipo AC (MONIVENT), usar CFETURNO como default
                         pdf = GenerarPdfCFETURNO(
                             acData.Division,
                             acData.Zona,
@@ -444,7 +420,6 @@ namespace MantenimientosTI.Controllers
                 }
 
                 // 3) Buscar en Equipos de Cómputo
-
                 var compData = (
                     from a in _dbocontext.Agenda
                     join pc in _dbocontext.EquipoComputos
@@ -532,11 +507,11 @@ namespace MantenimientosTI.Controllers
             EscribirTexto(cb, bf, 10, 78f, 60f, responsable);
             EscribirTexto(cb, bf, 7, 445f, 110f, $"Fecha de Impresión: {fechaImpresion}");
 
-            if (tipoMantenimiento == "C")
+            if (tipoMantenimiento == "C") // Correctivo
             {
                 EscribirTexto(cb, bf, 10, 453.5f, 581f, "X");
             }
-            else
+            else // Preventivo
             {
                 EscribirTexto(cb, bf, 10, 280.5f, 581f, "X");
             }
@@ -635,18 +610,18 @@ namespace MantenimientosTI.Controllers
         }
 
         private byte[] GenerarPdfComputo(
-        string division,
-        string zona,
-        string agencia,
-        string seriePc,
-        string serieMon,
-        string rpe,
-        string nombreRpe,
-        string claveAgenda,
-        DateOnly fechaProgramada,
-        string responsable,
-        string tipoEquipo,
-        string numActFijo)
+            string division,
+            string zona,
+            string agencia,
+            string seriePc,
+            string serieMon,
+            string rpe,
+            string nombreRpe,
+            string claveAgenda,
+            DateOnly fechaProgramada,
+            string responsable,
+            string tipoEquipo,
+            string numActFijo)
         {
             string fechaImpresion = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
 
@@ -655,9 +630,9 @@ namespace MantenimientosTI.Controllers
             using var stamper = new PdfStamper(reader, ms);
             var cb = stamper.GetOverContent(1);
 
+            // Construye la ruta a la fuente de forma robusta
             string fontPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
             var bf = BaseFont.CreateFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-
 
             EscribirTexto(cb, bf, 10, 505f, 735f, claveAgenda);
             EscribirTexto(cb, bf, 10, 120f, 691f, agencia);
@@ -708,15 +683,16 @@ namespace MantenimientosTI.Controllers
 
         [HttpPost]
         public IActionResult GenerarHojaServicioComputo(
-        string numActFijo,
-        string fechaProgramada,
-        string responsable = "TECNICO_DE_ZONA",
-        string nombreTecnico = null,
-        string rpe = null,
-        string nombre = null)
+            string numActFijo,
+            string fechaProgramada,
+            string responsable = "TECNICO_DE_ZONA",
+            string nombreTecnico = null,
+            string rpe = null,
+            string nombre = null)
         {
             try
             {
+                // El nombre del técnico ahora viene del usuario logueado
                 string nombreResponsable = nombreTecnico ?? "Técnico de Zona";
                 var fecha = DateOnly.Parse(fechaProgramada);
 

@@ -10,17 +10,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddDbContext<MantenimientosTIContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ConexionSQL")));
+builder.Services.AddDbContext<MantenimientosTIContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ConexionSQL")));
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
+// Servicios personalizados
+builder.Services.AddScoped<MantenimientosTI.Services.BitacoraService>();
+builder.Services.AddHostedService<ScheduledEmailService>();
+
+// Configuración de Data Protection
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(@"C:\temp-keys\"))
     .SetApplicationName("MantenimientosTI")
     .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
-
-// Registrar el servicio programado
-builder.Services.AddHostedService<ScheduledEmailService>();
 
 // Configuración de sesión
 builder.Services.AddSession(options =>
@@ -64,6 +67,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseHttpsRedirection();
 app.UseRouting();
 
+// IMPORTANTE: El orden de estos middlewares es crucial
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();

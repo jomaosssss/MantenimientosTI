@@ -2,29 +2,42 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MantenimientosTI.Models;
-using Microsoft.AspNetCore.Identity; // Se ocupa para PasswordHasher
+using Microsoft.AspNetCore.Identity; // Necesario para PasswordHasher
+using MantenimientosTI.Services;
+using MantenimientosTI.Helpers;
 
-namespace MantenimientosTI.Controllers
+namespace ProyectoMantenimientos.Controllers
 {
     [Authorize(Roles = "ADMINISTRADOR")]
     public class ConfiguracionController : Controller
     {
         private readonly MantenimientosTIContext _dbocontext;
+        private readonly BitacoraService _bitacora;
 
-        public ConfiguracionController(MantenimientosTIContext context)
+        public ConfiguracionController(MantenimientosTIContext context, BitacoraService bitacora)
         {
             _dbocontext = context;
+            _bitacora = bitacora;
         }
 
-        public IActionResult Configuracion()
+        public async Task<IActionResult> Configuracion()
         {
-            var usuarios = _dbocontext.Usuarios
+            // Carga los datos para los modales de usuarios
+            ViewBag.Roles = await _dbocontext.CatRols.ToListAsync();
+            ViewBag.Zonas = await _dbocontext.CatZonas.ToListAsync();
+
+            // Consulta los últimos 50 registros de la bitácora y los envía a la vista
+            var ultimosMovimientos = await _dbocontext.RegistroActividad
+                .OrderByDescending(r => r.FechaHora)
+                .Take(50)
+                .ToListAsync();
+            ViewBag.Bitacora = ultimosMovimientos;
+
+            // Carga la lista de usuarios para la tabla principal
+            var usuarios = await _dbocontext.Usuarios
                 .Include(u => u.ClaveRolNavigation)
                 .Include(u => u.CatZona)
-                .ToList();
-
-            ViewBag.Roles = _dbocontext.CatRols.ToList();
-            ViewBag.Zonas = _dbocontext.CatZonas.ToList();
+                .ToListAsync();
 
             return View(usuarios);
         }
@@ -125,19 +138,38 @@ namespace MantenimientosTI.Controllers
         }
 
         [HttpPost]
-        public IActionResult CambiarEstadoAgendarPreventivos([FromBody] bool habilitar)
+        public async Task<IActionResult> CambiarEstadoAgendarPreventivos([FromBody] bool habilitar)
         {
-            var config = _dbocontext.Configuraciones
-                .FirstOrDefault(c => c.ClaveConfiguracion == "AGENDAR_PREVENTIVOS");
-
-            if (config == null)
+            try
             {
-                return Json(new { success = false, message = "Clave de configuración no encontrada." });
-            }
+                var config = await _dbocontext.Configuraciones
+                    .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "AGENDAR_PREVENTIVOS");
 
-            config.Valor = habilitar ? "1" : "0";
-            _dbocontext.SaveChanges();
-            return Json(new { success = true });
+                if (config == null)
+                {
+                    config = new Configuracion { ClaveConfiguracion = "AGENDAR_PREVENTIVOS" };
+                    _dbocontext.Configuraciones.Add(config);
+                }
+
+                config.Valor = habilitar ? "1" : "0";
+
+                // Prepara el registro de bitácora
+                var usuario = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
+                var accion = habilitar ? BitacoraAcciones.HabilitarCargaCsv : BitacoraAcciones.DeshabilitarCargaCsv;
+                var descripcion = habilitar
+                    ? "Habilitó la función de carga masiva de mantenimientos."
+                    : "Deshabilitó la función de carga masiva de mantenimientos.";
+
+                _bitacora.RegistrarActividad(usuario, accion, descripcion);
+
+                await _dbocontext.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al actualizar la configuración: " + ex.Message });
+            }
         }
 
         [HttpPost]
@@ -166,6 +198,7 @@ namespace MantenimientosTI.Controllers
             return Json(new { success = true });
         }
 
+        // --- MODELOS INTERNOS PARA LAS ACCIONES ---
         public class ActualizarRecibirReporteModel
         {
             public string Rpe { get; set; }

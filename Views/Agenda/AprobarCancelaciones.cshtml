@@ -1,0 +1,75 @@
+﻿@model List<MantenimientosTI.Models.Agendum>
+@{
+    ViewData["Title"] = "Aprobar Cancelaciones";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h4 class="mb-0">Citas Pre-Canceladas Pendientes de Aprobación</h4>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Activo Fijo</th>
+                            <th>Fecha Programada</th>
+                            <th>Tipo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr id="fila-@item.ClaveAgenda">
+                                <td>@item.NumActFijo</td>
+                                <td>@item.FechaProgramada.ToString("dd/MM/yyyy")</td>
+                                <td>@(item.ClaveTipoMtto == "P" ? "Preventivo" : "Correctivo")</td>
+                                <td>
+                                    <button class="btn btn-success btn-sm btn-confirmar" data-id="@item.ClaveAgenda">
+                                        <i class="fas fa-check"></i> Confirmar Cancelación
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    No hay citas pendientes de aprobación.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('.btn-confirmar').on('click', function() {
+                var id = $(this).data('id');
+                var button = $(this);
+
+                if (confirm('¿Está seguro de que desea confirmar la cancelación de esta cita? Esta acción no se puede deshacer.')) {
+                    $.post('@Url.Action("ConfirmarCancelacion", "Agenda")', { idAgenda: id })
+                        .done(function(response) {
+                            if (response.success) {
+                                alert(response.message);
+                                // Opcional: Ocultar la fila de la tabla
+                                $('#fila-' + id).fadeOut();
+                            } else {
+                                alert('Error: ' + response.message);
+                            }
+                        })
+                        .fail(function() {
+                            alert('No se pudo comunicar con el servidor.');
+                        });
+                }
+            });
+        });
+    </script>
+}
