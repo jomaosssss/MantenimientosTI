@@ -23,7 +23,7 @@
                                     <th>Zona</th>
                                     <th>Agencia</th>
                                     <th>Centro</th>
-                                    <th>Cajero</th>
+                                    <th>Núm. de Cajero</th>
                                     <th>Fecha Programada</th>
                                     <th>Fecha de Atención</th>
                                     <th>Fecha Terminada</th>
@@ -56,6 +56,9 @@
                                     <th>Fecha Programada</th>
                                     <th>Fecha de Atención</th>
                                     <th>Fecha Terminada</th>
+                                    <th>Foto Antes</th>
+                                    <th>Foto Durante</th>
+                                    <th>Foto Despues</th>
                                     <th>Hoja de Servicio</th>
                                     <th>Ver Equipo</th>
                                 </tr>
@@ -82,6 +85,9 @@
                                     <th>Fecha Programada</th>
                                     <th>Fecha de Atención</th>
                                     <th>Fecha Terminada</th>
+                                    <th>Foto Antes</th>
+                                    <th>Foto Durante</th>
+                                    <th>Foto Despues</th>
                                     <th>Hoja de Servicio</th>
                                     <th>Ver Equipo</th>
                                 </tr>
@@ -115,7 +121,7 @@
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content rounded">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalInfoLabel">Información del equipo</h5>
+                <h5 class="modal-title" id="modalInfoLabel">Información del Mantenimiento</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body" id="modalInfoBody">
@@ -219,6 +225,33 @@
                     { data: 'fechaAtencion' },
                     { data: 'fechaTerminada' },
                     {
+                        data: 'tieneFotos',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="antes">Ver</button>' :
+                                'N/A';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'tieneFotos',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="durante">Ver</button>' :
+                                'N/A';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'tieneFotos',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="despues">Ver</button>' :
+                                'N/A';
+                        },
+                        orderable: false
+                    },
+                    {
                         data: 'evidenciaHojaServicio',
                         render: function(data, type, row) {
                             return data ?
@@ -253,6 +286,33 @@
                     { data: 'fechaProgramada' },
                     { data: 'fechaAtencion' },
                     { data: 'fechaTerminada' },
+                    {
+                        data: 'tieneFotos',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="antes">Ver</button>' :
+                                'N/A';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'tieneFotos',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="durante">Ver</button>' :
+                                'N/A';
+                        },
+                        orderable: false
+                    },
+                    {
+                        data: 'tieneFotos',
+                        render: function(data, type, row) {
+                            return data ?
+                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="despues">Ver</button>' :
+                                'N/A';
+                        },
+                        orderable: false
+                    },
                     {
                         data: 'evidenciaHojaServicio',
                         render: function(data, type, row) {

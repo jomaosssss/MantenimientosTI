@@ -1,12 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
-using MantenimientosTI.Models;
+﻿using MantenimientosTI.Models;
 using MantenimientosTI.Models.ViewModels;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+using MantenimientosTI.Services;
+using MantenimientosTI.Helpers;
 
 namespace ProyectoMantenimientos.Controllers
 {
@@ -14,10 +19,17 @@ namespace ProyectoMantenimientos.Controllers
     {
         
         private readonly MantenimientosTIContext _dbocontext;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly BitacoraService _bitacora;
+        private readonly IPasswordHasher<Usuario> _passwordHasher;
 
-        public UsuarioController(MantenimientosTIContext context)
+
+        public UsuarioController(MantenimientosTIContext context, IPasswordHasher<Usuario> passwordHasher, BitacoraService bitacora, IHttpClientFactory httpClientFactory)
         {
             _dbocontext = context;
+            _httpClientFactory = httpClientFactory;
+            _passwordHasher = passwordHasher;
+            _bitacora = bitacora;
         }
 
         [HttpGet]
@@ -25,106 +37,188 @@ namespace ProyectoMantenimientos.Controllers
         {
             return View();
         }
-
+      
         [HttpPost]
         public async Task<IActionResult> Login(VMLogin model)
         {
-            ModelState.Clear();
-
-            // Validación manual de campos vacíos
-            if (string.IsNullOrWhiteSpace(model.Correo) && string.IsNullOrWhiteSpace(model.Contrasenia))
+            if (string.IsNullOrWhiteSpace(model.Rpe))
             {
-                ViewBag.Mensaje = "Por favor, ingrese su correo electrónico y contraseña";
+                ViewBag.Mensaje = "El campo RPE es requerido";
                 return View(model);
             }
-            else if (string.IsNullOrWhiteSpace(model.Correo))
-            {
-                ViewBag.Mensaje = "El campo Correo electrónico es requerido";
-                return View(model);
-            }
-            else if (string.IsNullOrWhiteSpace(model.Contrasenia))
+            if (string.IsNullOrWhiteSpace(model.Contrasenia))
             {
                 ViewBag.Mensaje = "El campo Contraseña es requerido";
                 return View(model);
             }
 
-            // Validación de credenciales
-            try
+            if (model.Rpe.ToUpper() == "MEM03" || model.Rpe.ToUpper() == "ADMIN")
             {
-                var usuario = _dbocontext.Usuarios
-                    .Include(u => u.ClaveRolNavigation)
-                    .Include(u => u.CatZona)
-                    .FirstOrDefault(u => u.Correo == model.Correo);
-
-                if (usuario == null)
+                try
                 {
-                    ViewBag.Mensaje = "Correo electrónico no registrado";
+                    var usuarioAdmin = await _dbocontext.Usuarios
+                        .Include(u => u.ClaveRolNavigation)
+                        .Include(u => u.CatZona)
+                        .FirstOrDefaultAsync(u => u.Rpe.ToUpper() == model.Rpe.ToUpper());
+
+                    if (usuarioAdmin == null)
+                    {
+                        ViewBag.Mensaje = "Usuario no encontrado en la base de datos.";
+                        return View(model);
+                    }
+
+                    var hasher = new PasswordHasher<Usuario>();
+                    var result = hasher.VerifyHashedPassword(usuarioAdmin, usuarioAdmin.Contrasenia, model.Contrasenia);
+
+                    if (result != PasswordVerificationResult.Success)
+                    {
+                        ViewBag.Mensaje = "Contraseña incorrecta para el usuario.";
+                        return View(model);
+                    }
+
+                    if (usuarioAdmin.Estatus.ToLower() != "activo")
+                    {
+                        ViewBag.Mensaje = "Usuario ADMIN inactivo. Contacte al administrador.";
+                        return View(model);
+                    }
+
+                    var claimsAdmin = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, usuarioAdmin.Rpe),
+                        new Claim(ClaimTypes.Name, $"{usuarioAdmin.Nombre} {usuarioAdmin.ApellidoP} {usuarioAdmin.ApellidoM}"),
+                        new Claim(ClaimTypes.Role, usuarioAdmin.ClaveRolNavigation?.Nombre ?? "Sin rol"),
+                        new Claim("RolId", usuarioAdmin.ClaveRol.ToString()),
+                        new Claim("Zona", usuarioAdmin.ClaveZona),
+                        new Claim("ZonaNombre", usuarioAdmin.CatZona?.NombreZona ?? "Sin zona"),
+                        new Claim("Division", usuarioAdmin.ClaveDivision)
+                    };
+
+                    var claimsIdentityAdmin = new ClaimsIdentity(claimsAdmin, CookieAuthenticationDefaults.AuthenticationScheme);
+                    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentityAdmin));
+
+                    HttpContext.Session.SetString("Rpe", usuarioAdmin.Rpe);
+                    HttpContext.Session.SetString("NombreUsuario", $"{usuarioAdmin.Nombre} {usuarioAdmin.ApellidoP} {usuarioAdmin.ApellidoM}");
+                    HttpContext.Session.SetInt32("Rol", usuarioAdmin.ClaveRol);
+                    HttpContext.Session.SetString("NombreRol", usuarioAdmin.ClaveRolNavigation?.Nombre ?? "Sin rol");
+                    HttpContext.Session.SetString("ClaveZona", usuarioAdmin.ClaveZona);
+                    HttpContext.Session.SetString("NombreZona", usuarioAdmin.CatZona?.NombreZona ?? "Sin zona");
+                    HttpContext.Session.SetString("ClaveDivision", usuarioAdmin.ClaveDivision);
+
+                    // --- REGISTRO EN BITÁCORA (ADMIN LOCAL) ---
+                    await _bitacora.RegistrarYGuardarAsync(
+                        HttpContext.Session.GetString("NombreUsuario"),
+                        BitacoraAcciones.InicioSesionAdmin,
+                        $"El administrador {usuarioAdmin.Rpe} inició sesión localmente."
+                    );
+                    // --- FIN DEL REGISTRO ---
+
+                    return RedirectToAction("Inicio", "Home");
+                }
+                catch (Exception ex)
+                {
+                    ViewBag.Mensaje = "Ocurrió un error al iniciar sesión como ADMIN.";
                     return View(model);
                 }
-
-                // Verificacion de contraseña con hash
-                var hasher = new PasswordHasher<Usuario>();
-                var result = hasher.VerifyHashedPassword(usuario, usuario.Contrasenia, model.Contrasenia);
-
-                // Migracion para desarrollo (solo para pruebas)
-#if DEBUG
-                if (result == PasswordVerificationResult.Failed && usuario.Contrasenia == model.Contrasenia)
-                {
-                    // Hashear la contraseña antigua y guardarla
-                    usuario.Contrasenia = hasher.HashPassword(usuario, model.Contrasenia);
-                    _dbocontext.SaveChanges();
-                    result = PasswordVerificationResult.Success;
-                }
-#endif
-
-                if (result != PasswordVerificationResult.Success)
-                {
-                    ViewBag.Mensaje = "Contraseña incorrecta";
-                    return View(model);
-                }
-
-                if (usuario.Estatus.ToLower() != "activo")
-                {
-                    ViewBag.Mensaje = "Usuario inactivo. Contacte al administrador";
-                    return View(model);
-                }
-
-                // Crear claims para el usuario
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.NameIdentifier, usuario.Rpe),
-                    new Claim(ClaimTypes.Name, $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}"),
-                    new Claim(ClaimTypes.Role, usuario.ClaveRolNavigation?.Nombre ?? "Sin rol"),
-                    new Claim("RolId", usuario.ClaveRol.ToString()),
-                    new Claim("Zona", usuario.ClaveZona),
-                    new Claim("ZonaNombre", usuario.CatZona?.NombreZona ?? "Sin zona"),
-                    new Claim("Division", usuario.ClaveDivision)
-                };
-
-                // Crear identidad y principal
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
-
-                // Iniciar sesión
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
-
-                // Configuración de sesión
-                HttpContext.Session.SetString("Rpe", usuario.Rpe);
-                HttpContext.Session.SetString("NombreUsuario", $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}");
-                HttpContext.Session.SetInt32("Rol", usuario.ClaveRol);
-                HttpContext.Session.SetString("NombreRol", usuario.ClaveRolNavigation?.Nombre ?? "Sin rol");
-                HttpContext.Session.SetString("ClaveZona", usuario.ClaveZona);
-                HttpContext.Session.SetString("NombreZona", usuario.CatZona?.NombreZona ?? "Sin zona");
-                HttpContext.Session.SetString("ClaveDivision", usuario.ClaveDivision);
-
-                return RedirectToAction("Inicio", "Home");
             }
-            catch (Exception ex)
+            else
             {
-                ViewBag.Mensaje = "Ocurrió un error al iniciar sesión. Intente nuevamente";
-                return View(model);
+                try
+                {
+                    var usuario = await _dbocontext.Usuarios
+                        .Include(u => u.ClaveRolNavigation)
+                        .Include(u => u.CatZona)
+                        .FirstOrDefaultAsync(u => u.Rpe == model.Rpe);
+
+                    if (usuario == null)
+                    {
+                        ViewBag.Mensaje = "RPE no registrado en el sistema. Contacte al administrador.";
+                        return View(model);
+                    }
+
+                    if (usuario.Estatus.ToLower() != "activo")
+                    {
+                        ViewBag.Mensaje = "Usuario inactivo. Contacte al administrador.";
+                        return View(model);
+                    }
+
+                    var configApi = await _dbocontext.Configuraciones.FirstOrDefaultAsync(c => c.ClaveConfiguracion == "LDAP_CFE");
+                    if (configApi == null || string.IsNullOrWhiteSpace(configApi.Valor))
+                    {
+                        ViewBag.Mensaje = "Error de configuración: No se encontró la URL de la API.";
+                        return View(model);
+                    }
+                    string apiUrl = configApi.Valor;
+
+                    var client = _httpClientFactory.CreateClient();
+                    var apiRequest = new ApiLoginRequest
+                    {
+                        rpe = model.Rpe,
+                        contrasenia = model.Contrasenia
+                    };
+
+                    var jsonContent = new StringContent(JsonSerializer.Serialize(apiRequest), Encoding.UTF8, "application/json");
+                    var response = await client.PostAsync(apiUrl, jsonContent);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var responseString = await response.Content.ReadAsStringAsync();
+                        var apiResult = JsonSerializer.Deserialize<ApiResponse>(responseString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                        // 4. Procesar la respuesta de la API
+                        if (apiResult != null && apiResult.procesoExitoso == 1)
+                        {
+                            var claims = new List<Claim>
+                            {
+                                new Claim(ClaimTypes.NameIdentifier, usuario.Rpe),
+                                new Claim(ClaimTypes.Name, $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}"),
+                                new Claim(ClaimTypes.Role, usuario.ClaveRolNavigation?.Nombre ?? "Sin rol"),
+                                new Claim("RolId", usuario.ClaveRol.ToString()),
+                                new Claim("Zona", usuario.ClaveZona),
+                                new Claim("ZonaNombre", usuario.CatZona?.NombreZona ?? "Sin zona"),
+                                new Claim("Division", usuario.ClaveDivision)
+                            };
+
+                            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+
+                            HttpContext.Session.SetString("Rpe", usuario.Rpe);
+                            HttpContext.Session.SetString("NombreUsuario", $"{usuario.Nombre} {usuario.ApellidoP} {usuario.ApellidoM}");
+                            HttpContext.Session.SetInt32("Rol", usuario.ClaveRol);
+                            HttpContext.Session.SetString("NombreRol", usuario.ClaveRolNavigation?.Nombre ?? "Sin rol");
+                            HttpContext.Session.SetString("ClaveZona", usuario.ClaveZona);
+                            HttpContext.Session.SetString("NombreZona", usuario.CatZona?.NombreZona ?? "Sin zona");
+                            HttpContext.Session.SetString("ClaveDivision", usuario.ClaveDivision);
+
+                            // --- REGISTRO EN BITÁCORA (TÉCNICO/API) ---
+                            await _bitacora.RegistrarYGuardarAsync(
+                                HttpContext.Session.GetString("NombreUsuario"),
+                                BitacoraAcciones.InicioSesionTecnico,
+                                $"El usuario {usuario.Rpe} inició sesión."
+                            );
+                            // --- FIN DEL REGISTRO ---
+                    
+                            return RedirectToAction("Inicio", "Home");
+                        }
+                        else
+                        {
+                            // Credenciales incorrectas
+                            ViewBag.Mensaje = apiResult?.mensaje ?? "Usuario y/o contraseña incorrectos.";
+                            return View(model);
+                        }
+                    }
+                    else
+                    {
+                        ViewBag.Mensaje = "Error al contactar el servicio de autenticación. Intente más tarde.";
+                        return View(model);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ViewBag.Mensaje = "Ocurrió un error inesperado al iniciar sesión.";
+                    return View(model);
+                }
             }
-        }
+        }   
 
         public async Task<IActionResult> CerrarSesion()
         {
@@ -176,24 +270,26 @@ namespace ProyectoMantenimientos.Controllers
             });
         }
 
-        [Authorize(Roles = "ADMINISTRADOR")]
+        // En /Controllers/UsuarioController.cs
+
         [HttpPost]
-        public IActionResult ActualizarUsuario([FromBody] UsuarioEditModel model)
+        public async Task<IActionResult> ActualizarUsuario([FromBody] UsuarioEditModel model)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var usuario = _dbocontext.Usuarios.FirstOrDefault(u => u.Rpe == model.Rpe);
-            if (usuario == null)
-            {
-                return NotFound(new { success = false, message = "Usuario no encontrado" });
-            }
-
             try
             {
-                // Actualizar propiedades
+                // 1. Busca el usuario de forma asíncrona
+                var usuario = await _dbocontext.Usuarios.FirstOrDefaultAsync(u => u.Rpe == model.Rpe);
+                if (usuario == null)
+                {
+                    return NotFound(new { success = false, message = "Usuario no encontrado" });
+                }
+
+                // 2. Actualiza sus propiedades en memoria
                 usuario.ClaveRol = model.ClaveRol;
                 usuario.ClaveZona = model.ClaveZona;
                 usuario.Nombre = model.Nombre;
@@ -202,26 +298,39 @@ namespace ProyectoMantenimientos.Controllers
                 usuario.Correo = model.Correo;
                 usuario.Estatus = model.Estatus;
 
-                _dbocontext.SaveChanges();
+                // 3. Prepara el registro de bitácora
+                var adminQueActualiza = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
+                var descripcion = $"Actualizó los datos del usuario '{usuario.Nombre} {usuario.ApellidoP}' con RPE '{model.Rpe}'.";
+                _bitacora.RegistrarActividad(adminQueActualiza, "ACTUALIZAR_USUARIO", descripcion);
+
+                // 4. Guarda AMBOS cambios (actualización y bitácora) en una sola transacción
+                await _dbocontext.SaveChangesAsync();
 
                 return Json(new { success = true });
             }
             catch (DbUpdateException ex)
             {
-                return Json(new { success = false, message = "Error al actualizar usuario: " + ex.Message });
+                return Json(new { success = false, message = "Error al guardar en la base de datos: " + (ex.InnerException?.Message ?? ex.Message) });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error inesperado al actualizar el usuario: " + ex.Message });
             }
         }
 
+        // En tu archivo: /Controllers/UsuarioController.cs
+
         [Authorize(Roles = "ADMINISTRADOR")]
         [HttpPost]
-        public IActionResult CrearUsuario([FromBody] UsuarioCreateModel model)
+        public async Task<IActionResult> CrearUsuario([FromBody] UsuarioCreateModel model)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            if (_dbocontext.Usuarios.Any(u => u.Rpe == model.Rpe))
+            // Usamos 'AnyAsync' para una consulta asíncrona más eficiente
+            if (await _dbocontext.Usuarios.AnyAsync(u => u.Rpe == model.Rpe))
             {
                 return Json(new { success = false, message = "El RPE ya está registrado" });
             }
@@ -230,6 +339,7 @@ namespace ProyectoMantenimientos.Controllers
             {
                 var hasher = new PasswordHasher<Usuario>();
 
+                // 1. Prepara el nuevo usuario
                 var nuevoUsuario = new Usuario
                 {
                     Rpe = model.Rpe,
@@ -240,18 +350,30 @@ namespace ProyectoMantenimientos.Controllers
                     ApellidoP = model.ApellidoP,
                     ApellidoM = model.ApellidoM,
                     Correo = model.Correo,
-                    Contrasenia = hasher.HashPassword(null, model.Contrasenia), // Hashear aquí
+                    Contrasenia = hasher.HashPassword(null, model.Contrasenia),
                     Estatus = "Activo"
                 };
+                _dbocontext.Usuarios.Add(nuevoUsuario); // Se añade al contexto una sola vez
 
-                _dbocontext.Usuarios.Add(nuevoUsuario);
-                _dbocontext.SaveChanges();
+                // 2. Prepara el registro de bitácora
+                var adminQueCrea = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
+                var descripcion = $"Creó al nuevo usuario '{model.Nombre} {model.ApellidoP}' con RPE '{model.Rpe}'.";
+                // Usamos el método que solo prepara, sin guardar
+                _bitacora.RegistrarActividad(adminQueCrea, "CREAR_USUARIO", descripcion);
+
+                // 3. Guarda AMBOS cambios en una sola transacción
+                await _dbocontext.SaveChangesAsync();
 
                 return Json(new { success = true });
             }
             catch (DbUpdateException ex)
             {
-                return Json(new { success = false, message = "Error al crear usuario: " + ex.Message });
+                // Esta excepción nos dará más detalles si algo falla en la base de datos
+                return Json(new { success = false, message = "Error al guardar en la base de datos: " + (ex.InnerException?.Message ?? ex.Message) });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error inesperado al crear el usuario: " + ex.Message });
             }
         }
 

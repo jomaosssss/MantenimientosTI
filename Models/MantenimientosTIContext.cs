@@ -35,6 +35,8 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<CatZona> CatZonas { get; set; }
 
+    public virtual DbSet<Configuracion> Configuraciones { get; set; }
+
     public virtual DbSet<Equipo> Equipos { get; set; }
 
     public virtual DbSet<EquipoAc> EquipoAcs { get; set; }
@@ -49,11 +51,15 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<RegistroEvento> RegistroEventos { get; set; }
 
+    public virtual DbSet<RegistroActividad> RegistroActividad { get; set; }
+
+    public virtual DbSet<CatAccion> CatAcciones { get; set; }
+
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
-//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//        => optionsBuilder.UseSqlServer("Server=MATEBOOKD14;Database=MantenimientosTI;Trusted_Connection=True;TrustServerCertificate=True;");
+    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+    //        => optionsBuilder.UseSqlServer("Server=MATEBOOKD14;Database=MantenimientosTI;Trusted_Connection=True;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -86,6 +92,24 @@ public partial class MantenimientosTIContext : DbContext
             entity.HasOne(d => d.NumActFijoNavigation).WithMany(p => p.Agenda)
                 .HasForeignKey(d => d.NumActFijo)
                 .HasConstraintName("FK_Agenda_numActF1_02FC7413");
+        });
+
+        modelBuilder.Entity<CatAccion>(entity =>
+        {
+            entity.ToTable("CatAcciones");
+
+            entity.HasKey(e => e.IdAccion);
+
+            // Define la columna ClaveAccion como única para evitar duplicados
+            entity.HasIndex(e => e.ClaveAccion).IsUnique();
+
+            entity.Property(e => e.ClaveAccion)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Descripcion)
+                .HasMaxLength(255)
+                .IsRequired();
         });
 
         modelBuilder.Entity<CatAgencium>(entity =>
@@ -197,9 +221,9 @@ public partial class MantenimientosTIContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("fuente");
             entity.Property(e => e.Severidad).HasColumnName("severidad");
+
+            // PROPIEDAD IMPORTANCIA AGREGADA COMO int
             entity.Property(e => e.Importancia)
-                .HasMaxLength(1)
-                .IsUnicode(false)
                 .HasColumnName("importancia");
 
             entity.HasOne(d => d.ClaveFallaNavigation).WithMany(p => p.CatEventos)
@@ -296,6 +320,29 @@ public partial class MantenimientosTIContext : DbContext
                 .HasForeignKey(d => d.ClaveDivision)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__catZona__claveDi__267ABA7A");
+        });
+
+        modelBuilder.Entity<Configuracion>(entity =>
+        {
+            entity.ToTable("Configuracion");
+
+            entity.HasKey(e => e.ClaveConfiguracion);
+
+            entity.Property(e => e.ClaveConfiguracion)
+                .HasColumnName("claveConfiguracion")
+                .HasMaxLength(100)
+                .IsUnicode(false);
+
+            entity.Property(e => e.Valor)
+                .HasColumnName("valor")
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .IsRequired();
+
+            entity.Property(e => e.Descripcion)
+                .HasColumnName("descripcion")
+                .HasMaxLength(500)
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<Equipo>(entity =>
@@ -544,6 +591,44 @@ public partial class MantenimientosTIContext : DbContext
                 .HasForeignKey(d => d.NumOrden)
                 .HasConstraintName("FK_Foto_Mantenimiento");
         });
+
+        modelBuilder.Entity<RegistroActividad>(entity =>
+        {
+            entity.ToTable("RegistroActividad");
+
+            entity.HasKey(e => e.IdRegistroActividad);
+
+            entity.Property(e => e.IdRegistroActividad)
+                .HasColumnName("IdRegistroActividad")
+                .ValueGeneratedOnAdd(); // Importante para indicar que es autoincremental (IDENTITY)
+
+            entity.Property(e => e.FechaHora)
+                .HasColumnName("FechaHora")
+                .HasColumnType("datetime");
+
+            entity.Property(e => e.Usuario)
+                .HasColumnName("Usuario")
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .IsRequired();
+
+            entity.Property(e => e.Accion)
+                .HasColumnName("Accion")
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .IsRequired();
+
+            entity.Property(e => e.Descripcion)
+                .HasColumnName("Descripcion")
+                .HasMaxLength(500)
+                .IsUnicode(false)
+                .IsRequired(false); // Le decimos que permite nulos
+
+            entity.Property(e => e.IdEntidadAfectada)
+                .HasColumnName("IdEntidadAfectada")
+                .IsRequired(false); // Le decimos que permite nulos
+        });
+
 
         modelBuilder.Entity<RegistroEvento>(entity =>
         {

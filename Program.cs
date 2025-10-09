@@ -11,8 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<MantenimientosTIContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ConexionSQL")));
-
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
+builder.Services.AddScoped<MantenimientosTI.Services.BitacoraService>();
 // Configuración de sesión
 builder.Services.AddSession(options =>
 {

@@ -164,7 +164,7 @@
                                 <th>Centro</th>
                                 <th>Tipo de Equipo</th>
                                 <th>Núm. de Cajero</th>
-                                <th>Estatus</th> <th>Inf. del Equipo</th>
+                                <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
                                 <th>Acciones</th>
                             </tr>
@@ -181,11 +181,6 @@
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
                                     <td>@item.NumCajero</td>
-
-                                    <td>
-                                        <span class="badge bg-info estatus-agenda">@item.Estatus</span>
-                                    </td>
-
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -236,18 +231,20 @@
                 </div>
                 <div class="card-body">
                     <table id="tablaAC" class="display">
-                        <thead>
-                            <tr>
-                                <th>Fecha Programada</th>
-                                <th>Zona</th>
-                                <th>Agencia</th>
-                                <th>Centro</th>
-                                <th>Tipo de Equipo</th>
-                                <th>Estatus</th><th>Inf. del Equipo</th>
-                                <th>Hoja de Servicio</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
+                           <thead>
+                                <tr>
+                                    <th>Fecha Programada</th>
+                                    <th>Zona</th>
+                                    <th>Agencia</th>
+                                    <th>Centro</th>
+                                    <th>Tipo de Equipo</th>
+                                    <th>Estatus</th>
+                                    <th>Núm. de Orden</th>
+                                    <th>Inf. del Equipo</th>
+                                    <th>Hoja de Servicio</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>      
                         <tbody>
                             @foreach (var item in Model.AtencionClientes)
                             {
@@ -259,11 +256,10 @@
                                     <td>@item.Agencia</td>
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
-
+                                    <td>@item.ClaveAgenda</td>
                                     <td>
-                                        <span class="badge bg-info estatus-agenda">@item.Estatus</span>
-                                    </td>
-
+                                     <span class="badge bg-info estatus-agenda">@item.Estatus</span>
+                                 </td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
                                             <i class="bi bi-eye"></i>
@@ -314,7 +310,7 @@
                 </div>
                 <div class="card-body">
                     <table id="tablaEC" class="display">
-                        <thead>
+                       <thead>
                             <tr>
                                 <th>Fecha Programada</th>
                                 <th>Zona</th>
@@ -322,7 +318,9 @@
                                 <th>Centro</th>
                                 <th>Tipo de Equipo</th>
                                 <th>Usuario</th>
-                                <th>Estatus</th><th>Inf. del Equipo</th>
+                                <th>Estatus</th>
+                                <th>Núm. de Orden</th>
+                                <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
                                 <th>Acciones</th>
                             </tr>
@@ -339,10 +337,10 @@
                                     <td>@item.Centro</td>
                                     <td>@item.Tipo</td>
                                     <td>@item.UsuarioAsignado</td>
-
-                                    <td>
-                                        <span class="badge bg-info estatus-agenda">@item.Estatus</span>
-                                    </td>
+                                   <td>@item.ClaveAgenda</td>
+                                     <td>
+                                         <span class="badge bg-info estatus-agenda">@item.Estatus</span>
+                                     </td>
 
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">

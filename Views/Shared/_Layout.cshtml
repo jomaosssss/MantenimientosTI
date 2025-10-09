@@ -8,7 +8,7 @@
     <meta name="author" content="" />
 
     <title>ARGOS</title>
-    <link rel="icon" type="image/png" href="~/images/LOGO.ico">
+    <link rel="icon" type="image/png" href="~/images/LOGO.png">
 
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -109,7 +109,10 @@
 
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
-                        <li><a class="dropdown-item" href="@Url.Action("Administrar", "Usuario")"><i class="fas fa-cog me-2"></i>Configuracion</a></li>
+                        @if (User.IsInRole("ADMINISTRADOR"))
+                        {
+                            <li><a class="dropdown-item" href="@Url.Action("Configuracion", "Configuracion")"><i class="fas fa-cog me-2"></i>Configuracion</a></li>
+                        }
                         <li><hr class="dropdown-divider" /></li>
                         <li><a class="dropdown-item" href="@Url.Action("CerrarSesion", "Usuario")"><i class="fas fa-sign-out-alt me-2"></i>Salir</a></li>
                     </ul>
@@ -130,11 +133,19 @@
                             Bandeja de Entrada
                         </a>
 
-                        @if (User.IsInRole("ADMINISTRADOR"))
+                        @* @if (User.IsInRole("ADMINISTRADOR"))
                         {
-                            <a href="/Usuario/Administrar" class="nav-link ajax-link text-white">
+                            <a href="/Usuario/Administrar" class="nav-link text-white">
                                 <div class="sb-nav-link-icon"><i class="fas fa-user"></i></div>
                                 Administrar Usuarios
+                            </a>
+                        } *@
+
+                        @if (User.IsInRole("ADMINISTRADOR"))
+                        {
+                            <a href="/Dashboard/Dashboard" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-eye"></i></div>
+                                Dashboard
                             </a>
                         }
 
@@ -204,6 +215,14 @@
                             <a href="@Url.Action("AprobarCancelaciones", "Agenda")" class="nav-link ajax-link text-white">
                                 <div class="sb-nav-link-icon"><i class="fas fa-check-to-slot"></i></div>
                                 Aprobar Cancelaciones
+                            </a>
+                        }
+
+                        @if (User.IsInRole("ADMINISTRADOR"))
+                        {
+                            <a href="@Url.Action("Index", "Bitacora")" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-history"></i></div>
+                                Bitácora de Actividad
                             </a>
                         }
 

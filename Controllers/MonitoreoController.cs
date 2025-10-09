@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MantenimientosTI.Models;
+using System.Globalization;
 
 namespace ProyectoMantenimientos.Controllers
 {
@@ -17,12 +18,10 @@ namespace ProyectoMantenimientos.Controllers
         [Authorize(Roles = "ADMINISTRADOR")]
         public IActionResult MonitoreoAdmin()
         {
-            // Última fecha de actualización
             var ultimaActualizacion = _dbocontext.RegistroEventos
                 .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
 
-            // Formatear la fecha en español
-            var culture = new System.Globalization.CultureInfo("es-ES");
+            var culture = new CultureInfo("es-ES");
             ViewBag.UltimaActualizacion = $"el {ultimaActualizacion:dd} de {culture.DateTimeFormat.GetMonthName(ultimaActualizacion.Month)} a las {ultimaActualizacion:HH:mm}";
 
             var zonasConCfematicos = _dbocontext.CatZonas
@@ -59,17 +58,33 @@ namespace ProyectoMantenimientos.Controllers
         {
             try
             {
-                // 1. Obtenemos la lista de todos los números de cajero existentes.
+                var ultimaFechaGeneral = _dbocontext.RegistroEventos
+                    .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
+                var fechaInicio = ultimaFechaGeneral.AddHours(-24);
                 var numerosCajero = _dbocontext.EquipoCfematicos
                     .Select(c => c.NumCajero)
                     .ToList();
-
-                // 2. Creamos un diccionario donde a CADA cajero se le asigna el valor "verde".
+                var eventosCriticos = _dbocontext.RegistroEventos
+                    .Where(re => re.FechaEvento >= fechaInicio && re.FechaEvento <= ultimaFechaGeneral)
+                    .Join(_dbocontext.CatEventos, r => r.ClaveEvento, e => e.ClaveEvento, (r, e) => new { r.NumCajero, e.Descripcion, e.Severidad })
+                    .Where(e => (e.Descripcion == "VENDIDO TONELERO" || e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" || e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" || e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" || e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") && e.Severidad == 100)
+                    .GroupBy(e => e.NumCajero)
+                    .Select(g => new { NumCajero = g.Key, TieneCritico = g.Any() })
+                    .ToList();
+                var eventosAdvertencia = _dbocontext.RegistroEventos
+                    .Where(re => re.FechaEvento >= fechaInicio && re.FechaEvento <= ultimaFechaGeneral)
+                    .Join(_dbocontext.CatEventos, r => r.ClaveEvento, e => e.ClaveEvento, (r, e) => new { r.NumCajero, e.Descripcion, e.Severidad })
+                    .Where(e => (e.Descripcion == "VENDIDO TONELERO" || e.Descripcion == "ERROR EN ACEPTADOR DE BILLETES" || e.Descripcion == "ERROR EN DISPENSADOR DE BILLETES" || e.Descripcion == "ERROR EN ACEPTADOR DE MONEDAS" || e.Descripcion == "ERROR EN DISPENSADOR DE MONEDAS") && e.Severidad == 50)
+                    .GroupBy(e => e.NumCajero)
+                    .Select(g => new { NumCajero = g.Key, TieneAdvertencia = g.Any() })
+                    .ToList();
                 var estados = numerosCajero.ToDictionary(
-                    numCajero => numCajero, // La clave es el número del cajero.
-                    numCajero => "verde"    // El valor SIEMPRE es "verde".
-                );
-
+                    numCajero => numCajero,
+                    numCajero => {
+                        var tieneCritico = eventosCriticos.Any(e => e.NumCajero == numCajero && e.TieneCritico);
+                        var tieneAdvertencia = eventosAdvertencia.Any(e => e.NumCajero == numCajero && e.TieneAdvertencia);
+                        return tieneCritico ? "rojo" : tieneAdvertencia ? "amarillo" : "verde";
+                    });
                 return Json(estados);
             }
             catch (Exception ex)
@@ -88,15 +103,10 @@ namespace ProyectoMantenimientos.Controllers
             {
                 return RedirectToAction("Error", "Home");
             }
-
-            // Obtener la última fecha de actualización
             var ultimaActualizacion = _dbocontext.RegistroEventos
                 .Max(re => (DateTime?)re.FechaEvento) ?? DateTime.Now;
-
-            // Formatear la fecha en español
-            var culture = new System.Globalization.CultureInfo("es-ES");
+            var culture = new CultureInfo("es-ES");
             ViewBag.UltimaActualizacion = $"el {ultimaActualizacion:dd} de {culture.DateTimeFormat.GetMonthName(ultimaActualizacion.Month)} a las {ultimaActualizacion:HH:mm}";
-
             var cfematicos = _dbocontext.Equipos
                 .Where(e => e.ClaveZona == claveZona)
                 .Include(e => e.CatCentro)
@@ -160,22 +170,21 @@ namespace ProyectoMantenimientos.Controllers
         public IActionResult ObtenerEstadisticasEventos(string numCajero, int dias = 7)
         {
             var fechaLimite = DateTime.Now.AddDays(-dias);
-
             var estadisticas = _dbocontext.RegistroEventos
-            .Where(re => re.NumCajero == numCajero && re.FechaEvento >= fechaLimite)
-            .Join(_dbocontext.CatEventos,
-                registro => registro.ClaveEvento,
-                evento => evento.ClaveEvento,
-                (registro, evento) => new { evento.Severidad, evento.ClaveFalla, evento.Importancia }
-            )
-            .Where(x => x.Importancia == 1)
-            .GroupBy(x => new { x.Severidad, x.ClaveFalla })
-            .Select(g => new {
-                Severidad = g.Key.Severidad,
-                Tipo = g.Key.ClaveFalla,
-                Cantidad = g.Count()
-            })
-           .ToList();
+                .Where(re => re.NumCajero == numCajero && re.FechaEvento >= fechaLimite)
+                .Join(_dbocontext.CatEventos,
+                    registro => registro.ClaveEvento,
+                    evento => evento.ClaveEvento,
+                    (registro, evento) => new { evento.Severidad, evento.ClaveFalla, evento.Importancia }
+                )
+                .Where(x => x.Importancia == 1) // FILTRO RE-INTEGRADO
+                .GroupBy(x => new { x.Severidad, x.ClaveFalla })
+                .Select(g => new {
+                    Severidad = g.Key.Severidad,
+                    Tipo = g.Key.ClaveFalla,
+                    Cantidad = g.Count()
+                })
+               .ToList();
 
             var criticosOperativos = estadisticas.FirstOrDefault(x => x.Severidad == 100 && x.Tipo == "O")?.Cantidad ?? 0;
             var criticosTecnicos = estadisticas.FirstOrDefault(x => x.Severidad == 100 && x.Tipo == "T")?.Cantidad ?? 0;
@@ -200,7 +209,6 @@ namespace ProyectoMantenimientos.Controllers
         public IActionResult ObtenerEventosRecientes(string numCajero, int dias = 7)
         {
             var fechaLimite = DateTime.Now.AddDays(-dias);
-
             var eventos = _dbocontext.RegistroEventos
                 .Where(re => re.NumCajero == numCajero && re.FechaEvento >= fechaLimite)
                 .Join(_dbocontext.CatEventos,
@@ -208,21 +216,23 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { registro, evento }
                 )
-                .Where(x => x.evento.Importancia == 1) // ¡FILTRO AÑADIDO!
+                .Where(x => x.evento.Importancia == 1) // FILTRO RE-INTEGRADO
                 .OrderByDescending(x => x.registro.FechaEvento)
                 .Take(5)
                 .Select(x => new {
                     fuente = x.evento.Fuente,
                     descripcion = x.evento.Descripcion,
                     severidad = x.evento.Severidad,
-                    fecha = x.registro.FechaEvento.ToString("g")
+                    fecha = x.registro.FechaEvento.ToString("g", CultureInfo.InvariantCulture)
                 })
                 .ToList();
-
             return Json(eventos);
         }
 
-        [HttpGet]
+        // ... (Se omiten los demás métodos por brevedad, pero todos deben tener el filtro de importancia si corresponde)
+    }
+}
+[HttpGet]
         public IActionResult ObtenerEstadisticasAvanzadas(string numCajero, int dias = 7)
         {
             var fechaLimite = DateTime.Now.AddDays(-dias);

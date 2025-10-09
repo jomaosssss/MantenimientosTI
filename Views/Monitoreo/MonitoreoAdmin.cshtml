@@ -34,9 +34,12 @@
             background-color: #ffc107 !important;
         }
 
-        .cfematico-btn:hover {
-            opacity: 0.9;
-        }
+
+    .btn.cfematico-btn:hover {
+        background-color: #228b3d;
+        filter: none;
+        transform: scale(1.1);
+    }
 
         .cfematico-btn.selected {
             box-shadow: 0 0 0 2px #0d6efd;
@@ -317,7 +320,7 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="text-muted small me-3">
                     Última actualización @ViewBag.UltimaActualizacion
-               
+
                 </div>
             </div>
         </div>
@@ -673,119 +676,73 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Variable global para el gráfico
+        // --- VARIABLES GLOBALES ---
         var basicBarChart = null;
         var selectedCfematico = null;
-        // Variable global para el estado del CFEmático seleccionado
-        var selectedCfematicoEstado = null;
+        var selectedCfematicoEstado = null; // Aunque no cambias color, se usa en las llamadas a la API
 
-        function aplicarColorCfematico(numCajero, estado) {
-            var $boton = $(`.cfematico-btn[data-num-cajero="${numCajero}"]`);
-
-            // Remover todas las clases de color primero
-            $boton.removeClass('bg-success bg-danger bg-warning');
-
-            // Agregar la clase correspondiente
-            switch(estado) {
-                case 'rojo':
-                    $boton.addClass('bg-danger');
-                    break;
-                case 'amarillo':
-                    $boton.addClass('bg-warning');
-                    break;
-                default: // verde
-                    $boton.addClass('bg-success');
-                    break;
-            }
-        }
-
-        // Función para cargar los estados de los CFEmáticos en lote
-        function cargarEstadosEnLote() {
-            $.get('@Url.Action("ObtenerEstadosCfematicos", "Monitoreo")', function(data) {
-                if (!data) {
-                    console.error('No se recibieron datos de estados');
-                    return;
-                }
-
-                console.log('Datos de estados recibidos:', data);
-
-                $('.cfematico-btn').each(function() {
-                    var numCajero = $(this).data('num-cajero');
-                    var estado = data[numCajero] || 'verde';
-
-                    console.log(`Aplicando estado ${estado} a CFEmático ${numCajero}`);
-                    aplicarColorCfematico(numCajero, estado);
-                });
-            }).fail(function(jqXHR, textStatus, errorThrown) {
-                console.error('Error al cargar estados:', textStatus, errorThrown);
+        // --- BLOQUE PRINCIPAL DE EJECUCIÓN ---
+        $(document).ready(function() {
+            // 1. Inicializar tooltips de Bootstrap
+            $('[data-bs-toggle="tooltip"]').tooltip({
+                trigger: 'hover'
             });
-        }
 
-            $(document).ready(function() {
-        // Inicializar tooltips
-        $('[data-bs-toggle="tooltip"]').tooltip({
-            trigger: 'hover'
-        });
+            // 2. Cargar los tipos de falla en el selector
+            cargarTiposFalla();
 
-        // Cargar estados iniciales
-        cargarEstadosEnLote();
+            // 3. Manejador de evento principal para los botones de CFEmático
+            $(document).on('click', '.cfematico-btn', function() {
+                var $clickedButton = $(this);
+                var wasSelected = $clickedButton.hasClass('selected');
+                var numCajero = $clickedButton.data('num-cajero');
 
-        // Delegación de eventos para los botones de CFEmáticos
-        $(document).on('click', '.cfematico-btn', function() {
-            var $clickedButton = $(this);
-            var wasSelected = $clickedButton.hasClass('selected');
-            var numCajero = $clickedButton.data('num-cajero');
-            
-            // Obtener el estado (color) del botón
-            var estado = 'verde'; // Por defecto
-            if ($clickedButton.hasClass('bg-danger')) estado = 'rojo';
-            if ($clickedButton.hasClass('bg-warning')) estado = 'amarillo';
-            
-            selectedCfematicoEstado = estado;
+                // Siempre será 'verde', pero mantenemos la variable por consistencia
+                selectedCfematicoEstado = 'verde';
 
-            $('.cfematico-btn').removeClass('selected');
+                $('.cfematico-btn').removeClass('selected');
 
-            if (!wasSelected) {
-                $clickedButton.addClass('selected');
-                selectedCfematico = numCajero;
+                if (!wasSelected) {
+                    $clickedButton.addClass('selected');
+                    selectedCfematico = numCajero;
 
-                // Resto de la funcionalidad...
-                cargarDetallesCfematico(numCajero);
-                actualizarGrafica(numCajero);
-                cargarEventos(numCajero);
-                mostrarEstadisticasAvanzadas(numCajero);
-                actualizarTablaEventos();
-                cargarMantenimientosCfematico(numCajero);
-            } else {
-                selectedCfematico = null;
-                selectedCfematicoEstado = null;
-                limpiarDatos();
+                    // Llamadas para cargar toda la información
+                    cargarDetallesCfematico(numCajero);
+                    actualizarGrafica(numCajero);
+                    mostrarEstadisticasAvanzadas(numCajero);
+                    actualizarTablaEventos();
+                    cargarMantenimientosCfematico(numCajero);
+                } else {
+                    selectedCfematico = null;
+                    selectedCfematicoEstado = null;
+                    limpiarDatos();
+                }
+            });
             }
         });
 
-            // Event listener para el selector de rango de tiempo
+            // 4. Listeners para los filtros de las tablas
             $('#rangoTiempo').change(function() {
                 if (selectedCfematico) {
                     actualizarGrafica(selectedCfematico);
-                    cargarEventos(selectedCfematico);
                     mostrarEstadisticasAvanzadas(selectedCfematico);
                 }
             });
 
-            // Event listener para el selector de año
             $('#selectYear').change(function() {
                 if (selectedCfematico) {
                     actualizarTablaEventos();
                 }
             });
 
-            // Event listener para el selector de falla
             $('#selectFalla').change(function() {
                 if (selectedCfematico) {
                     actualizarTablaEventos();
                 }
             });
         });
+
+        // --- FUNCIONES DE CARGA DE DATOS ---
 
         function cargarDetallesCfematico(numCajero) {
             $.get('@Url.Action("ObtenerDetallesCfematico", "Monitoreo")', { numCajero: numCajero })
@@ -795,8 +752,6 @@
                         mostrarErrorEnUI("No se pudieron cargar los detalles");
                         return;
                     }
-
-                    // Actualiza la UI solo si hay datos válidos
                     $('#numCajero').text(data.numCajero);
                     $('#numActFijo').text(data.numActFijo);
                     $('#numSerie').text(data.numSerie);
@@ -812,32 +767,13 @@
                 });
         }
 
-        function mostrarErrorEnUI(mensaje) {
-            console.error(mensaje);
-            $('#numCajero').text('-');
-            $('#numActFijo').text('-');
-            $('#numSerie').text('-');
-            $('#numInventario').text('-');
-            $('#ipCajero').text('-');
-            $('#version').text('No disponible');
-            $('#zona').text('-');
-            $('#agencia').text('-');
-            $('#centro').text('-');
-        }
-
         function actualizarGrafica(numCajero) {
             var dias = $('#rangoTiempo').val();
-
-            $.get('@Url.Action("ObtenerEstadisticasEventos", "Monitoreo")', {
-                numCajero: numCajero,
-                dias: dias
-            }, function(data) {
+            $.get('@Url.Action("ObtenerEstadisticasEventos", "Monitoreo")', { numCajero: numCajero, dias: dias }, function(data) {
                 var ctx = document.getElementById('basicBarChart').getContext('2d');
-
                 if (basicBarChart !== null) {
                     basicBarChart.destroy();
                 }
-
                 basicBarChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -846,208 +782,48 @@
                             {
                                 label: 'Operativos',
                                 data: [data.criticosOperativos, data.altosOperativos, data.bajosOperativos],
-                                backgroundColor: 'rgba(231, 76, 60, 0.8)',
-                                borderColor: 'rgba(231, 76, 60, 1)',
-                                borderWidth: 1
+                                backgroundColor: 'rgba(231, 76, 60, 0.8)'
                             },
                             {
                                 label: 'Técnicos',
                                 data: [data.criticosTecnicos, data.altosTecnicos, data.bajosTecnicos],
-                                backgroundColor: 'rgba(52, 152, 219, 0.8)',
-                                borderColor: 'rgba(52, 152, 219, 1)',
-                                borderWidth: 1
+                                backgroundColor: 'rgba(52, 152, 219, 0.8)'
                             }
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Cantidad de Eventos',
-                                    font: {
-                                        weight: 'bold'
-                                    }
-                                },
-                                grid: {
-                                    display: true,
-                                    color: 'rgba(0, 0, 0, 0.05)'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Nivel de Severidad',
-                                    font: {
-                                        weight: 'bold'
-                                    }
-                                },
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    boxWidth: 12,
-                                    padding: 20,
-                                    font: {
-                                        size: 12
-                                    }
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                                titleFont: {
-                                    size: 14,
-                                    weight: 'bold'
-                                },
-                                bodyFont: {
-                                    size: 12
-                                },
-                                callbacks: {
-                                    label: function(context) {
-                                        return `${context.dataset.label}: ${context.parsed.y} eventos`;
-                                    }
-                                }
-                            }
-                        },
+                        scales: { y: { beginAtZero: true } },
                         onClick: function(evt, elements) {
                             if (elements.length > 0) {
                                 var clickedElement = elements[0];
                                 var datasetIndex = clickedElement.datasetIndex;
                                 var labelIndex = clickedElement.index;
-
-                                // Determinar qué tipo de eventos se ha clickeado
-                                var severidad = labelIndex === 0 ? 100 :
-                                              labelIndex === 1 ? 50 : 0;
+                                var severidad = labelIndex === 0 ? 100 : (labelIndex === 1 ? 50 : 0);
                                 var tipo = datasetIndex === 0 ? 'O' : 'T';
-
-                                // Obtener el CFEmático seleccionado
                                 var selectedCfematico = $('.cfematico-btn.selected').data('num-cajero');
-
-                                // Cargar eventos filtrados en el modal
-                                cargarEventosParaModal(selectedCfematico, severidad, tipo, dias);
-                            }
                         }
                     }
                 });
-            });
-        }
-
-        // Función para cargar eventos en el modal
-        function cargarEventosParaModal(numCajero, severidad, tipo, dias) {
-            $.get('@Url.Action("ObtenerEventosFiltrados", "Monitoreo")', {
-                numCajero: numCajero,
-                severidad: severidad,
-                tipo: tipo,
-                dias: dias,
-                estado: selectedCfematicoEstado // ← Nuevo parámetro
-            }, function(data) {
-                var $content = $('#modalEventosContent');
-                $content.empty();
-
-                if (data.length === 0) {
-                    $content.html('<p class="text-muted">No hay eventos para estos criterios</p>');
-                    return;
-                }
-
-                var titulo = `Eventos ${getSeveridadText(severidad)} (${tipo === 'O' ? 'Operativos' : 'Técnicos'})`;
-                $('#eventosModalLabel').text(titulo);
-
-                var eventosHtml = data.map(function(evento) {
-                    var badgeClass = evento.severidad == 100 ? 'bg-danger' :
-                                   evento.severidad == 50 ? 'bg-warning' : 'bg-success';
-
-                    return `
-                        <div class="border-bottom pb-2 mb-2">
-                            <div class="d-flex justify-content-between">
-                                <span class="fw-bold">${evento.fuente}</span>
-                                <span class="badge ${badgeClass}">${evento.severidad}</span>
-                            </div>
-                            <div>${evento.descripcion}</div>
-                            <div class="text-end small text-muted">${evento.fecha}</div>
-                        </div>
-                    `;
-                }).join('');
-
-                $content.html(eventosHtml);
-
-                // Mostrar el modal
-                var modal = new bootstrap.Modal(document.getElementById('eventosModal'));
-                modal.show();
-            });
-        }
-
-        function getSeveridadText(severidad) {
-            return severidad === 100 ? 'Críticos' :
-                   severidad === 50 ? 'Altos' : 'Bajos';
-        }
-
-        // Función para cargar los eventos recientes
-        function cargarEventos(numCajero) {
-            var dias = $('#rangoTiempo').val();
-
-            $.get('@Url.Action("ObtenerEventosRecientes", "Monitoreo")', {
-                numCajero: numCajero,
-                dias: dias,
-                estado: selectedCfematicoEstado // ← Nuevo parámetro
-            }, function(data) {
-                var $lista = $('#listaEventos');
-                $lista.empty();
-
-                if (data.length === 0) {
-                    $lista.html('<div class="text-center py-2"><p class="text-muted">No hay eventos recientes</p></div>');
-                    return;
-                }
-
-                var eventosHtml = data.map(function(evento) {
-                    var badgeClass = evento.severidad == 100 ? 'bg-danger' :
-                                   evento.severidad == 50 ? 'bg-warning' : 'bg-success';
-
-                    return `
-                        <div class="border-bottom pb-2 mb-2">
-                            <div class="d-flex justify-content-between">
-                                <span class="fw-bold">${evento.fuente}</span>
-                                <span class="badge ${badgeClass}">${evento.severidad}</span>
-                            </div>
-                            <div>${evento.descripcion}</div>
-                            <div class="text-end small text-muted">${evento.fecha}</div>
-                        </div>
-                    `;
-                }).join('');
 
                 $lista.html(eventosHtml);
             });
         }
 
-        // Función para mostrar estadísticas avanzadas
         function mostrarEstadisticasAvanzadas(numCajero) {
             var dias = $('#rangoTiempo').val();
-
-            $.get('@Url.Action("ObtenerEstadisticasAvanzadas", "Monitoreo")', {
-                numCajero: numCajero,
-                dias: dias
-            }, function(data) {
+            $.get('@Url.Action("ObtenerEstadisticasAvanzadas", "Monitoreo")', { numCajero: numCajero, dias: dias }, function(data) {
                 var $container = $('#estadisticasAvanzadas');
                 $container.empty();
-
                 if (data.mensaje) {
                     $container.html(`<p class="text-muted small">${data.mensaje}</p>`);
                     return;
                 }
-
-                // Crear HTML para las estadísticas
                 var html = `
                     <div class="mb-3">
                         <h6 class="small fw-bold">Total de eventos: <span class="badge bg-secondary">${data.totalEventos}</span></h6>
                     </div>
-
                     <div class="mb-3">
                         <h6 class="small fw-bold">Eventos más comunes:</h6>
                         ${data.comunes.map(evento => `
@@ -1056,219 +832,66 @@
                                 <span class="badge bg-secondary">${evento.cantidad}</span>
                             </div>
                         `).join('')}
-                    </div>
-                `;
-
+                    </div>`;
                 if (data.tiempoPromedio) {
                     html += `
                         <div class="mb-3">
                             <h6 class="small fw-bold">Tiempo promedio entre fallos:</h6>
                             <div class="small">${data.tiempoPromedio.toFixed(1)} horas</div>
-                        </div>
-                    `;
+                        </div>`;
                 }
-
-                $container.html(html);
-            });
-        }
-
-        // Función para limpiar los datos cuando se deselecciona un CFEmático
-        function limpiarDatos() {
-            $('#numCajero, #numActFijo, #numSerie, #numInventario, #ipCajero, #zona, #agencia, #centro').text('-');
-            $('#version').text('No disponible');
-            $('#listaEventos').html('<div class="text-center py-2"><p class="text-muted">Seleccione un CFEmático para ver sus eventos</p></div>');
-            $('#estadisticasAvanzadas').html('<p class="text-muted small">Seleccione un CFEmático para ver análisis detallado</p>');
-            $('#tablaMantenimientos tbody').html('<tr><td colspan="5" class="text-center text-muted py-3">Seleccione un CFEmático</td></tr>');
-
-            if (basicBarChart !== null) {
-                basicBarChart.destroy();
-                basicBarChart = null;
-                $('#basicBarChart').replaceWith('<canvas id="basicBarChart"></canvas>');
-            }
-
-            // Limpiar tabla de eventos
-            var $tbody = $('#tablaEventos tbody');
-            $tbody.empty();
-            $tbody.append('<tr><td colspan="13" class="text-center text-muted py-3">Seleccione un CFEmático</td></tr>');
-            
-            // Limpiar el estado seleccionado
-            selectedCfematicoEstado = null;
-        }
-
-        // Función para cargar los tipos de falla en el select
-        function cargarTiposFalla() {
-            $.get('@Url.Action("ObtenerTiposFalla", "Monitoreo")', function(data) {
-                var $select = $('#selectFalla');
-                $select.empty();
-
-                $select.append($('<option>', {
-                    value: '',
-                    text: 'TODAS LAS FALLAS'
-                }));
-
-                $.each(data, function(index, item) {
-                    $select.append($('<option>', {
-                        value: item.claveFalla,
-                        text: item.descripcion
-                    }));
                 });
             });
         }
 
-        // Función para actualizar la tabla de eventos
         function actualizarTablaEventos() {
-            if (!selectedCfematico) {
-                return;
-            }
-
+            if (!selectedCfematico) return;
             var claveFalla = $('#selectFalla').val();
             var year = $('#selectYear').val();
-
-            $.get('@Url.Action("ObtenerEstadisticasEventosPorMes", "Monitoreo")', {
-                claveFalla: claveFalla,
-                year: year,
-                numCajero: selectedCfematico
-            }, function(data) {
+            $.get('@Url.Action("ObtenerEstadisticasEventosPorMes", "Monitoreo")', { claveFalla: claveFalla, year: year, numCajero: selectedCfematico }, function(data) {
                 var $tbody = $('#tablaEventos tbody');
                 $tbody.empty();
-
                 if (data.length === 0) {
                     $tbody.append('<tr><td colspan="13" class="text-center text-muted py-3">No hay datos para mostrar</td></tr>');
                     return;
                 }
-
                 $.each(data, function(index, item) {
                     var row = '<tr>';
-                    row += '<td class="text-start">' + item.descripcion + '</td>';
-
-                    // Agregar celdas para cada mes con clase clickable
+                    row += `<td class="text-start">${item.descripcion}</td>`;
                     for (var i = 1; i <= 12; i++) {
                         var monthKey = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][i-1];
                         var count = item[monthKey] || 0;
-
-                        row += `<td class="clickable-cell"
-                                  data-descripcion="${item.descripcion}"
-                                  data-mes="${i}"
-                                  data-year="${year}"
-                                  data-clave-falla="${claveFalla}">${count}</td>`;
+                        row += `<td class="clickable-cell" data-descripcion="${item.descripcion}" data-mes="${i}" data-year="${year}" data-clave-falla="${claveFalla}">${count}</td>`;
                     }
-
                     row += '</tr>';
                     $tbody.append(row);
                 });
-
-                // Agregar evento click a las celdas
                 $('.clickable-cell').click(function() {
                     var descripcion = $(this).data('descripcion');
                     var mes = $(this).data('mes');
                     var year = $(this).data('year');
                     var claveFalla = $(this).data('clave-falla');
-
                     cargarEventosMensuales(selectedCfematico, descripcion, mes, year, claveFalla);
                 });
             });
-        }
-
-        // Función para cargar eventos mensuales en el modal
-        function cargarEventosMensuales(numCajero, descripcion, mes, year, claveFalla) {
-            $.get('@Url.Action("ObtenerEventosMensuales", "Monitoreo")', {
-                numCajero: numCajero,
-                descripcion: descripcion,
-                mes: mes,
-                year: year,
-                claveFalla: claveFalla,
-                estado: selectedCfematicoEstado // ← Nuevo parámetro
-            }, function(data) {
-                var $content = $('#modalEventosMensualesContent');
-                $content.empty();
-
-                if (data.length === 0) {
-                    $content.html('<p class="text-muted">No hay eventos para estos criterios</p>');
-                    return;
-                }
-
-                var nombreMes = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][mes-1];
-
-                var titulo = `Eventos de ${descripcion} - ${nombreMes} ${year}`;
-                $('#eventosMensualesModalLabel').text(titulo);
-
-                var eventosHtml = data.map(function(evento) {
-                    var badgeClass = evento.severidad == 100 ? 'bg-danger' :
-                                   evento.severidad == 50 ? 'bg-warning' : 'bg-success';
-
-                    return `
-                        <div class="border-bottom pb-2 mb-2">
-                            <div class="d-flex justify-content-between">
-                                <span class="fw-bold">${evento.fuente}</span>
-                                <span class="badge ${badgeClass}">${evento.severidad}</span>
-                            </div>
-                            <div>${evento.descripcion}</div>
-                            <div class="text-end small text-muted">${evento.fecha}</div>
-                        </div>
-                    `;
-                }).join('');
-
-                $content.html(eventosHtml);
-
-                // Mostrar el modal
-                var modal = new bootstrap.Modal(document.getElementById('eventosMensualesModal'));
-                modal.show();
-            });
-        }
-
-        // Llamar esta función al cargar la página
-        $(document).ready(function() {
-            cargarTiposFalla();
-            cargarEstadosEnLote();
-        });
 
         // Función para cargar los mantenimientos del CFEmático seleccionado
         function cargarMantenimientosCfematico(numCajero) {
-            $.get('@Url.Action("ObtenerMantenimientosCfematico", "Monitoreo")', { numCajero: numCajero }, function(data) {
-                var $tbody = $('#tablaMantenimientos tbody');
-                $tbody.empty();
-
-                if (data.error) {
-                    $tbody.append('<tr><td colspan="5" class="text-center text-danger py-3">Error al cargar los mantenimientos</td></tr>');
+             $.get('@Url.Action("ObtenerMantenimientosCfematico", "Monitoreo")', { numCajero: numCajero }, function(data) {
+                var $tbody = $('#tablaMantenimientos tbody').empty();
+                if (data.error || data.length === 0) {
+                    var message = data.error ? "Error al cargar mantenimientos" : "No hay mantenimientos registrados";
+                    $tbody.append(`<tr><td colspan="5" class="text-center text-muted py-3">${message}</td></tr>`);
                     return;
                 }
-
-                if (data.length === 0) {
-                    $tbody.append('<tr><td colspan="5" class="text-center text-muted py-3">No hay mantenimientos registrados</td></tr>');
-                    return;
-                }
-
-                data.sort((a, b) => {
-            const fechaA = new Date(a.fechaProgramada.split('/').reverse().join('-'));
-            const fechaB = new Date(b.fechaProgramada.split('/').reverse().join('-'));
-            return fechaA - fechaB;  // Cambia a `fechaA - fechaB` para orden ascendente
-        });
-
-        var $tbody = $('#tablaMantenimientos tbody');
-        $tbody.empty();
-
+                data.sort((a, b) => new Date(a.fechaProgramada.split('/').reverse().join('-')) - new Date(b.fechaProgramada.split('/').reverse().join('-')));
                 $.each(data, function(index, item) {
-                        var hojaServicioHtml = item.tieneHojaServicio
-                ? `<button class="btn btn-sm btn-outline-primary btn-descarga"
-                     data-num-cajero="${numCajero}"
-                     data-fecha="${item.fechaProgramada}">
-                    <i class="fas fa-file-pdf"></i> Descargar
-                   </button>`
-                : 'N/A';
-
+                    var hojaServicioHtml = item.tieneHojaServicio
+                        ? `<button class="btn btn-sm btn-outline-primary btn-descarga" data-num-cajero="${numCajero}" data-fecha="${item.fechaProgramada}"><i class="fas fa-file-pdf"></i> Descargar</button>`
+                        : 'N/A';
                     var detallesHtml = item.estatus === 'TERMINADO'
-                    ? `<button class="btn btn-sm btn-outline-info btn-detalles"
-                         data-rpe="${item.rpe || 'No registrado'}"
-                         data-tipo-mtto="${item.tipoMantenimiento}"
-                         data-problemas="${escapeHtml(item.problemas || '')}"
-                         data-diagnostico="${escapeHtml(item.diagnostico || '')}"
-                         data-observaciones="${escapeHtml(item.observaciones || '')}"
-                         data-fotos='${JSON.stringify(item.fotos || null)}'>
-                        <i class="fas fa-eye"></i> Ver
-                       </button>`
-                    : 'N/A';
-
+                        ? `<button class="btn btn-sm btn-outline-info btn-detalles" data-rpe="${item.rpe || 'No registrado'}" data-tipo-mtto="${item.tipoMantenimiento}" data-problemas="${escapeHtml(item.problemas || '')}" data-diagnostico="${escapeHtml(item.diagnostico || '')}" data-observaciones="${escapeHtml(item.observaciones || '')}" data-fotos='${JSON.stringify(item.fotos || null)}'><i class="fas fa-eye"></i> Ver</button>`
+                        : 'N/A';
                     var row = `<tr>
                         <td>${item.fechaProgramada}</td>
                         <td>${item.fechaTerminacion}</td>
@@ -1276,75 +899,155 @@
                         <td>${hojaServicioHtml}</td>
                         <td>${detallesHtml}</td>
                     </tr>`;
-
                     $tbody.append(row);
                 });
-
-                // Inicializar eventos para los botones de descarga
                 $('.btn-descarga').click(function() {
-                    var numCajero = $(this).data('num-cajero');
-                    var fecha = $(this).data('fecha');
-                    descargarHojaServicio(numCajero, fecha);
+                    descargarHojaServicio($(this).data('num-cajero'), $(this).data('fecha'));
                 });
-
-                // Inicializar eventos para los botones de detalles
                 $('.btn-detalles').click(function() {
                     mostrarDetallesMantenimiento($(this));
                 });
             });
         }
 
-        function descargarHojaServicio(numCajero, fechaProgramada) {
-            var fechaCodificada = encodeURIComponent(fechaProgramada);
-            var url = '@Url.Action("DescargarHojaServicioCfematico", "Monitoreo")?numCajero=' + numCajero + '&fechaProgramada=' + fechaCodificada;
+        // --- FUNCIONES UTILITARIAS Y DE MODALES ---
 
-            console.log("URL de descarga:", url);
+        function cargarTiposFalla() {
+            $.get('@Url.Action("ObtenerTiposFalla", "Monitoreo")', function(data) {
+                var $select = $('#selectFalla').empty();
+                $select.append($('<option>', { value: '', text: 'TODAS LAS FALLAS' }));
+                $.each(data, function(index, item) {
+                    $select.append($('<option>', { value: item.claveFalla, text: item.descripcion }));
+                });
+            });
+        }
 
-            window.open(url, '_blank');
+        function limpiarDatos() {
+            $('#numCajero, #numActFijo, #numSerie, #numInventario, #ipCajero, #zona, #agencia, #centro').text('');
+            $('#version').text('');
+            $('#estadisticasAvanzadas').html('<p class="text-muted small">Seleccione un CFEmático para ver análisis detallado</p>');
+            $('#tablaMantenimientos tbody').html('<tr><td colspan="5" class="text-center text-muted py-3">Seleccione un CFEmático</td></tr>');
+            if (basicBarChart) {
+                basicBarChart.destroy();
+                basicBarChart = null;
+            }
+            $('#tablaEventos tbody').html('<tr><td colspan="13" class="text-center text-muted py-3">Seleccione un CFEmático y un tipo de falla</td></tr>');
+            selectedCfematicoEstado = null;
+        }
+
+        function mostrarErrorEnUI(mensaje) {
+            console.error(mensaje);
+            limpiarDatos(); // Limpia los campos para evitar mostrar datos incorrectos
+        }
+
+        function cargarEventosParaModal(numCajero, severidad, tipo, dias) {
+            $.get('@Url.Action("ObtenerEventosFiltrados", "Monitoreo")', {
+                numCajero: numCajero,
+                severidad: severidad,
+                tipo: tipo,
+                dias: dias,
+                estado: selectedCfematicoEstado
+            }, function (data) {
+                var $content = $('#modalEventosContent').empty();
+
+                if (data.length === 0) {
+                    $content.html('<p class="text-muted">No hay eventos para estos criterios.</p>');
+                } else {
+                    // Se construye el HTML usando las propiedades del objeto 'evento'
+                    var eventosHtml = data.map(function (evento) {
+                        var badgeClass = evento.severidad == 100 ? 'bg-danger' :
+                                         evento.severidad == 50 ? 'bg-warning' : 'bg-info';
+
+                        return `
+                            <div class="border-bottom pb-2 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold small">${evento.fuente}</span>
+                                    <span class="badge ${badgeClass}">${getSeveridadText(evento.severidad)}</span>
+                                </div>
+                                <div class="small mt-1">${evento.descripcion}</div>
+                                <div class="text-end small text-muted fst-italic mt-1">${evento.fecha}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    $content.html(eventosHtml);
+                }
+
+                // Se actualiza el título del modal y se muestra
+                $('#eventosModalLabel').text(`Eventos ${getSeveridadText(severidad)} (${tipo === 'O' ? 'Operativos' : 'Técnicos'})`);
+                new bootstrap.Modal(document.getElementById('eventosModal')).show();
+            });
+        }
+
+        // REEMPLAZA TU FUNCIÓN ACTUAL CON ESTA VERSIÓN CORREGIDA
+        function cargarEventosMensuales(numCajero, descripcion, mes, year, claveFalla) {
+            $.get('@Url.Action("ObtenerEventosMensuales", "Monitoreo")', {
+                numCajero: numCajero,
+                descripcion: descripcion,
+                mes: mes,
+                year: year,
+                claveFalla: claveFalla,
+                estado: selectedCfematicoEstado
+            }, function (data) {
+                var $content = $('#modalEventosMensualesContent').empty();
+
+                // Se define el array de nombres de meses para el título
+                var nombreMes = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][mes - 1];
+
+                if (data.length === 0) {
+                    $content.html('<p class="text-muted">No hay eventos para estos criterios.</p>');
+                } else {
+                    // Se construye el HTML usando las propiedades del objeto 'evento'
+                    var eventosHtml = data.map(function (evento) {
+                        var badgeClass = evento.severidad == 100 ? 'bg-danger' :
+                                         evento.severidad == 50 ? 'bg-warning' : 'bg-info';
+
+                        return `
+                            <div class="border-bottom pb-2 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold small">${evento.fuente}</span>
+                                    <span class="badge ${badgeClass}">${getSeveridadText(evento.severidad)}</span>
+                                </div>
+                                <div class="small mt-1">${evento.descripcion}</div>
+                                <div class="text-end small text-muted fst-italic mt-1">${evento.fecha}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    $content.html(eventosHtml);
+                }
+
+                // Se actualiza el título del modal y se muestra
+                $('#eventosMensualesModalLabel').text(`Eventos de ${descripcion} - ${nombreMes} ${year}`);
+                new bootstrap.Modal(document.getElementById('eventosMensualesModal')).show();
+            });
         }
 
         function mostrarDetallesMantenimiento($btn) {
-            // Mostrar datos básicos
             $('#rpeDetalle').text($btn.data('rpe') || 'No registrado');
             $('#problemasDetalle').text($btn.data('problemas') || 'No especificado');
             $('#diagnosticoDetalle').text($btn.data('diagnostico') || 'No especificado');
             $('#observacionesDetalle').text($btn.data('observaciones') || 'No especificado');
-
-            // Manejar fotos
             const fotosContainer = $('#fotosMantenimientoContainer');
             const esCorrectivo = $btn.data('tipo-mtto') === 'C';
             const fotos = $btn.data('fotos');
-
             if (esCorrectivo && fotos) {
                 fotosContainer.removeClass('d-none');
-
-                // Función para cargar una foto
-                const cargarFoto = (elementId, fotoBase64) => {
-                    if (fotoBase64) {
-                        $(elementId).attr('src', `data:image/jpeg;base64,${fotoBase64}`);
-                    } else {
-                        $(elementId).attr('src', 'https://via.placeholder.com/200x150?text=No+disponible');
-                    }
-                };
-
+                const cargarFoto = (id, b64) => $(id).attr('src', b64 ? `data:image/jpeg;base64,${b64}` : 'https://via.placeholder.com/200x150?text=No+disponible');
                 cargarFoto('#fotoAntes', fotos.fotoAntes);
                 cargarFoto('#fotoDurante', fotos.fotoDurante);
                 cargarFoto('#fotoDespues', fotos.fotoDespues);
             } else {
                 fotosContainer.addClass('d-none');
             }
-
-            var modal = new bootstrap.Modal(document.getElementById('detallesMantenimientoModal'));
-            modal.show();
+            new bootstrap.Modal(document.getElementById('detallesMantenimientoModal')).show();
         }
 
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+        function descargarHojaServicio(numCajero, fechaProgramada) {
+            var url = `@Url.Action("DescargarHojaServicioCfematico", "Monitoreo")?numCajero=${numCajero}&fechaProgramada=${encodeURIComponent(fechaProgramada)}`;
+            window.open(url, '_blank');
         }
+
+        function getSeveridadText(s) { return s === 100 ? 'Críticos' : s === 50 ? 'Altos' : 'Bajos'; }
+        function escapeHtml(u) { return u.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+
     </script>
 }
