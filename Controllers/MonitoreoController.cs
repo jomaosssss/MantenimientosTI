@@ -219,7 +219,8 @@ namespace ProyectoMantenimientos.Controllers
                 .Where(x => x.evento.Importancia == 1) // FILTRO RE-INTEGRADO
                 .OrderByDescending(x => x.registro.FechaEvento)
                 .Take(5)
-                .Select(x => new {
+                .Select(x => new
+                {
                     fuente = x.evento.Fuente,
                     descripcion = x.evento.Descripcion,
                     severidad = x.evento.Severidad,
@@ -229,10 +230,7 @@ namespace ProyectoMantenimientos.Controllers
             return Json(eventos);
         }
 
-        // ... (Se omiten los demás métodos por brevedad, pero todos deben tener el filtro de importancia si corresponde)
-    }
-}
-[HttpGet]
+        [HttpGet]
         public IActionResult ObtenerEstadisticasAvanzadas(string numCajero, int dias = 7)
         {
             var fechaLimite = DateTime.Now.AddDays(-dias);

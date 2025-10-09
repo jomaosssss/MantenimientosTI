@@ -53,13 +53,13 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<RegistroActividad> RegistroActividad { get; set; }
 
-    public virtual DbSet<CatAccion> CatAcciones { get; set; }
+    public virtual DbSet<CatAccion> CatAcciones { get; set; } 
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
-    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-    //        => optionsBuilder.UseSqlServer("Server=MATEBOOKD14;Database=MantenimientosTI;Trusted_Connection=True;TrustServerCertificate=True;");
+//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+//        => optionsBuilder.UseSqlServer("Server=MATEBOOKD14;Database=MantenimientosTI;Trusted_Connection=True;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -221,7 +221,7 @@ public partial class MantenimientosTIContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("fuente");
             entity.Property(e => e.Severidad).HasColumnName("severidad");
-
+            
             // PROPIEDAD IMPORTANCIA AGREGADA COMO int
             entity.Property(e => e.Importancia)
                 .HasColumnName("importancia");
