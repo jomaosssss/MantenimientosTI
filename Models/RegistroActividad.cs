@@ -16,6 +16,10 @@ namespace MantenimientosTI.Models
         [StringLength(100)]
         public string Usuario { get; set; }
 
+        //[StringLength(50)]
+        //public string RPE { get; set; }
+
+
         [Required]
         [StringLength(50)]
         public string Accion { get; set; }

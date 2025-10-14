@@ -3,6 +3,7 @@ using MantenimientosTI.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using MantenimientosTI.Models.ViewModels;
 
 namespace MantenimientosTI.Controllers
 {
@@ -495,6 +496,36 @@ namespace MantenimientosTI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "ADMINISTRADOR")]
+        public async Task<IActionResult> CancelarDirecto(int idAgenda)
+        {
+            try
+            {
+                var agendaItem = await _dbocontext.Agenda.FindAsync(idAgenda);
+
+                if (agendaItem == null)
+                {
+                    return Json(new { success = false, message = "No se encontró la cita en la agenda." });
+                }
+
+                // Solo se puede cancelar directamente si está pendiente
+                if (agendaItem.Estatus != "PENDIENTE")
+                {
+                    return Json(new { success = false, message = $"No se puede cancelar una cita con estatus '{agendaItem.Estatus}'." });
+                }
+
+                agendaItem.Estatus = "CANCELADO";
+                await _dbocontext.SaveChangesAsync();
+
+                return Json(new { success = true, message = "La cita ha sido cancelada directamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Ocurrió un error al cancelar la cita: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
         [Authorize(Roles = "TÉCNICO DE ZONA")]
         public async Task<IActionResult> PreCancelar(int idAgenda)
         {
@@ -588,11 +619,83 @@ namespace MantenimientosTI.Controllers
         [Authorize(Roles = "ADMINISTRADOR")]
         public async Task<IActionResult> AprobarCancelaciones()
         {
-            var citasPrecanceladas = await _dbocontext.Agenda
-                .Where(a => a.Estatus == "PRE-CANCELADO")
-                .Include(a => a.NumActFijoNavigation) // Para obtener detalles del equipo
-                .OrderBy(a => a.FechaProgramada)
-                .ToListAsync();
+            string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+            int claveRol = HttpContext.Session.GetInt32("Rol") ?? 0;
+
+            // Consulta base para citas pre-canceladas
+            var agendaQuery = _dbocontext.Agenda
+                .Include(a => a.NumActFijoNavigation)
+                    .ThenInclude(e => e.CatCentro)
+                        .ThenInclude(c => c.CatAgencium)
+                            .ThenInclude(a => a.CatZona)
+                .Include(a => a.ClaveTipoMttoNavigation)
+                .Where(a => a.Estatus == "PRE-CANCELADO");
+
+            // Filtro por zona si no es administrador (aunque este método es solo para admin, por si acaso)
+            if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
+            {
+                agendaQuery = agendaQuery
+                    .Where(a => a.NumActFijoNavigation != null &&
+                               a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+            }
+
+            var agenda = await agendaQuery.ToListAsync();
+
+            // Convertir a VMAgendaVista usando la misma lógica que en Inicio
+            var citasPrecanceladas = new List<VMAgendaVista>();
+
+            foreach (var item in agenda)
+            {
+                string tipo = "CFEMÁTICO";
+
+                // Determinar el tipo de equipo (misma lógica que en Inicio)
+                var equipoAc = _dbocontext.EquipoAcs
+                    .Include(e => e.ClaveTipoEquipoNavigation)
+                    .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
+
+                var equipoComputo = _dbocontext.EquipoComputos
+                    .Include(e => e.ClaveTipoEquipoNavigation)
+                    .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
+
+                EquipoCfematico? equipoCfematico = null;
+                if (equipoAc == null && equipoComputo == null)
+                {
+                    equipoCfematico = _dbocontext.EquipoCfematicos
+                        .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
+                }
+
+                // Actualizar tipo según el equipo encontrado
+                if (equipoAc?.ClaveTipoEquipoNavigation != null)
+                    tipo = equipoAc.ClaveTipoEquipoNavigation.NombreTipoEquipo;
+                else if (equipoComputo?.ClaveTipoEquipoNavigation != null)
+                    tipo = equipoComputo.ClaveTipoEquipoNavigation.NombreTipoEquipo;
+
+                // Obtener datos de ubicación (misma lógica que en Inicio)
+                var centro = item.NumActFijoNavigation?.CatCentro;
+                var nombreCentro = item.NumActFijoNavigation?.CatCentro?.NombreCentro ?? "Sin centro";
+                var nombreAgencia = centro?.CatAgencium?.NombreAgencia ?? "Sin agencia";
+                var nombreZona = centro?.CatAgencium?.CatZona?.NombreZona ?? "Sin zona";
+
+                // Crear ViewModel
+                var viewModel = new VMAgendaVista
+                {
+                    NumActFijo = item.NumActFijo,
+                    FechaProgramada = item.FechaProgramada,
+                    Zona = nombreZona,
+                    Agencia = nombreAgencia,
+                    Centro = nombreCentro,
+                    Tipo = tipo,
+                    Estatus = item.Estatus,
+                    NumCajero = equipoCfematico?.NumCajero ?? "N/A",
+                    TipoMantenimiento = item.ClaveTipoMttoNavigation?.NombreTipoM ?? "PREVENTIVO",
+                    ClaveAgenda = item.ClaveAgenda,
+                    // Para equipos de cómputo
+                    UsuarioAsignado = equipoComputo != null ?
+                        $"{equipoComputo.Rpe} - {equipoComputo.NombreRpe}" : "N/A"
+                };
+
+                citasPrecanceladas.Add(viewModel);
+            }
 
             return View(citasPrecanceladas);
         }

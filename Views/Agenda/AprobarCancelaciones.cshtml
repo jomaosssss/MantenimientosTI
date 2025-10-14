@@ -1,74 +1,295 @@
-﻿@model List<MantenimientosTI.Models.Agendum>
+﻿@model List<MantenimientosTI.Models.ViewModels.VMAgendaVista>
 @{
     ViewData["Title"] = "Aprobar Cancelaciones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h4 class="mb-0">Citas Pre-Canceladas Pendientes de Aprobación</h4>
+<style>
+    .hover-scale {
+        transition: all 0.3s ease;
+    }
+
+    .card[style*="background-color: #dc3545"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(220, 53, 69, 0.2) !important;
+    }
+
+    .card[style*="background-color: #ffc107"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(255, 193, 7, 0.2) !important;
+    }
+
+    .badge-pre-cancelado {
+        background-color: #ffc107;
+        color: #000;
+    }
+
+    .table-actions {
+        white-space: nowrap;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="card shadow-sm rounded">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">Aprobar Cancelaciones</h2>
+            <div class="leyenda-mantenimientos">
+                <span class="badge badge-pre-cancelado">PRE-CANCELADO</span>
+                <small class="text-muted ms-2">- Pendientes de aprobación</small>
+            </div>
         </div>
+
         <div class="card-body">
-            @if (Model.Any())
-            {
-                <table class="table table-striped table-hover">
-                    <thead>
-                        <tr>
-                            <th>Activo Fijo</th>
-                            <th>Fecha Programada</th>
-                            <th>Tipo</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr id="fila-@item.ClaveAgenda">
-                                <td>@item.NumActFijo</td>
-                                <td>@item.FechaProgramada.ToString("dd/MM/yyyy")</td>
-                                <td>@(item.ClaveTipoMtto == "P" ? "Preventivo" : "Correctivo")</td>
-                                <td>
-                                    <button class="btn btn-success btn-sm btn-confirmar" data-id="@item.ClaveAgenda">
-                                        <i class="fas fa-check"></i> Confirmar Cancelación
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <div class="alert alert-info">
-                    No hay citas pendientes de aprobación.
+            <!-- TARJETAS DE ESTADÍSTICAS -->
+            <div class="row g-3 mb-4">
+                <div class="col-xl-4 col-md-6">
+                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #dc3545; min-height: 100px;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-danger mb-1 fw-bold" style="font-size: 0.75rem;">PENDIENTES DE APROBACIÓN</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.Count</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-clock text-danger" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            }
+
+                <div class="col-xl-4 col-md-6">
+                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #ffc107; min-height: 100px;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-warning mb-1 fw-bold" style="font-size: 0.75rem;">SOLICITUDES ESTE MES</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.Count</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-exclamation-triangle text-warning" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-4 col-md-6">
+                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #6c757d; min-height: 100px;">
+                        <div class="card-body p-3 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-white text-secondary mb-1 fw-bold" style="font-size: 0.75rem;">TÉCNICOS INVOLUCRADOS</span>
+                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.Select(x => x.Zona).Distinct().Count()</h2>
+                                </div>
+                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-users text-secondary" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-dark text-center mt-3 mb-3 h4">Solicitudes de cancelación pendientes de aprobación</p>
+
+            <!-- TABLA DE CITAS PRE-CANCELADAS -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-clock me-1"></i> Citas Pre-Canceladas Pendientes de Aprobación
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="tablaPreCanceladas">
+                                <thead>
+                                    <tr>
+                                        <th>Activo Fijo</th>
+                                        <th>Fecha Programada</th>
+                                        <th>Zona</th>
+                                        <th>Agencia</th>
+                                        <th>Centro</th>
+                                        <th>Tipo de Equipo</th>
+                                        <th>Tipo Mantenimiento</th>
+                                        <th>Estatus</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model)
+                                    {
+                                        <tr id="fila-@item.ClaveAgenda">
+                                            <td>
+                                                <strong>@item.NumActFijo</strong>
+                                                @if (!string.IsNullOrEmpty(item.NumCajero) && item.NumCajero != "N/A")
+                                                {
+                                                    <br />
+                                                    <small class="text-muted">Cajero: @item.NumCajero</small>
+                                                }
+                                            </td>
+                                            <td>@item.FechaProgramada.ToString("dd/MM/yyyy")</td>
+                                            <td>@item.Zona</td>
+                                            <td>@item.Agencia</td>
+                                            <td>@item.Centro</td>
+                                            <td>
+                                                <span class="badge bg-secondary">@item.Tipo</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @(item.TipoMantenimiento == "PREVENTIVO" ? "bg-primary" : "bg-danger")">
+                                                    @item.TipoMantenimiento
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">PRE-CANCELADO</span>
+                                            </td>
+                                            <td class="text-center table-actions">
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-success btn-sm btn-confirmar" data-id="@item.ClaveAgenda" title="Confirmar Cancelación">
+                                                        <i class="fas fa-check me-1"></i>Confirmar
+                                                    </button>
+                                                    <button class="btn btn-danger btn-sm btn-rechazar" data-id="@item.ClaveAgenda" title="Rechazar Cancelación">
+                                                        <i class="fas fa-times me-1"></i>Rechazar
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No hay citas pendientes de aprobación.
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         $(document).ready(function() {
+            // Configurar DataTable
+            $('#tablaPreCanceladas').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                },
+                order: [[1, 'asc']], // Ordenar por fecha programada
+                pageLength: 10,
+                responsive: true
+            });
+
+            // Confirmar cancelación
             $('.btn-confirmar').on('click', function() {
                 var id = $(this).data('id');
                 var button = $(this);
 
-                if (confirm('¿Está seguro de que desea confirmar la cancelación de esta cita? Esta acción no se puede deshacer.')) {
-                    $.post('@Url.Action("ConfirmarCancelacion", "Agenda")', { idAgenda: id })
-                        .done(function(response) {
-                            if (response.success) {
-                                alert(response.message);
-                                // Opcional: Ocultar la fila de la tabla
-                                $('#fila-' + id).fadeOut();
-                            } else {
-                                alert('Error: ' + response.message);
-                            }
-                        })
-                        .fail(function() {
-                            alert('No se pudo comunicar con el servidor.');
-                        });
-                }
+                Swal.fire({
+                    title: '¿Confirmar Cancelación?',
+                    text: "Esta acción confirmará la cancelación permanentemente.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, confirmar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Mostrar loading
+                        button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Procesando...');
+
+                        $.post('@Url.Action("ConfirmarCancelacion", "Agenda")', { idAgenda: id })
+                            .done(function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        title: '¡Confirmada!',
+                                        text: response.message,
+                                        icon: 'success',
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    }).then(() => {
+                                        // Ocultar la fila de la tabla
+                                        $('#fila-' + id).fadeOut(300, function() {
+                                            $(this).remove();
+                                            // Recargar la página si no hay más registros
+                                            if ($('#tablaPreCanceladas tbody tr').length === 0) {
+                                                location.reload();
+                                            }
+                                        });
+                                    });
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                    button.prop('disabled', false).html('<i class="fas fa-check me-1"></i>Confirmar');
+                                }
+                            })
+                            .fail(function() {
+                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                                button.prop('disabled', false).html('<i class="fas fa-check me-1"></i>Confirmar');
+                            });
+                    }
+                });
+            });
+
+            // Rechazar cancelación
+            $('.btn-rechazar').on('click', function() {
+                var id = $(this).data('id');
+                var button = $(this);
+
+                Swal.fire({
+                    title: '¿Rechazar Cancelación?',
+                    text: "La cita volverá al estatus 'PENDIENTE'.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, rechazar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Mostrar loading
+                        button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Procesando...');
+
+                        $.post('@Url.Action("ReactivarAgenda", "Agenda")', { idAgenda: id })
+                            .done(function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        title: '¡Rechazada!',
+                                        text: 'La cita ha sido reactivada exitosamente.',
+                                        icon: 'success',
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    }).then(() => {
+                                        // Ocultar la fila de la tabla
+                                        $('#fila-' + id).fadeOut(300, function() {
+                                            $(this).remove();
+                                            // Recargar la página si no hay más registros
+                                            if ($('#tablaPreCanceladas tbody tr').length === 0) {
+                                                location.reload();
+                                            }
+                                        });
+                                    });
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                    button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazar');
+                                }
+                            })
+                            .fail(function() {
+                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                                button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazar');
+                            });
+                    }
+                });
             });
         });
     </script>

@@ -169,7 +169,7 @@
                                 <th>Estatus</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
-                                <th>Acciones</th>
+                                <th>Cancelaciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -201,16 +201,31 @@
                                     <td class="text-center">
                                         @if (item.Estatus == "PENDIENTE")
                                         {
-                                            <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
-                                                Cancelar
-                                            </button>
+                                            @if (User.IsInRole("ADMINISTRADOR"))
+                                            {
+                                                <!-- ADMINISTRADOR: Cancelación directa -->
+                                                <button class="btn btn-danger btn-sm btn-cancelar-directo" data-id="@item.ClaveAgenda">
+                                                    Cancelar
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <!-- TÉCNICO: Pre-cancelación -->
+                                                <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                    Cancelar
+                                                </button>
+                                            }
                                         }
                                         else if (item.Estatus == "PRE-CANCELADO")
                                         {
                                             @if (User.IsInRole("ADMINISTRADOR"))
                                             {
-                                                <button class="btn btn-success btn-sm btn-activar" data-id="@item.ClaveAgenda">
-                                                    RECHAZAR CANCELACIÓN
+                                                <!-- ADMINISTRADOR: Gestionar pre-cancelaciones de técnicos -->
+                                                <button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda">
+                                                    Confirmar
+                                                </button>
+                                                <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda">
+                                                    Rechazar
                                                 </button>
                                             }
                                             else
@@ -248,7 +263,7 @@
                                 <th>Estatus</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
-                                <th>Acciones</th>
+                                <th>Cancelaciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -279,16 +294,31 @@
                                     <td class="text-center">
                                         @if (item.Estatus == "PENDIENTE")
                                         {
-                                            <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
-                                                Cancelar
-                                            </button>
+                                            @if (User.IsInRole("ADMINISTRADOR"))
+                                            {
+                                                <!-- ADMINISTRADOR: Cancelación directa -->
+                                                <button class="btn btn-danger btn-sm btn-cancelar-directo" data-id="@item.ClaveAgenda">
+                                                    Cancelar
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <!-- TÉCNICO: Pre-cancelación -->
+                                                <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                    Cancelar
+                                                </button>
+                                            }
                                         }
                                         else if (item.Estatus == "PRE-CANCELADO")
                                         {
                                             @if (User.IsInRole("ADMINISTRADOR"))
                                             {
-                                                <button class="btn btn-success btn-sm btn-activar" data-id="@item.ClaveAgenda">
-                                                    RECHAZAR CANCELACIÓN
+                                                <!-- ADMINISTRADOR: Gestionar pre-cancelaciones de técnicos -->
+                                                <button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda">
+                                                    Confirmar
+                                                </button>
+                                                <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda">
+                                                    Rechazar
                                                 </button>
                                             }
                                             else
@@ -327,7 +357,7 @@
                                 <th>Estatus</th>
                                 <th>Inf. del Equipo</th>
                                 <th>Hoja de Servicio</th>
-                                <th>Acciones</th>
+                                <th>Cancelaciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -359,16 +389,31 @@
                                     <td class="text-center">
                                         @if (item.Estatus == "PENDIENTE")
                                         {
-                                            <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
-                                                Cancelar
-                                            </button>
+                                            @if (User.IsInRole("ADMINISTRADOR"))
+                                            {
+                                                <!-- ADMINISTRADOR: Cancelación directa -->
+                                                <button class="btn btn-danger btn-sm btn-cancelar-directo" data-id="@item.ClaveAgenda">
+                                                    Cancelar
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <!-- TÉCNICO: Pre-cancelación -->
+                                                <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                    Cancelar
+                                                </button>
+                                            }
                                         }
                                         else if (item.Estatus == "PRE-CANCELADO")
                                         {
                                             @if (User.IsInRole("ADMINISTRADOR"))
                                             {
-                                                <button class="btn btn-success btn-sm btn-activar" data-id="@item.ClaveAgenda">
-                                                    RECHAZAR CANCELACIÓN
+                                                <!-- ADMINISTRADOR: Gestionar pre-cancelaciones de técnicos -->
+                                                <button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda">
+                                                    Confirmar
+                                                </button>
+                                                <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda">
+                                                    Rechazar
                                                 </button>
                                             }
                                             else
@@ -488,7 +533,6 @@
 </div>
 
 @section Scripts {
-
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -504,7 +548,50 @@
                 }
             });
 
-            // FUNCIONALIDAD DE CANCELACIÓN/ACTIVACIÓN DE LA VERSIÓN ENTRANTE
+            // =============================================
+            // CANCELACIÓN DIRECTA PARA ADMINISTRADORES
+            // =============================================
+            $('.display').on('click', '.btn-cancelar-directo', function() {
+                var id = $(this).data('id');
+                var fila = $(this).closest('tr');
+                var button = $(this);
+
+                Swal.fire({
+                    title: '¿Cancelar Cita?',
+                    text: "Esta cita será cancelada permanentemente.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, cancelar',
+                    cancelButtonText: 'No'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post('@Url.Action("CancelarDirecto", "Agenda")', { idAgenda: id })
+                            .done(function(response) {
+                                if (response.success) {
+                                    Swal.fire('¡Cancelada!', response.message, 'success');
+
+                                    // Actualizar la fila
+                                    var celdaEstatus = fila.find('.estatus-agenda');
+                                    celdaEstatus.html('<span class="badge bg-secondary">CANCELADO</span>');
+
+                                    var celdaAcciones = button.closest('td');
+                                    celdaAcciones.html('<span class="text-muted">N/A</span>');
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                }
+                            })
+                            .fail(function() {
+                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                            });
+                    }
+                });
+            });
+
+            // =============================================
+            // PRE-CANCELACIÓN PARA TÉCNICOS
+            // =============================================
             $('.display').on('click', '.btn-precancelar', function() {
                 var id = $(this).data('id');
                 var fila = $(this).closest('tr');
@@ -532,7 +619,7 @@
 
                                     var celdaAcciones = button.closest('td');
                                     if (esAdmin) {
-                                        celdaAcciones.html('<button class="btn btn-success btn-sm btn-activar" data-id="' + id + '">ACTIVAR</button>');
+                                        celdaAcciones.html('<button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="' + id + '">Confirmar Cancelación</button> <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="' + id + '">Rechazar</button>');
                                     } else {
                                         celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
                                     }
@@ -547,32 +634,34 @@
                 });
             });
 
-            $('.display').on('click', '.btn-activar', function() {
+            // =============================================
+            // CONFIRMAR CANCELACIÓN (Admin para pre-cancelaciones)
+            // =============================================
+            $('.display').on('click', '.btn-confirmar-cancelacion', function() {
                 var id = $(this).data('id');
-                var button = $(this);
                 var fila = $(this).closest('tr');
 
                 Swal.fire({
-                    title: '¿Reactivar Cita?',
-                    text: "La cita volverá al estatus 'PENDIENTE'.",
+                    title: '¿Confirmar Cancelación?',
+                    text: "La pre-cancelación será confirmada permanentemente.",
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonColor: '#28a745',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Sí, reactivar',
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, confirmar',
                     cancelButtonText: 'Cancelar'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        $.post('@Url.Action("ReactivarAgenda", "Agenda")', { idAgenda: id })
+                        $.post('@Url.Action("ConfirmarCancelacion", "Agenda")', { idAgenda: id })
                             .done(function(response) {
                                 if (response.success) {
-                                    Swal.fire('¡Restaurada!', response.message, 'success');
+                                    Swal.fire('¡Confirmada!', response.message, 'success');
 
                                     var celdaEstatus = fila.find('.estatus-agenda');
-                                    celdaEstatus.html('<span class="badge bg-info">PENDIENTE</span>');
+                                    celdaEstatus.html('<span class="badge bg-secondary">CANCELADO</span>');
 
-                                    var celdaAcciones = button.closest('td');
-                                    celdaAcciones.html('<button class="btn btn-warning btn-sm btn-precancelar" data-id="' + id + '">Pre-cancelar</button>');
+                                    var celdaAcciones = fila.find('td:last');
+                                    celdaAcciones.html('<span class="text-muted">N/A</span>');
                                 } else {
                                     Swal.fire('Error', response.message, 'error');
                                 }
@@ -584,7 +673,52 @@
                 });
             });
 
-            // CÓDIGO ORIGINAL PARA MODALES Y PDFs
+            // =============================================
+            // RECHACAR CANCELACIÓN (Admin para pre-cancelaciones)
+            // =============================================
+            $('.display').on('click', '.btn-rechazar-cancelacion', function() {
+                var id = $(this).data('id');
+                var fila = $(this).closest('tr');
+
+                Swal.fire({
+                    title: '¿Rechazar Cancelación?',
+                    text: "La cita volverá al estatus 'PENDIENTE'.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, rechazar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post('@Url.Action("ReactivarAgenda", "Agenda")', { idAgenda: id })
+                            .done(function(response) {
+                                if (response.success) {
+                                    Swal.fire('¡Rechazada!', 'La cita ha sido reactivada.', 'success');
+
+                                    var celdaEstatus = fila.find('.estatus-agenda');
+                                    celdaEstatus.html('<span class="badge bg-info">PENDIENTE</span>');
+
+                                    var celdaAcciones = fila.find('td:last');
+                                    if (esAdmin) {
+                                        celdaAcciones.html('<button class="btn btn-danger btn-sm btn-cancelar-directo" data-id="' + id + '">Cancelar</button>');
+                                    } else {
+                                        celdaAcciones.html('<button class="btn btn-warning btn-sm btn-precancelar" data-id="' + id + '">Cancelar</button>');
+                                    }
+                                } else {
+                                    Swal.fire('Error', response.message, 'error');
+                                }
+                            })
+                            .fail(function() {
+                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                            });
+                    }
+                });
+            });
+
+            // =============================================
+            // CÓDIGO ORIGINAL (MANTENER ESTO SIN CAMBIOS)
+            // =============================================
             $('[data-bs-target="#modalInfo"]').on('click', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');

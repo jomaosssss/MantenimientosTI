@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MantenimientosTI.Models
 {
@@ -13,6 +14,6 @@ namespace MantenimientosTI.Models
 
         [Required]
         [StringLength(255)]
-        public string Descripcion { get; set; }
+        public string Descripcion { get; set; } // ← CAMBIA a "Descripcion"
     }
 }

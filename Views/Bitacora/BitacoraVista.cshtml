@@ -1,48 +1,259 @@
-﻿@model List<MantenimientosTI.Models.RegistroActividad>
+﻿@model List<MantenimientosTI.Models.VMBitacora>
 @{
-    ViewData["Title"] = "Bitácora de Actividad";
+    ViewData["Title"] = "Bitácora de Actividad del Sistema";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var usuarioActual = ViewBag.UsuarioActual as dynamic;
 }
+
+<style>
+    .bg-verde-argos {
+        background-color: #008e60 !important;
+    }
+
+    .bg-verde-claro {
+        background-color: #e8f5e8 !important;
+    }
+
+    .text-verde-oscuro {
+        color: #006747 !important;
+    }
+
+    .border-verde {
+        border-color: #008e60 !important;
+    }
+
+    .badge-sesion {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .badge-usuario {
+        background-color: #ffc107;
+        color: black;
+    }
+
+    .badge-sistema {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .badge-configuracion {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .table-verde th {
+        background-color: #008e60 !important;
+        color: white;
+    }
+</style>
 
 <div class="container mt-4">
     <div class="card shadow-sm">
-        <div class="card-header">
-            <h4 class="mb-0">Bitácora de Actividad del Sistema</h4>
+        <div class="card-header bg-verde-argos text-white d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0">Bitácora de Actividad del Sistema</h4>
+                <small class="text-light">
+                    Consultado por: <strong>@usuarioActual?.Nombre</strong>
+                    (@usuarioActual?.Rol - @usuarioActual?.Zona)
+                </small>
+            </div>
+            <span class="badge bg-light text-dark">@ViewBag.TotalRegistros registros</span>
         </div>
+
         <div class="card-body">
-            <table id="tablaBitacora" class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>Fecha y Hora</th>
-                        <th>Usuario</th>
-                        <th>Acción</th>
-                        <th>Descripción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var registro in Model)
-                    {
+            <!-- FILTROS -->
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <form method="get" class="d-flex align-items-center">
+                        <input type="text" name="searchString" class="form-control me-2"
+                               placeholder="Buscar en usuario, acción o descripción..."
+                               value="@ViewBag.SearchString" style="min-width: 250px;">
+                        <select name="tipoFiltro" class="form-select me-2" style="width: auto;">
+                            <option value="todo" selected="@(ViewBag.TipoFiltro == "todo")">Todos los eventos</option>
+                            <option value="sesion" selected="@(ViewBag.TipoFiltro == "sesion")">Inicios de sesión</option>
+                            <option value="usuarios" selected="@(ViewBag.TipoFiltro == "usuarios")">Gestión de usuarios</option>
+                            <option value="admin" selected="@(ViewBag.TipoFiltro == "admin")">Administradores</option>
+                            <option value="tecnico" selected="@(ViewBag.TipoFiltro == "tecnico")">Técnicos</option>
+                        </select>
+                        <button type="submit" class="btn btn-outline-success me-2">
+                            <i class="fas fa-filter"></i> Filtrar
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                            <i class="fas fa-refresh"></i> Limpiar
+                        </a>
+                    </form>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="tablaBitacora" class="table table-striped table-hover w-100 table-verde">
+                    <thead>
                         <tr>
-                            <td class="text-nowrap">@registro.FechaHora.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                            <td>@registro.Usuario</td>
-                            <td><span class="badge bg-secondary">@registro.Accion</span></td>
-                            <td>@registro.Descripcion</td>
+                            <th>Fecha y Hora</th>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Descripción</th>
+                            <th>Información Adicional</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var registro in Model)
+                        {
+                            <tr>
+                                <td class="text-nowrap">
+                                    <small>@registro.FechaHora.ToString("dd/MM/yyyy")</small><br>
+                                    <strong>@registro.FechaHora.ToString("HH:mm:ss")</strong>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">@registro.Usuario</div>
+                                    <small class="text-muted">@ObtenerTipoUsuario(registro.DescripcionAccion, registro.Usuario)</small>
+                                </td>
+                                <td>
+                                    <span class="badge @GetBadgeAccionClass(registro.ClaveAccion)">
+                                        @ObtenerAccionLimpia(registro.ClaveAccion)
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold">@ObtenerDescripcionPrincipal(registro.DescripcionAccion)</div>
+                                </td>
+                                <td>
+                                    @if (TieneInformacionAdicional(registro.DescripcionAccion))
+                                    {
+                                        <div class="small">
+                                            @foreach (var detalle in ObtenerDetallesAdicionales(registro.DescripcionAccion))
+                                            {
+                                                <span class="badge bg-verde-claro text-verde-oscuro border border-verde me-1 mb-1">@detalle</span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Sin información adicional</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PIE DE PÁGINA -->
+        <div class="card-footer text-muted d-flex justify-content-between" style="background-color: #f8f9fa;">
+            <small>
+                Generado el: @DateTime.Now.ToString("dd/MM/yyyy HH:mm") |
+                Usuario: @usuarioActual?.Nombre |
+                Zona: @usuarioActual?.Zona
+            </small>
+            <small>Total: @ViewBag.TotalRegistros registros encontrados</small>
         </div>
     </div>
 </div>
 
+@functions {
+    public string ObtenerTipoUsuario(string descripcion, string usuario)
+    {
+        if (usuario.Contains("TECNICO") || descripcion.Contains("MEM03"))
+            return "Técnico";
+
+        if (descripcion.Contains("ADMIN") || usuario.Contains("ADMIN") || usuario.Contains("XD XD"))
+            return "Administrador";
+
+        return "Usuario";
+    }
+
+    public string ObtenerAccionLimpia(string accion)
+    {
+        return accion switch
+        {
+            "INFO_9.55.0(1,ADMIN)" => "Inicio Sesión",
+            "INICIO_SESION_ADMIN" => "Sesión Admin",
+            "INICIO_SESION_TECNICO" => "Sesión Técnico",
+            "ACTUALIZA (USUARIO)" => "Actualizar Usuario",
+            "ACTUALIZAR_USUARIO" => "Actualizar Usuario",
+            "CREAR_USUARIO" => "Crear Usuario",
+            "HABILITAR_CARGA_CSV" => "Habilitar CSV",
+            "DESHABILITAR_CARGA_CSV" => "Deshabilitar CSV",
+            _ => accion
+        };
+    }
+
+    public string ObtenerDescripcionPrincipal(string descripcion)
+    {
+        if (descripcion.Contains("|"))
+            return descripcion.Split('|')[0].Trim();
+        return descripcion.Length > 60 ? descripcion.Substring(0, 60) + "..." : descripcion;
+    }
+
+    public bool TieneInformacionAdicional(string descripcion)
+    {
+        return descripcion.Contains("|") ||
+               descripcion.Contains("RPE:") ||
+               descripcion.Contains("Zona:") ||
+               descripcion.Contains("Agencia:") ||
+               descripcion.Contains("Centro:") ||
+               descripcion.Contains("Rol:");
+    }
+
+    public List<string> ObtenerDetallesAdicionales(string descripcion)
+    {
+        var detalles = new List<string>();
+
+        if (descripcion.Contains("RPE:"))
+            detalles.Add("RPE: " + ExtraerValor(descripcion, "RPE:"));
+        if (descripcion.Contains("Rol:"))
+            detalles.Add("Rol: " + ExtraerValor(descripcion, "Rol:"));
+        if (descripcion.Contains("Zona:"))
+            detalles.Add("Zona: " + ExtraerValor(descripcion, "Zona:"));
+        if (descripcion.Contains("Agencia:"))
+            detalles.Add("Agencia: " + ExtraerValor(descripcion, "Agencia:"));
+        if (descripcion.Contains("Centro:"))
+            detalles.Add("Centro: " + ExtraerValor(descripcion, "Centro:"));
+
+        return detalles;
+    }
+
+    public string ExtraerValor(string texto, string clave)
+    {
+        var inicio = texto.IndexOf(clave) + clave.Length;
+        var fin = texto.IndexOf("|", inicio);
+        if (fin == -1) fin = texto.Length;
+        return texto.Substring(inicio, fin - inicio).Trim();
+    }
+
+    public string GetBadgeAccionClass(string claveAccion)
+    {
+        return claveAccion switch
+        {
+            "INFO_9.55.0(1,ADMIN)" => "badge-sesion",
+            "INICIO_SESION_ADMIN" => "badge-sesion",
+            "INICIO_SESION_TECNICO" => "badge-sesion",
+            "ACTUALIZA (USUARIO)" => "badge-usuario",
+            "ACTUALIZAR_USUARIO" => "badge-usuario",
+            "CREAR_USUARIO" => "badge-usuario",
+            "HABILITAR_CARGA_CSV" => "badge-configuracion",
+            "DESHABILITAR_CARGA_CSV" => "badge-configuracion",
+            _ => "badge-sistema"
+        };
+    }
+}
+
 @section Scripts {
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script>
         $(document).ready(function() {
             $('#tablaBitacora').DataTable({
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
-                order: [[0, 'desc']]
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                },
+                order: [[0, 'desc']],
+                pageLength: 25,
+                responsive: true,
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip'
             });
         });
     </script>
