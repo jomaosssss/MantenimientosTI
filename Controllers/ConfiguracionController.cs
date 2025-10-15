@@ -26,10 +26,12 @@ namespace ProyectoMantenimientos.Controllers
             ViewBag.Roles = await _dbocontext.CatRols.ToListAsync();
             ViewBag.Zonas = await _dbocontext.CatZonas.ToListAsync();
 
-            // Consulta los últimos 50 registros de la bitácora y los envía a la vista
+            // ✅ CAMBIO: Consulta los registros de las últimas 24 horas en lugar de los últimos 50
+            var fechaLimite = DateTime.Now.AddHours(-24);
             var ultimosMovimientos = await _dbocontext.RegistroActividad
+                .Where(r => r.FechaHora >= fechaLimite) // Filtro de 24 horas
                 .OrderByDescending(r => r.FechaHora)
-                .Take(50)
+                .Take(50) // Mantenemos el límite de 50 registros máximo
                 .ToListAsync();
             ViewBag.Bitacora = ultimosMovimientos;
 

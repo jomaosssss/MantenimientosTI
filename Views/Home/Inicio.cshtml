@@ -221,11 +221,11 @@
                                             @if (User.IsInRole("ADMINISTRADOR"))
                                             {
                                                 <!-- ADMINISTRADOR: Gestionar pre-cancelaciones de técnicos -->
-                                                <button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda">
-                                                    Confirmar
+                                                <button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda" title="Confirmar Cancelación">
+                                                    <i class="bi bi-check-circle"></i>
                                                 </button>
-                                                <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda">
-                                                    Rechazar
+                                                <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda" title="Rechazar Cancelación">
+                                                    <i class="bi bi-x-circle"></i>
                                                 </button>
                                             }
                                             else
@@ -619,7 +619,7 @@
 
                                     var celdaAcciones = button.closest('td');
                                     if (esAdmin) {
-                                        celdaAcciones.html('<button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="' + id + '">Confirmar Cancelación</button> <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="' + id + '">Rechazar</button>');
+                                        celdaAcciones.html('<button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="' + id + '" title="Confirmar Cancelación"><i class="bi bi-check-circle"></i></button> <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="' + id + '" title="Rechazar Cancelación"><i class="bi bi-x-circle"></i></button>');
                                     } else {
                                         celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
                                     }

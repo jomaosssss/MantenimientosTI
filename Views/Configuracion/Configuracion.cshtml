@@ -101,34 +101,59 @@
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <span>
-                            <i class="fas fa-history me-1"></i> Últimos Movimientos en Bitácora
+                            <i class="fas fa-history me-1"></i> Actividad de las Últimas 24 Horas
                         </span>
                         <a href="@Url.Action("Index", "Bitacora")" class="btn btn-sm btn-light">
                             Ver Bitácora Completa <i class="fas fa-arrow-right ms-1"></i>
                         </a>
                     </div>
                     <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Fecha y Hora</th>
-                                    <th>Usuario</th>
-                                    <th>Acción</th>
-                                    <th>Descripción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var registro in ViewBag.Bitacora as List<RegistroActividad>)
-                                {
+                        @{
+                            var bitacora = ViewBag.Bitacora as List<RegistroActividad>;
+                            var totalRegistros = bitacora?.Count ?? 0;
+                        }
+                        
+                        @if (totalRegistros == 0)
+                        {
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                <p>No hay actividad registrada en las últimas 24 horas</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-2">
+                                <small class="text-muted">Mostrando @totalRegistros registro(s) de las últimas 24 horas</small>
+                            </div>
+                            <table class="table table-sm table-hover">
+                                <thead>
                                     <tr>
-                                        <td class="text-nowrap">@registro.FechaHora.ToString("dd/MM/yy HH:mm:ss")</td>
-                                        <td>@registro.Usuario</td>
-                                        <td><span class="badge bg-secondary">@registro.Accion</span></td>
-                                        <td>@registro.Descripcion</td>
+                                        <th>Fecha y Hora</th>
+                                        <th>Usuario</th>
+                                        <th>Acción</th>
+                                        <th>Descripción</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach (var registro in bitacora)
+                                    {
+                                        <tr>
+                                            <td class="text-nowrap">
+                                                <small>@registro.FechaHora.ToString("dd/MM/yy")</small><br>
+                                                <strong>@registro.FechaHora.ToString("HH:mm:ss")</strong>
+                                            </td>
+                                            <td>@registro.Usuario</td>
+                                            <td>
+                                                <span class="badge @GetBadgeClass(registro.Accion)">
+                                                    @GetAccionLimpia(registro.Accion)
+                                                </span>
+                                            </td>
+                                            <td class="small">@registro.Descripcion</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
                     </div>
                 </div>
             </div>
@@ -305,6 +330,35 @@
         </div>
     </div>
 </div>
+
+@functions {
+    public string GetBadgeClass(string accion)
+    {
+        if (accion.Contains("SESION") || accion.Contains("INFO_9.55.0"))
+            return "bg-success";
+        if (accion.Contains("USUARIO"))
+            return "bg-warning text-dark";
+        if (accion.Contains("HABILITAR") || accion.Contains("DESHABILITAR"))
+            return "bg-info";
+        return "bg-secondary";
+    }
+
+    public string GetAccionLimpia(string accion)
+    {
+        return accion switch
+        {
+            "INFO_9.55.0(1,ADMIN)" => "Inicio Sesión",
+            "INICIO_SESION_ADMIN" => "Sesión Admin",
+            "INICIO_SESION_TECNICO" => "Sesión Técnico",
+            "ACTUALIZA (USUARIO)" => "Actualizar Usuario",
+            "ACTUALIZAR_USUARIO" => "Actualizar Usuario",
+            "CREAR_USUARIO" => "Crear Usuario",
+            "HABILITAR_CARGA_CSV" => "Habilitar CSV",
+            "DESHABILITAR_CARGA_CSV" => "Deshabilitar CSV",
+            _ => accion
+        };
+    }
+}
 
 @section Scripts {
     <!-- DataTables -->
