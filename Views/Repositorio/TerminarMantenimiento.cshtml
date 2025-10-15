@@ -6,13 +6,13 @@
 <div class="container mt-5">
     <div class="card shadow-sm">
         <div class="card-header bg-white">
-            <h1 class="mb-0">Terminar Mantenimiento</h1>
+            <h1 class="mb-0">Terminar mantenimiento</h1>
         </div>
         <div class="card-body">
             <div class="row mb-4">
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label class="form-label">Buscar por Número de Orden:</label>
+                        <label class="form-label">Buscar por número de orden:</label>
                         <div class="input-group">
                             <input type="text" id="numeroOrden" class="form-control" placeholder="Ingrese el número de orden">
                             <button class="btn btn-success" type="button" id="btnBuscarOrden">
@@ -28,26 +28,26 @@
                 <div id="resultadoBusqueda" class="mt-4 mb-4">
                     <div class="card shadow-sm">
                         <div class="card-header bg-light">
-                            <h5 class="mb-0">Información del Mantenimiento</h5>
+                            <h5 class="mb-0">Información del mantenimiento</h5>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4"><p><strong>Número de Orden:</strong> <span id="infoNumOrden">-</span></p></div>
-                                <div class="col-md-4"><p><strong>Tipo de Mantenimiento:</strong> <span id="infoTipoMantenimiento">-</span></p></div>
+                                <div class="col-md-4"><p><strong>Número de orden:</strong> <span id="infoNumOrden">-</span></p></div>
+                                <div class="col-md-4"><p><strong>Tipo de mantenimiento:</strong> <span id="infoTipoMantenimiento">-</span></p></div>
                                 <div class="col-md-4"><p><strong>Zona:</strong> <span id="infoZona">-</span></p></div>
                             </div>
                             <div class="row mt-2">
-                                <div class="col-md-4"><p><strong>Número de Activo Fijo:</strong> <span id="infoNumActFijo">-</span></p></div>
-                                <div class="col-md-4"><p><strong>Fecha Programada:</strong> <span id="infoFechaProgramada">-</span></p></div>
+                                <div class="col-md-4"><p><strong>Número de activo fijo:</strong> <span id="infoNumActFijo">-</span></p></div>
+                                <div class="col-md-4"><p><strong>Fecha programada:</strong> <span id="infoFechaProgramada">-</span></p></div>
                                 <div class="col-md-4"><p><strong>Agencia:</strong> <span id="infoAgencia">-</span></p></div>
                             </div>
                             <div class="row mt-2">
-                                <div class="col-md-4"><p><strong>Tipo de Equipo:</strong> <span id="infoTipoEquipo">-</span></p></div>
+                                <div class="col-md-4"><p><strong>Tipo de equipo:</strong> <span id="infoTipoEquipo">-</span></p></div>
                                 <div class="col-md-4"><p><strong>Estatus:</strong> <span id="infoEstatus">-</span></p></div>
                                 <div class="col-md-4"><p><strong>Centro:</strong> <span id="infoCentro">-</span></p></div>
                             </div>
                             <div class="row mt-2" id="filaNumCajero" style="display: none;">
-                                <div class="col-md-4"><p><strong>Número de Cajero:</strong> <span id="infoNumCajero">-</span></p></div>
+                                <div class="col-md-4"><p><strong>Número de cajero:</strong> <span id="infoNumCajero">-</span></p></div>
                             </div>
                         </div>
                     </div>
@@ -86,7 +86,7 @@
                 <div class="row mb-4">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label">Foto Antes del Mantenimiento:</label>
+                            <label class="form-label">Foto antes del mantenimiento:</label>
                             <div class="input-group">
                                 <input type="file" id="fotoAntes" class="form-control" accept="image/*">
                                 <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoAntes"><i class="bi bi-x-circle"></i> Limpiar</button>
@@ -95,7 +95,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label">Foto Durante el Mantenimiento:</label>
+                            <label class="form-label">Foto durante el mantenimiento:</label>
                             <div class="input-group">
                                 <input type="file" id="fotoDurante" class="form-control" accept="image/*">
                                 <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDurante"><i class="bi bi-x-circle"></i> Limpiar</button>
@@ -104,7 +104,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label">Foto Después del Mantenimiento:</label>
+                            <label class="form-label">Foto después del mantenimiento:</label>
                             <div class="input-group">
                                 <input type="file" id="fotoDespues" class="form-control" accept="image/*">
                                 <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDespues"><i class="bi bi-x-circle"></i> Limpiar</button>
@@ -116,7 +116,7 @@
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label">Hoja de Servicio (PDF):</label>
+                            <label class="form-label">Hoja de servicio (PDF):</label>
                             <div class="input-group">
                                 <input type="file" id="archivoPdf" class="form-control" accept=".pdf">
                                 <button class="btn btn-outline-secondary" type="button" id="btnLimpiarPdf"><i class="bi bi-x-circle"></i> Limpiar</button>
@@ -126,7 +126,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label class="form-label">Fecha de Atención:</label>
+                            <label class="form-label">Fecha de atención:</label>
                             <input type="date" id="fechaAtencion" class="form-control">
                         </div>
                     </div>
