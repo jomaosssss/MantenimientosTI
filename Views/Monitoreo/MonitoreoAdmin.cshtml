@@ -40,11 +40,11 @@
         transform: scale(1.1);
     }
 
-        .cfematico-btn.selected {
-            box-shadow: 0 0 0 2px #0d6efd;
-            transform: scale(1.1);
-            z-index: 1;
-        }
+    .cfematico-btn.selected {
+        box-shadow: 0 0 0 2px #0d6efd;
+        transform: scale(1.1);
+        z-index: 1;
+    }
 
     /* ESTILOS PARA LAS TARJETAS DE ZONA */
     .zona-card {
@@ -717,8 +717,6 @@
                     limpiarDatos();
                 }
             });
-            }
-        });
 
             // 4. Listeners para los filtros de las tablas
             $('#rangoTiempo').change(function() {
@@ -802,11 +800,11 @@
                                 var severidad = labelIndex === 0 ? 100 : (labelIndex === 1 ? 50 : 0);
                                 var tipo = datasetIndex === 0 ? 'O' : 'T';
                                 var selectedCfematico = $('.cfematico-btn.selected').data('num-cajero');
+                                cargarEventosParaModal(selectedCfematico, severidad, tipo, dias);
+                            }
                         }
                     }
                 });
-
-                $lista.html(eventosHtml);
             });
         }
 
@@ -839,7 +837,7 @@
                             <div class="small">${data.tiempoPromedio.toFixed(1)} horas</div>
                         </div>`;
                 }
-                });
+                $container.html(html);
             });
         }
 
@@ -873,8 +871,8 @@
                     cargarEventosMensuales(selectedCfematico, descripcion, mes, year, claveFalla);
                 });
             });
+        }
 
-        // Función para cargar los mantenimientos del CFEmático seleccionado
         function cargarMantenimientosCfematico(numCajero) {
              $.get('@Url.Action("ObtenerMantenimientosCfematico", "Monitoreo")', { numCajero: numCajero }, function(data) {
                 var $tbody = $('#tablaMantenimientos tbody').empty();
