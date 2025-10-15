@@ -40,11 +40,11 @@
         transform: scale(1.1);
     }
 
-        .cfematico-btn.selected {
-            box-shadow: 0 0 0 2px #0d6efd;
-            transform: scale(1.1);
-            z-index: 1;
-        }
+    .cfematico-btn.selected {
+        box-shadow: 0 0 0 2px #0d6efd;
+        transform: scale(1.1);
+        z-index: 1;
+    }
 
     /* ESTILOS PARA LAS TARJETAS DE ZONA */
     .zona-card {
@@ -162,22 +162,6 @@
             border-color: #86b7fe;
             box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.1);
         }
-
-    @@media (max-width: 1400px) {
-        .zones-container {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    @@media (max-width: 992px) {
-        .zones-container {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .main-grid {
-            grid-template-columns: 1fr;
-        }
-    }
 
     /* ESTILOS PARA LA LISTA DE EVENTOS */
     .event-item {
@@ -310,6 +294,183 @@
     img[src*="placeholder.com"] {
         opacity: 0.6;
     }
+
+    /* ===== ESTILOS RESPONSIVOS MEJORADOS ===== */
+
+    /* Contenedores responsivos para tablas */
+    .table-responsive-custom {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+    }
+
+        .table-responsive-custom table {
+            min-width: 600px;
+            margin-bottom: 0;
+        }
+
+    /* Media queries para diseño responsivo */
+    @@media (max-width: 1400px) {
+        .zones-container {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .main-grid {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+
+    @@media (max-width: 1200px) {
+        .main-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .zones-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .compact-container {
+            padding: 6px;
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .main-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .zones-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .info-container {
+            order: -1;
+        }
+
+        .card-body {
+            padding: 0.75rem;
+        }
+
+        .table-responsive-custom table {
+            min-width: 700px;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .zones-container {
+            grid-template-columns: 1fr;
+        }
+
+        .compact-container {
+            padding: 4px;
+        }
+
+        .card-header {
+            padding: 6px 10px !important;
+        }
+
+        .filters-container {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 5px;
+        }
+
+        .filter-select {
+            width: 100%;
+            max-width: none;
+        }
+
+        .table-responsive-custom table {
+            min-width: 800px;
+            font-size: 0.7rem;
+        }
+
+        .info-card, .events-card {
+            padding: 6px;
+        }
+
+        .chart-container {
+            height: 180px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .container {
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+
+        .compact-container {
+            padding: 2px;
+        }
+
+        .card-body {
+            padding: 0.5rem;
+        }
+
+        .table-responsive-custom table {
+            min-width: 900px;
+        }
+
+        .cfematico-btn {
+            width: 16px;
+            height: 16px;
+        }
+
+        .zona-card {
+            height: 130px !important;
+        }
+
+        .zona-title {
+            font-size: 0.75rem;
+        }
+
+        .chart-container {
+            height: 160px;
+        }
+
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+    }
+
+    /* Mejoras para elementos específicos en móviles */
+    @@media (max-width: 768px) {
+        .card-header h5 {
+            font-size: 1rem;
+        }
+
+        .text-muted.small {
+            font-size: 0.7rem;
+        }
+
+        .btn-descarga, .btn-detalles {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.3rem;
+        }
+
+        #rangoTiempo {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+        }
+    }
+
+    /* Para pantallas muy pequeñas */
+    @@media (max-width: 400px) {
+        .zones-container {
+            grid-template-columns: 1fr;
+        }
+
+        .cfematicos-container {
+            justify-content: center;
+        }
+
+        .main-grid {
+            gap: 5px;
+        }
+    }
 </style>
 
 <div class="container mt-2 compact-container">
@@ -319,7 +480,6 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="text-muted small me-3">
                     Última actualización @ViewBag.UltimaActualizacion
-
                 </div>
             </div>
         </div>
@@ -435,7 +595,7 @@
 
                     <div class="events-card mb-3">
                         <h6 class="mb-2">Mantenimientos Programados</h6>
-                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                        <div class="table-responsive-custom">
                             <table class="table table-sm table-striped" id="tablaMantenimientos">
                                 <thead class="sticky-top bg-light">
                                     <tr>
@@ -469,7 +629,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <div class="table-responsive-custom">
                             <table class="table table-sm table-striped table-hover" id="tablaEventos">
                                 <thead class="sticky-top bg-light">
                                     <tr>
@@ -672,6 +832,7 @@
         </div>
     </div>
 </div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -735,6 +896,13 @@
             $('#selectFalla').change(function() {
                 if (selectedCfematico) {
                     actualizarTablaEventos();
+                }
+            });
+
+            // 5. Ajustar gráfica al cambiar tamaño de ventana
+            $(window).on('resize', function() {
+                if (selectedCfematico && basicBarChart) {
+                    actualizarGrafica(selectedCfematico);
                 }
             });
         });
