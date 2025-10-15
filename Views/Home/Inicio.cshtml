@@ -4,6 +4,11 @@
 }
 @model MantenimientosTI.Models.ViewModels.VMAgendaInicio
 @using System.Globalization
+@{
+    // Obtener el mes actual y siguiente
+    var mesActual = DateTime.Now.ToString("MMMM", new CultureInfo("es-ES")).ToUpper();
+    var mesSiguiente = DateTime.Now.AddMonths(1).ToString("MMMM", new CultureInfo("es-ES")).ToUpper();
+}
 <style>
     /* Estilos para las filas de la tabla */
     tr.table-danger {
@@ -89,7 +94,7 @@
                         <div class="card-body p-3 d-flex flex-column justify-content-center">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <span class="badge bg-white text-primary mb-1 fw-bold" style="font-size: 0.75rem;">PROGRAMADOS ESTE MES</span>
+                                    <span class="badge bg-white text-primary mb-1 fw-bold" style="font-size: 0.75rem;">PROGRAMADOS @mesActual</span>
                                     <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.ProgramadosCount</h2>
                                 </div>
                                 <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
@@ -104,7 +109,7 @@
                         <div class="card-body p-3 d-flex flex-column justify-content-center">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <span class="badge bg-white text-success mb-1 fw-bold" style="font-size: 0.75rem;">TERMINADOS ESTE MES</span>
+                                    <span class="badge bg-white text-success mb-1 fw-bold" style="font-size: 0.75rem;">TERMINADOS @mesActual</span>
                                     <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.TerminadosCount</h2>
                                 </div>
                                 <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
@@ -120,7 +125,7 @@
                         <div class="card-body p-3 d-flex flex-column justify-content-center">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <span class="badge bg-white text-warning mb-1 fw-bold" style="font-size: 0.75rem;">PENDIENTES ESTE MES</span>
+                                    <span class="badge bg-white text-warning mb-1 fw-bold" style="font-size: 0.75rem;">PENDIENTES @mesActual</span>
                                     <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.PendientesCount</h2>
                                 </div>
                                 <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
@@ -136,7 +141,7 @@
                         <div class="card-body p-3 d-flex flex-column justify-content-center">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <span class="badge bg-white text-black-50 mb-1 fw-bold" style="font-size: 0.75rem;">PROGRAMADOS EL PROXIMO MES</span>
+                                    <span class="badge bg-white text-black-50 mb-1 fw-bold" style="font-size: 0.75rem;">PROGRAMADOS @mesSiguiente</span>
                                     <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.ProgramadosProximoMesCount</h2>
                                 </div>
                                 <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">

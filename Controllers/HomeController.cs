@@ -71,7 +71,7 @@ namespace ProyectoMantenimientos.Controllers
             int claveRol = HttpContext.Session.GetInt32("Rol") ?? 0;
             var hoy = DateOnly.FromDateTime(DateTime.Now);
 
-            // Obtener primer y último día del mes actual
+            // Para obtener el primer y último día del mes actual
             var primerDiaMes = new DateOnly(hoy.Year, hoy.Month, 1);
             var ultimoDiaMes = new DateOnly(hoy.Year, hoy.Month, DateTime.DaysInMonth(hoy.Year, hoy.Month));
 
@@ -82,40 +82,47 @@ namespace ProyectoMantenimientos.Controllers
                 DateTime.DaysInMonth(primerDiaProximoMes.Year, primerDiaProximoMes.Month)
             );
 
-            // 1. CONSULTAS PARA LOS CONTADORES DE LAS TARJETAS
+            var estatusExcluidos = new List<string> { "PRE CANCELADO", "CANCELADO" };
+
+            // Terminados de este mes
             var terminadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                 .ThenInclude(e => e.CatCentro)
                 .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.Estatus == "TERMINADO" &&
-               a.FechaProgramada >= primerDiaMes &&
-               a.FechaProgramada <= ultimoDiaMes);
+                           !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaMes &&
+                           a.FechaProgramada <= ultimoDiaMes);
 
-            // Consulta para contar pendientes (SOLO de este mes)
+            // Pendientes de este mes
             var pendientesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.Estatus == "PENDIENTE" &&
-                       a.FechaProgramada >= primerDiaMes &&
-                       a.FechaProgramada <= ultimoDiaMes);
+                           !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaMes &&
+                           a.FechaProgramada <= ultimoDiaMes);
 
-            // NUEVA CONSULTA: Todos los programados este mes (sin importar estatus)
+            // Programados de este mes
             var programadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
-                .Where(a => a.FechaProgramada >= primerDiaMes &&
+                .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
 
+            // Programados el próximo mes
             var proximoMesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
-                .Where(a => a.FechaProgramada >= primerDiaProximoMes &&
-                        a.FechaProgramada <= ultimoDiaProximoMes);
+                .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaProximoMes &&
+                           a.FechaProgramada <= ultimoDiaProximoMes);
 
-            // Aplicar filtro por zona SOLO si NO es administrador (Rol = 1)
+            // Filtro para mostrar conteos por zona si no es tecnico de zona
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 terminadosQuery = terminadosQuery
@@ -131,7 +138,7 @@ namespace ProyectoMantenimientos.Controllers
                                a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
                 proximoMesQuery = proximoMesQuery
                     .Where(a => a.NumActFijoNavigation != null &&
-                        a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+                            a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
             }
 
             // Obtener los conteos
@@ -140,16 +147,17 @@ namespace ProyectoMantenimientos.Controllers
             int programadosCount = programadosQuery.Count();
             int proximoMesCount = proximoMesQuery.Count();
 
-            // 2. CONSULTA PARA LAS TABLAS (SOLO PENDIENTES - mantiene el filtro original)
+            // Consulta de registros con estatus PENDIENTE para las tablas
             var agendaQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                             .ThenInclude(a => a.CatZona)
                 .Include(a => a.ClaveTipoMttoNavigation)
-                .Where(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                .Where(a => a.Estatus == "PENDIENTE" &&
+                           !estatusExcluidos.Contains(a.Estatus));
 
-            // Filtro por zona si no es administrador
+            // Filtro para mostrar registros por zona si es tecnico de zona
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 agendaQuery = agendaQuery
@@ -159,7 +167,7 @@ namespace ProyectoMantenimientos.Controllers
 
             var agenda = agendaQuery.ToList();
 
-            // 3. CLASIFICAR LOS EQUIPOS EN LAS LISTAS CORRESPONDIENTES
+            // Clasificar los registros en las listas correspondientes
             var cfematicos = new List<VMAgendaVista>();
             var atencionClientes = new List<VMAgendaVista>();
             var computo = new List<VMAgendaVista>();
@@ -216,11 +224,11 @@ namespace ProyectoMantenimientos.Controllers
                     atencionClientes.Add(viewModel);
                 else if (equipoComputo != null)
                 {
-                    // Si el equipo es de cómputo, preparamos la cadena del usuario
+                    // Si el equipo es de cómputo, preparamos la cadena del usuario para mostrar en la tabla
                     string rpe = equipoComputo.Rpe;
                     string nombre = equipoComputo.NombreRpe;
 
-                    // Verificamos si los datos existen para evitar mostrar "- "
+                    // Verificamos si los datos existen
                     if (!string.IsNullOrEmpty(rpe) && !string.IsNullOrEmpty(nombre))
                     {
                         viewModel.UsuarioAsignado = $"{rpe} - {nombre}";
@@ -236,7 +244,7 @@ namespace ProyectoMantenimientos.Controllers
                     cfematicos.Add(viewModel);
             }
 
-            // 4. CREAR EL VIEWMODEL FINAL
+            // Crear el ViewModel final
             var vmInicio = new VMAgendaInicio
             {
                 Cfematicos = cfematicos.OrderBy(vm => vm.FechaProgramada).ToList(),
