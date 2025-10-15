@@ -82,7 +82,7 @@ namespace ProyectoMantenimientos.Controllers
                 DateTime.DaysInMonth(primerDiaProximoMes.Year, primerDiaProximoMes.Month)
             );
 
-            var estatusExcluidos = new List<string> { "PRE CANCELADO", "CANCELADO" };
+            var estatusExcluidos = new List<string> { "PRE-CANCELADO", "CANCELADO" };
 
             // Terminados de este mes
             var terminadosQuery = _dbocontext.Agenda
@@ -154,7 +154,7 @@ namespace ProyectoMantenimientos.Controllers
                         .ThenInclude(c => c.CatAgencium)
                             .ThenInclude(a => a.CatZona)
                 .Include(a => a.ClaveTipoMttoNavigation)
-                .Where(a => a.Estatus == "PENDIENTE" &&
+                .Where(a => (a.Estatus == "PENDIENTE" && a.Estatus == "PRE-CANCELADO") && 
                            !estatusExcluidos.Contains(a.Estatus));
 
             // Filtro para mostrar registros por zona si es tecnico de zona
