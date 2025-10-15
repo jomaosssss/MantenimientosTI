@@ -83,46 +83,47 @@ namespace MantenimientosTI.Controllers
                 DateTime.DaysInMonth(primerDiaProximoMes.Year, primerDiaProximoMes.Month)
             );
 
-            // Terminados de este mes
+            var estatusExcluidos = new List<string> { "PRE CANCELADO", "CANCELADO" };
 
+            // Terminados de este mes
             var terminadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                 .ThenInclude(e => e.CatCentro)
                 .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.Estatus == "TERMINADO" &&
-               a.FechaProgramada >= primerDiaMes &&
-               a.FechaProgramada <= ultimoDiaMes);
+                           !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaMes &&
+                           a.FechaProgramada <= ultimoDiaMes);
 
             // Pendientes de este mes
-
             var pendientesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                 .Where(a => a.Estatus == "PENDIENTE" &&
-                       a.FechaProgramada >= primerDiaMes &&
-                       a.FechaProgramada <= ultimoDiaMes);
+                           !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaMes &&
+                           a.FechaProgramada <= ultimoDiaMes);
 
             // Programados de este mes
-
             var programadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
-                .Where(a => a.FechaProgramada >= primerDiaMes &&
+                .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
 
-            // Programados el proximo mes
-
+            // Programados el próximo mes
             var proximoMesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
-                .Where(a => a.FechaProgramada >= primerDiaProximoMes &&
-                        a.FechaProgramada <= ultimoDiaProximoMes);
+                .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaProximoMes &&
+                           a.FechaProgramada <= ultimoDiaProximoMes);
 
             // Filtro para mostrar conteos por zona si no es tecnico de zona
-
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 terminadosQuery = terminadosQuery
@@ -138,28 +139,26 @@ namespace MantenimientosTI.Controllers
                                a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
                 proximoMesQuery = proximoMesQuery
                     .Where(a => a.NumActFijoNavigation != null &&
-                        a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+                            a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
             }
 
             // Obtener los conteos
-
             int terminadosCount = terminadosQuery.Count();
             int pendientesCount = pendientesQuery.Count();
             int programadosCount = programadosQuery.Count();
             int proximoMesCount = proximoMesQuery.Count();
 
             // Consulta de registros con estatus PENDIENTE para las tablas
-
             var agendaQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                             .ThenInclude(a => a.CatZona)
                 .Include(a => a.ClaveTipoMttoNavigation)
-                .Where(a => a.Estatus == "PENDIENTE");
+                .Where(a => a.Estatus == "PENDIENTE" &&
+                           !estatusExcluidos.Contains(a.Estatus));
 
             // Filtro para mostrar registros por zona si es tecnico de zona
-
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 agendaQuery = agendaQuery
@@ -170,7 +169,6 @@ namespace MantenimientosTI.Controllers
             var agenda = agendaQuery.ToList();
 
             // Clasificar los registros en las listas correspondientes
-
             var cfematicos = new List<VMAgendaVista>();
             var atencionClientes = new List<VMAgendaVista>();
             var computo = new List<VMAgendaVista>();
@@ -180,7 +178,6 @@ namespace MantenimientosTI.Controllers
                 string tipo = "CFEMÁTICO";
 
                 // Determinar el tipo de equipo
-
                 var equipoAc = _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
@@ -197,21 +194,18 @@ namespace MantenimientosTI.Controllers
                 }
 
                 // Actualizar tipo según el equipo encontrado
-
                 if (equipoAc?.ClaveTipoEquipoNavigation != null)
                     tipo = equipoAc.ClaveTipoEquipoNavigation.NombreTipoEquipo;
                 else if (equipoComputo?.ClaveTipoEquipoNavigation != null)
                     tipo = equipoComputo.ClaveTipoEquipoNavigation.NombreTipoEquipo;
 
                 // Obtener datos de ubicación
-
                 var centro = item.NumActFijoNavigation?.CatCentro;
                 var nombreCentro = item.NumActFijoNavigation?.CatCentro?.NombreCentro ?? "Sin centro";
                 var nombreAgencia = centro?.CatAgencium?.NombreAgencia ?? "Sin agencia";
                 var nombreZona = centro?.CatAgencium?.CatZona?.NombreZona ?? "Sin zona";
 
                 // Crear ViewModel
-
                 var viewModel = new VMAgendaVista
                 {
                     NumActFijo = item.NumActFijo,
@@ -227,19 +221,15 @@ namespace MantenimientosTI.Controllers
                 };
 
                 // Clasificar en las listas correspondientes
-
                 if (equipoAc != null)
                     atencionClientes.Add(viewModel);
                 else if (equipoComputo != null)
                 {
-
                     // Si el equipo es de cómputo, preparamos la cadena del usuario para mostrar en la tabla
-
                     string rpe = equipoComputo.Rpe;
                     string nombre = equipoComputo.NombreRpe;
 
                     // Verificamos si los datos existen
-
                     if (!string.IsNullOrEmpty(rpe) && !string.IsNullOrEmpty(nombre))
                     {
                         viewModel.UsuarioAsignado = $"{rpe} - {nombre}";
@@ -256,7 +246,6 @@ namespace MantenimientosTI.Controllers
             }
 
             // Crear el ViewModel final
-
             var vmInicio = new VMAgendaInicio
             {
                 Cfematicos = cfematicos.OrderBy(vm => vm.FechaProgramada).ToList(),
@@ -369,7 +358,7 @@ namespace MantenimientosTI.Controllers
                         nombreResponsable,
                         cfData.TipoMantenimiento);
 
-                    return File(pdf, "application/pdf", $"HojaServicioCFEmatico_{numActFijo}.pdf");
+                    return File(pdf, "application/pdf", $"Orden_{cfData.ClaveAgenda}_HojaServicioCFEmatico_{numActFijo}.pdf");
                 }
 
                 // 2) Buscar en Equipos de Atención a Clientes
@@ -440,7 +429,7 @@ namespace MantenimientosTI.Controllers
                         fileNamePrefix = "HojaServicioMONIVENT";
                     }
 
-                    return File(pdf, "application/pdf", $"{fileNamePrefix}_{numActFijo}.pdf");
+                    return File(pdf, "application/pdf", $"Orden_{acData.ClaveAgenda}_{fileNamePrefix}_{numActFijo}.pdf");
                 }
 
                 // 3) Buscar en Equipos de Cómputo
@@ -482,7 +471,7 @@ namespace MantenimientosTI.Controllers
                         nombreUsuario,
                         compData.TipoEquipo,
                         numActFijo);
-                    return File(pdf, "application/pdf", $"Computo_HojaServicio_{numActFijo}.pdf");
+                    return File(pdf, "application/pdf", $"Orden_{compData.ClaveAgenda}_Computo_HojaServicio_{numActFijo}.pdf");
                 }
 
                 return Json(new
@@ -758,7 +747,7 @@ namespace MantenimientosTI.Controllers
                         compData.TipoEquipo,
                         numActFijo);
 
-                    return File(pdf, "application/pdf", $"Computo_HojaServicio_{numActFijo}.pdf");
+                    return File(pdf, "application/pdf", $"Orden_{compData.ClaveAgenda}_Computo_HojaServicio_{numActFijo}.pdf");
                 }
 
                 return Json(new { success = false, message = "No se encontró el equipo" });

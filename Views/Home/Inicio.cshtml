@@ -611,49 +611,57 @@
                 }
             });
 
-            // Generar PDF para CFEmáticos
-            $('#btnGenerarPdf').click(function() {
-                if ($('#formHojaServicio')[0].checkValidity()) {
-                    var formData = $('#formHojaServicio').serialize();
-                    var $btn = $(this);
-                    var numCajero = $('#numCajeroPdf').val();
-                    var fileName = numCajero ?
-                        'HojaServicioCFEMATICO_' + numCajero + '.pdf' :
-                        'HojaServicioCFEMATICO_' + $('#numActFijoPdf').val() + '.pdf';
+        // En la sección de generar PDF para CFEmáticos, actualizar el nombre del archivo
+        $('#btnGenerarPdf').click(function() {
+            if ($('#formHojaServicio')[0].checkValidity()) {
+                var formData = $('#formHojaServicio').serialize();
+                var $btn = $(this);
 
-                    $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
+                $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
 
-                    $.ajax({
-                        url: '/Home/GenerarHojaServicio',
-                        type: 'POST',
-                        data: formData,
-                        xhrFields: {
-                            responseType: 'blob'
-                        },
-                        success: function(data) {
-                            var url = URL.createObjectURL(data);
-                            var a = document.createElement('a');
-                            a.href = url;
-                            a.download = fileName;
-                            document.body.appendChild(a);
-                            a.click();
-                            setTimeout(function() {
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                                $('#modalPdf').modal('hide');
-                            }, 100);
-                        },
-                        error: function(xhr) {
-                            alert('Error al generar el PDF: ' + xhr.responseText);
-                        },
-                        complete: function() {
-                            $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF');
+                $.ajax({
+                    url: '/Home/GenerarHojaServicio',
+                    type: 'POST',
+                    data: formData,
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+                    success: function(data, status, xhr) {
+                        var url = URL.createObjectURL(data);
+                        var a = document.createElement('a');
+                        a.href = url;
+
+                        var contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                        var fileName = 'documento.pdf';
+
+                        if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+                            var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                            var matches = filenameRegex.exec(contentDisposition);
+                            if (matches != null && matches[1]) {
+                                fileName = matches[1].replace(/['"]/g, '');
+                            }
                         }
-                    });
-                } else {
-                    $('#formHojaServicio')[0].reportValidity();
-                }
-            });
+
+                        a.download = fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(function() {
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            $('#modalPdf').modal('hide');
+                        }, 100);
+                    },
+                    error: function(xhr) {
+                        alert('Error al generar el PDF: ' + xhr.responseText);
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF');
+                    }
+                });
+            } else {
+                $('#formHojaServicio')[0].reportValidity();
+            }
+        });
 
             // Funciones para Equipos de Cómputo
             $('#btnContinuarComputo').click(function() {
