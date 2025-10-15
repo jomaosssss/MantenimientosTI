@@ -159,16 +159,16 @@
                     <table id="tablaCFEmaticos" class="display">
                         <thead>
                             <tr>
-                                <th>Fecha Programada</th>
+                                <th>Fecha programada</th>
                                 <th>Zona</th>
                                 <th>Agencia</th>
                                 <th>Centro</th>
-                                <th>Tipo de Equipo</th>
-                                <th>Núm. de Cajero</th>
-                                <th>Núm. de Orden</th>
+                                <th>Tipo de equipo</th>
+                                <th>Núm. de cajero</th>
+                                <th>Núm. de orden</th>
                                 <th>Estatus</th>
-                                <th>Inf. del Equipo</th>
-                                <th>Hoja de Servicio</th>
+                                <th>Inf. del equipo</th>
+                                <th>Hoja de servicio</th>
                                 <th>Cancelaciones</th>
                             </tr>
                         </thead>
@@ -221,10 +221,10 @@
                                             @if (User.IsInRole("ADMINISTRADOR"))
                                             {
                                                 <!-- ADMINISTRADOR: Gestionar pre-cancelaciones de técnicos -->
-                                                <button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda" title="Confirmar Cancelación">
+                                                <button class="btn btn-success btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda" title="Confirmar Cancelación">
                                                     <i class="bi bi-check-circle"></i>
                                                 </button>
-                                                <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda" title="Rechazar Cancelación">
+                                                <button class="btn btn-danger btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda" title="Rechazar Cancelación">
                                                     <i class="bi bi-x-circle"></i>
                                                 </button>
                                             }
@@ -254,15 +254,15 @@
                     <table id="tablaAC" class="display">
                         <thead>
                             <tr>
-                                <th>Fecha Programada</th>
+                                <th>Fecha programada</th>
                                 <th>Zona</th>
                                 <th>Agencia</th>
                                 <th>Centro</th>
-                                <th>Tipo de Equipo</th>
-                                <th>Núm. de Orden</th>
+                                <th>Tipo de equipo</th>
+                                <th>Núm. de orden</th>
                                 <th>Estatus</th>
-                                <th>Inf. del Equipo</th>
-                                <th>Hoja de Servicio</th>
+                                <th>Inf. del equipo</th>
+                                <th>Hoja de servicio</th>
                                 <th>Cancelaciones</th>
                             </tr>
                         </thead>
@@ -314,11 +314,11 @@
                                             @if (User.IsInRole("ADMINISTRADOR"))
                                             {
                                                 <!-- ADMINISTRADOR: Gestionar pre-cancelaciones de técnicos -->
-                                                <button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda">
-                                                    Confirmar
+                                                <button class="btn btn-success btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda" title="Confirmar Cancelación">
+                                                    <i class="bi bi-check-circle"></i>
                                                 </button>
-                                                <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda">
-                                                    Rechazar
+                                                <button class="btn btn-danger btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda" title="Rechazar Cancelación">
+                                                    <i class="bi bi-x-circle"></i>
                                                 </button>
                                             }
                                             else
@@ -347,16 +347,16 @@
                     <table id="tablaEC" class="display">
                         <thead>
                             <tr>
-                                <th>Fecha Programada</th>
+                                <th>Fecha programada</th>
                                 <th>Zona</th>
                                 <th>Agencia</th>
                                 <th>Centro</th>
-                                <th>Tipo de Equipo</th>
+                                <th>Tipo de equipo</th>
                                 <th>Usuario</th>
-                                <th>Núm. de Orden</th>
+                                <th>Núm. de orden</th>
                                 <th>Estatus</th>
-                                <th>Inf. del Equipo</th>
-                                <th>Hoja de Servicio</th>
+                                <th>Inf. del equipo</th>
+                                <th>Hoja de servicio</th>
                                 <th>Cancelaciones</th>
                             </tr>
                         </thead>
@@ -409,11 +409,11 @@
                                             @if (User.IsInRole("ADMINISTRADOR"))
                                             {
                                                 <!-- ADMINISTRADOR: Gestionar pre-cancelaciones de técnicos -->
-                                                <button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda">
-                                                    Confirmar
+                                                <button class="btn btn-success btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda" title="Confirmar Cancelación">
+                                                    <i class="bi bi-check-circle"></i>
                                                 </button>
-                                                <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda">
-                                                    Rechazar
+                                                <button class="btn btn-danger btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda" title="Rechazar Cancelación">
+                                                    <i class="bi bi-x-circle"></i>
                                                 </button>
                                             }
                                             else
@@ -619,7 +619,7 @@
 
                                     var celdaAcciones = button.closest('td');
                                     if (esAdmin) {
-                                        celdaAcciones.html('<button class="btn btn-danger btn-sm btn-confirmar-cancelacion" data-id="' + id + '" title="Confirmar Cancelación"><i class="bi bi-check-circle"></i></button> <button class="btn btn-success btn-sm btn-rechazar-cancelacion" data-id="' + id + '" title="Rechazar Cancelación"><i class="bi bi-x-circle"></i></button>');
+                                        celdaAcciones.html('<button class="btn btn-success btn-sm btn-confirmar-cancelacion" data-id="' + id + '" title="Confirmar Cancelación"><i class="bi bi-check-circle"></i></button> <button class="btn btn-danger btn-sm btn-rechazar-cancelacion" data-id="' + id + '" title="Rechazar Cancelación"><i class="bi bi-x-circle"></i></button>');
                                     } else {
                                         celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
                                     }

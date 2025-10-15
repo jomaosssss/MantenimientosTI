@@ -130,7 +130,7 @@
 
                         <a href="/Home/Inicio" class="nav-link ajax-link text-white">
                             <div class="sb-nav-link-icon"><i class="fas fa-home"></i></div>
-                            Bandeja de Entrada
+                            Bandeja de entrada
                         </a>
 
                         @if (User.IsInRole("ADMINISTRADOR"))
@@ -167,12 +167,12 @@
 
                                 <a class="nav-link text-white ajax-link" href="/Agenda/AgendarPreventivos">
                                     <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
-                                    Mantenimientos Preventivos
+                                    Mantenimientos preventivos
                                 </a>
 
                                 <a class="nav-link collapsed text-white" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCorrectivo" aria-expanded="false" aria-controls="collapseCorrectivo">
                                     <div class="sb-nav-link-icon"><i class="fas fa-triangle-exclamation"></i></div>
-                                    Mantenimiento Correctivo
+                                    Mantenimiento correctivo
                                     <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                                 </a>
 
@@ -189,24 +189,24 @@
 
                         <a href="/Repositorio/TerminarMantenimiento" class="nav-link ajax-link text-white">
                             <div class="sb-nav-link-icon"><i class="fas fa-upload"></i></div>
-                            Terminar Mantenimiento
+                            Terminar mantenimiento
                         </a>
 
                         <a href="/Repositorio/Repositorio" class="nav-link ajax-link text-white">
                             <div class="sb-nav-link-icon"><i class="fas fa-history"></i></div>
-                            Historial de Mantenimientos
+                            Historial de mantenimientos
                         </a>
 
                         <a href="/Repositorio/InventarioEquipos" class="nav-link ajax-link text-white">
                             <div class="sb-nav-link-icon"><i class="fas fa-clipboard-list"></i></div>
-                            Inventario de Equipos
+                            Inventario de equipos
                         </a>
 
                         @if (User.IsInRole("ADMINISTRADOR"))
                         {
                             <a href="@Url.Action("AprobarCancelaciones", "Agenda")" class="nav-link ajax-link text-white">
                                 <div class="sb-nav-link-icon"><i class="fas fa-check-to-slot"></i></div>
-                                Aprobar Cancelaciones
+                                Aprobar cancelaciones
                             </a>
                         }
 
@@ -214,7 +214,7 @@
                         {
                             <a href="@Url.Action("Index", "Bitacora")" class="nav-link ajax-link text-white">
                                 <div class="sb-nav-link-icon"><i class="fas fa-history"></i></div>
-                                Bitácora de Actividad
+                                Bitácora de actividad
                             </a>
                         }
 
