@@ -258,6 +258,18 @@ namespace ProyectoMantenimientos.Controllers
 
         public async Task<IActionResult> CerrarSesion()
         {
+            // REGISTRO EN BITÁCORA - LOGOUT
+            var usuario = HttpContext.Session.GetString("NombreUsuario");
+            var rpe = HttpContext.Session.GetString("Rpe");
+            var rol = HttpContext.Session.GetString("NombreRol");
+            var zona = HttpContext.Session.GetString("NombreZona");
+            var centro = HttpContext.Session.GetString("ClaveDivision");
+
+            if (!string.IsNullOrEmpty(usuario))
+            {
+                await _bitacora.RegistrarLogoutAsync(usuario, rpe, rol, zona, centro);
+            }
+
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "Usuario");

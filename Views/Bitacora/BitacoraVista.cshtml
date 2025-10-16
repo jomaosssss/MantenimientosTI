@@ -43,6 +43,11 @@
         color: white;
     }
 
+    .badge-mantenimiento {
+        background-color: #17a2b8;
+        color: white;
+    }
+
     .table-verde th {
         background-color: #008e60 !important;
         color: white;
@@ -72,8 +77,10 @@
                                value="@ViewBag.SearchString" style="min-width: 250px;">
                         <select name="tipoFiltro" class="form-select me-2" style="width: auto;">
                             <option value="todo" selected="@(ViewBag.TipoFiltro == "todo")">Todos los eventos</option>
-                            <option value="sesion" selected="@(ViewBag.TipoFiltro == "sesion")">Inicios de sesión</option>
+                            <option value="sesion" selected="@(ViewBag.TipoFiltro == "sesion")">Inicios/cierre de sesión</option>
                             <option value="usuarios" selected="@(ViewBag.TipoFiltro == "usuarios")">Gestión de usuarios</option>
+                            <option value="mantenimientos" selected="@(ViewBag.TipoFiltro == "mantenimientos")">Mantenimientos</option>
+                            <option value="csv" selected="@(ViewBag.TipoFiltro == "csv")">Cargas CSV</option>
                             <option value="admin" selected="@(ViewBag.TipoFiltro == "admin")">Administradores</option>
                             <option value="tecnico" selected="@(ViewBag.TipoFiltro == "tecnico")">Técnicos</option>
                         </select>
@@ -230,11 +237,17 @@
             "INFO_9.55.0(1,ADMIN)" => "badge-sesion",
             "INICIO_SESION_ADMIN" => "badge-sesion",
             "INICIO_SESION_TECNICO" => "badge-sesion",
+            "LOGOUT_SISTEMA" => "badge-sesion",
             "ACTUALIZA (USUARIO)" => "badge-usuario",
             "ACTUALIZAR_USUARIO" => "badge-usuario",
             "CREAR_USUARIO" => "badge-usuario",
             "HABILITAR_CARGA_CSV" => "badge-configuracion",
             "DESHABILITAR_CARGA_CSV" => "badge-configuracion",
+            "CARGA_CSV" => "badge-configuracion",
+            "CARGA_MTTO_CORRECTIVO" => "badge-mantenimiento",
+            "TERMINACION_MTTO" => "badge-mantenimiento",
+            "PRECANCELACION_MTTO" => "badge-mantenimiento",
+            "CONFIRMACION_CANCELACION" => "badge-mantenimiento",
             _ => "badge-sistema"
         };
     }
