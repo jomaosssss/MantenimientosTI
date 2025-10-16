@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MantenimientosTI.Models
@@ -7,7 +6,7 @@ namespace MantenimientosTI.Models
     public class RegistroActividad
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // <-- 2. AÑADE ESTE ATRIBUTO
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int IdRegistroActividad { get; set; }
 
         public DateTime FechaHora { get; set; }
@@ -18,7 +17,6 @@ namespace MantenimientosTI.Models
 
         //[StringLength(50)]
         //public string RPE { get; set; }
-
 
         [Required]
         [StringLength(50)]

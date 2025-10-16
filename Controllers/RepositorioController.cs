@@ -75,7 +75,7 @@ namespace MantenimientosTI.Controllers
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
 
-                // Buscar en EquipoCfematico si no es AC ni Computo
+                // Buscar en EquipoCfematico si no es Atencion a Clientes ni Equipo de Computo
                 if (equipoAC == null && equipoComputo == null)
                 {
                     var equipoCfematico = await _dbocontext.EquipoCfematicos
@@ -100,7 +100,6 @@ namespace MantenimientosTI.Controllers
                 var agencia = centro?.CatAgencium;
                 var zona = agencia?.CatZona;
 
-                // Antes de crear el mantenimiento
                 var rpeUsuario = HttpContext.Session.GetString("Rpe");
                 if (string.IsNullOrEmpty(rpeUsuario))
                 {
@@ -368,7 +367,7 @@ namespace MantenimientosTI.Controllers
                         .Include(e => e.ClaveTipoEquipoNavigation)
                         .FirstOrDefaultAsync(e => e.NumActFijo == m.NumActFijo);
 
-                    // Buscar en EquipoCfematico solo si no es AC ni Computo
+                    // Buscar en EquipoCfematico solo si no es Atencion a Clientes ni Equipo de Computo
                     var equipoCfematico = (equipoAc == null && equipoComputo == null) ?
                         await _dbocontext.EquipoCfematicos
                             .FirstOrDefaultAsync(e => e.NumActFijo == m.NumActFijo) :
@@ -571,11 +570,11 @@ namespace MantenimientosTI.Controllers
                 var fechaProgramada = mantenimiento.Agendum?.FechaProgramada.ToString("dd/MM/yyyy") ?? "No especificada";
                 var nombreUsuario = $"{mantenimiento.RpeNavigation?.Nombre ?? ""} {mantenimiento.RpeNavigation?.ApellidoP ?? ""} {mantenimiento.RpeNavigation?.ApellidoM ?? ""}".Trim();
 
-                // Construir el HTML con los detalles - NÚMERO DE CAJERO PRIMERO
+                // Construir el HTML con los detalles (num de cajero primero
                 var htmlInfoEquipo = @"
                 <ul class='list-group list-group-flush'>";
 
-                    // Mostrar número de cajero PRIMERO si es CFEMÁTICO y tiene valor
+                    // Mostrar número de cajero primero si es CFEMÁTICO y tiene valor
                     if (tipoEquipo == "CFEMÁTICO" && numCajero != "N/A")
                     {
                         htmlInfoEquipo += $@"<li class='list-group-item'><strong>Número de Cajero:</strong> {numCajero}</li>";

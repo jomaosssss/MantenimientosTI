@@ -61,7 +61,7 @@
 
                 mostrarResultadoDetallado(data);
 
-                // LIMPIAR EL SELECTOR DE ARCHIVO - AÑADIDO AQUÍ
+                // Limpiar el selector de archivo
                 input.value = '';
 
             } else {
@@ -91,7 +91,7 @@
                     mostrarResultadoDetallado(data);
                 }
 
-                // LIMPIAR EL SELECTOR DE ARCHIVO TAMBIÉN EN CASO DE ERROR - AÑADIDO AQUÍ
+                // Limpiar el selector de archivo tambien en caso de error
                 input.value = '';
             }
         })
@@ -103,7 +103,7 @@
                 confirmButtonColor: '#3085d6'
             });
 
-            // LIMPIAR EL SELECTOR DE ARCHIVO TAMBIÉN EN CASO DE ERROR DE CONEXIÓN - AÑADIDO AQUÍ
+            // Limpiar el selector de archivo tambien en caso de error
             input.value = '';
         })
         .finally(() => {
@@ -113,12 +113,11 @@
         });
 }
 
-// El resto de tu código permanece igual...
 function mostrarResultadoDetallado(data) {
     const resultadoDetallado = document.getElementById("resultadoDetallado");
     const detalleLineas = document.getElementById("detalleLineas");
 
-    // Mostrar el resumen SIEMPRE, independientemente de si hay éxito o no
+    // Mostrar el resumen siempre, independientemente de si hay éxito o no
     if (data.resumen) {
         document.getElementById("totalLineas").textContent = data.resumen.totalLineas;
         document.getElementById("exitosos").textContent = data.resumen.exitosos;

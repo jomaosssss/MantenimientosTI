@@ -82,14 +82,10 @@ namespace ProyectoMantenimientos.Controllers
                 DateTime.DaysInMonth(primerDiaProximoMes.Year, primerDiaProximoMes.Month)
             );
 
-            // Para todas las consultas: excluir solo CANCELADO
+            // Para todas las consultas excluyendo con estatus CANCELADO
             var estatusExcluidos = new List<string> { "CANCELADO" };
 
-            // =============================================
-            // CONSULTAS PARA TARJETAS - EXCLUIR SOLO CANCELADO
-            // =============================================
-
-            // Terminados de este mes (solo TERMINADO, excluyendo CANCELADO)
+            // Terminados de este mes excluyendo con estatus CANCELADO
             var terminadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                 .ThenInclude(e => e.CatCentro)
@@ -99,7 +95,7 @@ namespace ProyectoMantenimientos.Controllers
                            a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
 
-            // Pendientes de este mes (PENDIENTE Y PRE-CANCELADO, excluyendo CANCELADO)
+            // Pendientes de este mes excluyendo con estatus CANCELADO
             var pendientesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -109,7 +105,7 @@ namespace ProyectoMantenimientos.Controllers
                            a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
 
-            // Programados de este mes (TODOS excepto CANCELADO)
+            // Programados de este mes excluyendo con estatus CANCELADO
             var programadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -118,7 +114,7 @@ namespace ProyectoMantenimientos.Controllers
                            a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
 
-            // Programados el próximo mes (TODOS excepto CANCELADO)
+            // Programados el próximo mes excluyendo con estatus CANCELADO
             var proximoMesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -151,10 +147,6 @@ namespace ProyectoMantenimientos.Controllers
             int pendientesCount = pendientesQuery.Count();
             int programadosCount = programadosQuery.Count();
             int proximoMesCount = proximoMesQuery.Count();
-
-            // =============================================
-            // CONSULTA PARA TABLAS - PENDIENTE Y PRE-CANCELADO
-            // =============================================
 
             // Consulta de registros con estatus PENDIENTE o PRE-CANCELADO para las tablas
             var agendaQuery = _dbocontext.Agenda

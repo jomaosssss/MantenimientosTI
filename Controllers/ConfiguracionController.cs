@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MantenimientosTI.Models;
-using Microsoft.AspNetCore.Identity; // Necesario para PasswordHasher
+using Microsoft.AspNetCore.Identity;
 using MantenimientosTI.Services;
 using MantenimientosTI.Helpers;
 
@@ -26,12 +26,12 @@ namespace ProyectoMantenimientos.Controllers
             ViewBag.Roles = await _dbocontext.CatRols.ToListAsync();
             ViewBag.Zonas = await _dbocontext.CatZonas.ToListAsync();
 
-            // ✅ CAMBIO: Consulta los registros de las últimas 24 horas en lugar de los últimos 50
+            // Consulta los registros de las últimas 24 horas en lugar de los últimos 50
             var fechaLimite = DateTime.Now.AddHours(-24);
             var ultimosMovimientos = await _dbocontext.RegistroActividad
                 .Where(r => r.FechaHora >= fechaLimite) // Filtro de 24 horas
                 .OrderByDescending(r => r.FechaHora)
-                .Take(50) // Mantenemos el límite de 50 registros máximo
+                .Take(50) // Límite de 50 registros máximo
                 .ToListAsync();
             ViewBag.Bitacora = ultimosMovimientos;
 
@@ -200,7 +200,8 @@ namespace ProyectoMantenimientos.Controllers
             return Json(new { success = true });
         }
 
-        // --- MODELOS INTERNOS PARA LAS ACCIONES ---
+        // Modelos internos para las acciones
+
         public class ActualizarRecibirReporteModel
         {
             public string Rpe { get; set; }

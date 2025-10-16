@@ -97,9 +97,8 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN DE BITÁCORA DE LA VERSIÓN ENTRANTE -->
                 <div class="card mb-4">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                         <span>
                             <i class="fas fa-history me-1"></i> Actividad de las últimas 24 horas
                         </span>
@@ -379,7 +378,6 @@
                 ]
             });
 
-
             // 1. Obtener el estado inicial de la configuración al cargar la página
             $.get('/Configuracion/ObtenerEstadoAgendarPreventivos')
                 .done(function (data) {
@@ -492,7 +490,7 @@
             $.get('/Usuario/ObtenerUsuarioPorRpe', { rpe: rpe })
                 .done(function(data) {
                     $('#RpeEditar').val(data.rpe);
-                    $('#RpeDisplay').val(data.rpe);  // Nueva línea para mostrar el RPE
+                    $('#RpeDisplay').val(data.rpe);
                     $('#RolEditar').val(data.claveRol);
                     $('#ZonaEditar').val(data.claveZona);
                     $('#NombreEditar').val(data.nombre);

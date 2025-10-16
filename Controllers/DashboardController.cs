@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.Net.Mail;
 using System.Net;
+using System.Net.Mail;
 using MantenimientosTI.Models;
 using Microsoft.EntityFrameworkCore;
 using ClosedXML.Excel;
@@ -869,7 +869,6 @@ namespace MantenimientosTI.Controllers
             }
         }
     }
-
 
     public class ReporteResumen
     {

@@ -40,7 +40,7 @@
         </div>
 
         <div class="card-body">
-            <!-- TARJETAS DE ESTADÍSTICAS - SOLO 2 TARJETAS AHORA -->
+
             <div class="row g-3 mb-4">
                 <div class="col-xl-6 col-md-6">
                     <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #dc3545; min-height: 100px;">
@@ -75,10 +75,10 @@
                 </div>
             </div>
 
-            <!-- TABLA DE CITAS PRE-CANCELADAS -->
+
             <div class="card mb-4">
-                <div class="card-header bg-warning text-dark">
-                    <i class="fas fa-clock me-1"></i> Citas pre-canceladas pendientes de aprobación
+                <div class="card-header bg-success text-dark">
+                    <i class="fas fa-clock me-1"></i> Mantenimientos pre-cancelados pendientes de aprobación
                 </div>
                 <div class="card-body">
                     @if (Model.Any())
@@ -103,7 +103,7 @@
                                     {
                                         <tr id="fila-@item.ClaveAgenda">
                                             <td>
-                                                <strong>@item.ClaveAgenda</strong>  <!-- ✅ USAMOS CLAVEAGENDA COMO NÚMERO DE ORDEN -->
+                                                <strong>@item.ClaveAgenda</strong>
                                             </td>
                                             <td>
                                                 <strong>@item.NumActFijo</strong>
@@ -145,7 +145,7 @@
                     {
                         <div class="alert alert-info text-center">
                             <i class="fas fa-info-circle me-2"></i>
-                            No hay citas pendientes de aprobación.
+                            No hay mantenimientos pendientes de cancelación.
                         </div>
                     }
                 </div>
@@ -167,7 +167,7 @@
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                 },
-                order: [[1, 'asc']], // Ordenar por fecha programada
+                order: [[1, 'asc']],
                 pageLength: 10,
                 responsive: true
             });
@@ -195,7 +195,7 @@
                             .done(function(response) {
                                 if (response.success) {
                                     Swal.fire({
-                                        title: '¡Confirmada!',
+                                        title: '¡Confirmado!',
                                         text: response.message,
                                         icon: 'success',
                                         timer: 2000,
@@ -230,7 +230,7 @@
 
                 Swal.fire({
                     title: '¿Rechazar Cancelación?',
-                    text: "La cita volverá al estatus 'PENDIENTE'.",
+                    text: "El mantenimiento volverá a estar PENDIENTE.",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#dc3545',
@@ -246,8 +246,8 @@
                             .done(function(response) {
                                 if (response.success) {
                                     Swal.fire({
-                                        title: '¡Rechazada!',
-                                        text: 'La cita ha sido reactivada exitosamente.',
+                                        title: '¡Rechazado!',
+                                        text: 'El mantenimiento ha sido reactivado exitosamente.',
                                         icon: 'success',
                                         timer: 2000,
                                         showConfirmButton: false
@@ -263,12 +263,12 @@
                                     });
                                 } else {
                                     Swal.fire('Error', response.message, 'error');
-                                    button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazar');
+                                    button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazado');
                                 }
                             })
                             .fail(function() {
                                 Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
-                                button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazar');
+                                button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazado');
                             });
                     }
                 });

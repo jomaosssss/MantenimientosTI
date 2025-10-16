@@ -140,13 +140,12 @@ namespace ProyectoMantenimientos.Controllers
                     HttpContext.Session.SetString("ClaveDivision", usuarioAdmin.ClaveDivision);
                     HttpContext.Session.SetString("Correo", usuarioAdmin.Correo);
 
-                    // --- REGISTRO EN BITÁCORA (ADMIN LOCAL) ---
+                    // Registro en bitacora (usuario local (no del directorio activo))
                     await _bitacora.RegistrarYGuardarAsync(
                         HttpContext.Session.GetString("NombreUsuario"),
                         BitacoraAcciones.InicioSesionAdmin,
                         $"El administrador {usuarioAdmin.Rpe} inició sesión localmente."
                     );
-                    // --- FIN DEL REGISTRO ---
 
                     return RedirectToAction("Inicio", "Home");
                 }
@@ -227,13 +226,12 @@ namespace ProyectoMantenimientos.Controllers
                             HttpContext.Session.SetString("ClaveDivision", usuario.ClaveDivision);
                             HttpContext.Session.SetString("Correo", usuario.Correo);
 
-                            // --- REGISTRO EN BITÁCORA (TÉCNICO/API) ---
+                            // Registro en bitacora del usuario del directorio activo
                             await _bitacora.RegistrarYGuardarAsync(
                                 HttpContext.Session.GetString("NombreUsuario"),
                                 BitacoraAcciones.InicioSesionTecnico,
                                 $"El usuario {usuario.Rpe} inició sesión."
                             );
-                            // --- FIN DEL REGISTRO ---
 
                             return RedirectToAction("Inicio", "Home");
                         }
@@ -339,7 +337,7 @@ namespace ProyectoMantenimientos.Controllers
                 var descripcion = $"Actualizó los datos del usuario '{usuario.Nombre} {usuario.ApellidoP}' con RPE '{model.Rpe}'.";
                 _bitacora.RegistrarActividad(adminQueActualiza, "ACTUALIZAR_USUARIO", descripcion);
 
-                // 4. Guarda AMBOS cambios (actualización y bitácora) en una sola transacción
+                // 4. Guarda ambos cambios (actualización y bitácora) en una sola transacción
                 await _dbocontext.SaveChangesAsync();
 
                 return Json(new { success = true });
@@ -388,7 +386,7 @@ namespace ProyectoMantenimientos.Controllers
                     Estatus = "Activo",
                     RecibirReporte = "SI"
                 };
-                _dbocontext.Usuarios.Add(nuevoUsuario); // Se añade al contexto una sola vez
+                _dbocontext.Usuarios.Add(nuevoUsuario);
 
                 // 2. Prepara el registro de bitácora
                 var adminQueCrea = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
@@ -396,7 +394,7 @@ namespace ProyectoMantenimientos.Controllers
                 // Usamos el método que solo prepara, sin guardar
                 _bitacora.RegistrarActividad(adminQueCrea, "CREAR_USUARIO", descripcion);
 
-                // 3. Guarda AMBOS cambios en una sola transacción
+                // 3. Guarda ambos cambios en una sola transacción
                 await _dbocontext.SaveChangesAsync();
 
                 return Json(new { success = true });

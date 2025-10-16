@@ -177,7 +177,7 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { evento.Severidad, evento.ClaveFalla, evento.Importancia }
                 )
-                .Where(x => x.Importancia == 1) // FILTRO RE-INTEGRADO
+                .Where(x => x.Importancia == 1)
                 .GroupBy(x => new { x.Severidad, x.ClaveFalla })
                 .Select(g => new {
                     Severidad = g.Key.Severidad,
@@ -216,7 +216,7 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { registro, evento }
                 )
-                .Where(x => x.evento.Importancia == 1) // FILTRO RE-INTEGRADO
+                .Where(x => x.evento.Importancia == 1)
                 .OrderByDescending(x => x.registro.FechaEvento)
                 .Take(5)
                 .Select(x => new
@@ -242,7 +242,7 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { registro, evento }
                 )
-                .Where(x => x.evento.Importancia == 1) // ¡FILTRO AÑADIDO!
+                .Where(x => x.evento.Importancia == 1)
                 .OrderBy(x => x.registro.FechaEvento)
                 .Select(x => new {
                     x.registro.FechaEvento,
@@ -393,7 +393,7 @@ namespace ProyectoMantenimientos.Controllers
                     evento => evento.ClaveEvento,
                     (registro, evento) => new { registro, evento }
                 )
-                .Where(x => x.evento.Importancia == 1 && // ¡FILTRO AÑADIDO!
+                .Where(x => x.evento.Importancia == 1 &&
                               x.evento.Descripcion == descripcion &&
                               (string.IsNullOrEmpty(claveFalla) || x.evento.ClaveFalla == claveFalla));
 

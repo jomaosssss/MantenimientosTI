@@ -20,7 +20,7 @@ namespace ProyectoMantenimientos.Controllers
 
         public async Task<IActionResult> Index(string searchString, string tipoFiltro = "todo")
         {
-            // OBTENER INFORMACIÓN DEL USUARIO ACTUAL DESDE SESIÓN
+            // Obtener informacion del usuario loggeado
             var usuarioActual = new
             {
                 Nombre = HttpContext.Session.GetString("NombreUsuario"),
@@ -34,7 +34,6 @@ namespace ProyectoMantenimientos.Controllers
                 .OrderByDescending(r => r.FechaHora)
                 .AsQueryable();
 
-            // FILTROS
             if (!string.IsNullOrEmpty(searchString))
             {
                 query = query.Where(r =>
@@ -69,7 +68,7 @@ namespace ProyectoMantenimientos.Controllers
                 })
                 .ToListAsync();
 
-            // ENVIAR INFORMACIÓN A LA VISTA
+            // Enviar informacion a la vista
             ViewBag.UsuarioActual = usuarioActual;
             ViewBag.SearchString = searchString;
             ViewBag.TipoFiltro = tipoFiltro;
@@ -78,7 +77,7 @@ namespace ProyectoMantenimientos.Controllers
             return View("BitacoraVista", registros);
         }
 
-        // MÉTODO PARA REGISTRAR EVENTOS CON ZONA Y CENTRO
+        // Registrar eventos con zona y centro
         public static async Task RegistrarEventoCompleto(MantenimientosTIContext context, HttpContext httpContext,
             string accion, string descripcion, string usuarioEspecifico = null)
         {
@@ -88,7 +87,7 @@ namespace ProyectoMantenimientos.Controllers
             var zona = httpContext.Session.GetString("NombreZona");
             var division = httpContext.Session.GetString("ClaveDivision");
 
-            // CONSTRUIR DESCRIPCIÓN CON ZONA Y CENTRO
+            // Construir la descripcion con zona y centro
             var descripcionCompleta = $"{descripcion} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {division}";
 
             var registro = new RegistroActividad

@@ -207,7 +207,7 @@ namespace MantenimientosTI.Controllers
                                 continue;
                             }
 
-                            // Validar y convertir la fecha - MODIFICADO PARA ACEPTAR DOS FORMATOS
+                            // Validar y convertir la fecha
                             DateOnly fechaProgramada;
                             try
                             {
@@ -569,7 +569,7 @@ namespace MantenimientosTI.Controllers
                     return Json(new { success = false, message = "No se encontró la cita en la agenda." });
                 }
 
-                // Solo se puede confirmar la cancelación si está pre-cancelada
+                // Solo se puede confirmar la cancelación si está pre-canceladas
                 if (agendaItem.Estatus != "PRE-CANCELADO")
                 {
                     return Json(new { success = false, message = $"Esta cita no está en estatus 'Pre-cancelado'." });
@@ -631,7 +631,7 @@ namespace MantenimientosTI.Controllers
                 .Include(a => a.ClaveTipoMttoNavigation)
                 .Where(a => a.Estatus == "PRE-CANCELADO");
 
-            // Filtro por zona si no es administrador (aunque este método es solo para admin, por si acaso)
+            // Filtro por zona si no es administrador (método es solo para admin, por si acaso)
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 agendaQuery = agendaQuery
@@ -759,7 +759,7 @@ namespace MantenimientosTI.Controllers
                 var nuevoCorrectivo = new Agendum
                 {
                     NumActFijo = numActFijo,
-                    ClaveTipoMtto = "C", // Correctivo
+                    ClaveTipoMtto = "C",
                     FechaProgramada = fechaProgramadaDate,
                     Estatus = "PENDIENTE"
                 };
