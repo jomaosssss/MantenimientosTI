@@ -82,9 +82,14 @@ namespace ProyectoMantenimientos.Controllers
                 DateTime.DaysInMonth(primerDiaProximoMes.Year, primerDiaProximoMes.Month)
             );
 
-            var estatusExcluidos = new List<string> { "PRE-CANCELADO", "CANCELADO" };
+            // Para todas las consultas: excluir solo CANCELADO
+            var estatusExcluidos = new List<string> { "CANCELADO" };
 
-            // Terminados de este mes
+            // =============================================
+            // CONSULTAS PARA TARJETAS - EXCLUIR SOLO CANCELADO
+            // =============================================
+
+            // Terminados de este mes (solo TERMINADO, excluyendo CANCELADO)
             var terminadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                 .ThenInclude(e => e.CatCentro)
@@ -94,17 +99,17 @@ namespace ProyectoMantenimientos.Controllers
                            a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
 
-            // Pendientes de este mes
+            // Pendientes de este mes (PENDIENTE Y PRE-CANCELADO, excluyendo CANCELADO)
             var pendientesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
-                .Where(a => a.Estatus == "PENDIENTE" &&
+                .Where(a => (a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO") &&
                            !estatusExcluidos.Contains(a.Estatus) &&
                            a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
 
-            // Programados de este mes
+            // Programados de este mes (TODOS excepto CANCELADO)
             var programadosQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -113,7 +118,7 @@ namespace ProyectoMantenimientos.Controllers
                            a.FechaProgramada >= primerDiaMes &&
                            a.FechaProgramada <= ultimoDiaMes);
 
-            // Programados el próximo mes
+            // Programados el próximo mes (TODOS excepto CANCELADO)
             var proximoMesQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -122,7 +127,7 @@ namespace ProyectoMantenimientos.Controllers
                            a.FechaProgramada >= primerDiaProximoMes &&
                            a.FechaProgramada <= ultimoDiaProximoMes);
 
-            // Filtro para mostrar conteos por zona si no es tecnico de zona
+            // Filtro para mostrar conteos por zona si no es administrador
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 terminadosQuery = terminadosQuery
@@ -147,17 +152,21 @@ namespace ProyectoMantenimientos.Controllers
             int programadosCount = programadosQuery.Count();
             int proximoMesCount = proximoMesQuery.Count();
 
-            // Consulta de registros con estatus PENDIENTE para las tablas
+            // =============================================
+            // CONSULTA PARA TABLAS - PENDIENTE Y PRE-CANCELADO
+            // =============================================
+
+            // Consulta de registros con estatus PENDIENTE o PRE-CANCELADO para las tablas
             var agendaQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
                         .ThenInclude(c => c.CatAgencium)
                             .ThenInclude(a => a.CatZona)
                 .Include(a => a.ClaveTipoMttoNavigation)
-                .Where(a => (a.Estatus == "PENDIENTE" && a.Estatus == "PRE-CANCELADO") && 
+                .Where(a => (a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO") &&
                            !estatusExcluidos.Contains(a.Estatus));
 
-            // Filtro para mostrar registros por zona si es tecnico de zona
+            // Filtro para mostrar registros por zona si no es administrador
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 agendaQuery = agendaQuery
