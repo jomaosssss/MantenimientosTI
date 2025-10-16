@@ -357,7 +357,7 @@ namespace ProyectoMantenimientos.Controllers
                         nombreResponsable,
                         cfData.TipoMantenimiento);
 
-                    return File(pdf, "application/pdf", $"HojaServicioCFEmatico_{numActFijo}.pdf");
+                    return File(pdf, "application/pdf", $"Orden_{cfData.ClaveAgenda}_HojaServicioCFEmatico_{numActFijo}.pdf");
                 }
 
                 // 2) Buscar en Equipos de Atención a Clientes
@@ -425,7 +425,7 @@ namespace ProyectoMantenimientos.Controllers
                         fileNamePrefix = "HojaServicioMONIVENT";
                     }
 
-                    return File(pdf, "application/pdf", $"{fileNamePrefix}_{numActFijo}.pdf");
+                    return File(pdf, "application/pdf", $"Orden_{acData.ClaveAgenda}_{fileNamePrefix}_{numActFijo}.pdf");
                 }
 
                 // 3) Buscar en Equipos de Cómputo
@@ -466,7 +466,7 @@ namespace ProyectoMantenimientos.Controllers
                         nombreUsuario,
                         compData.TipoEquipo,
                         numActFijo);
-                    return File(pdf, "application/pdf", $"Computo_HojaServicio_{numActFijo}.pdf");
+                    return File(pdf, "application/pdf", $"Orden_{compData.ClaveAgenda}_Computo_HojaServicio_{numActFijo}.pdf");
                 }
 
                 return Json(new
@@ -743,7 +743,7 @@ namespace ProyectoMantenimientos.Controllers
                         compData.TipoEquipo,
                         numActFijo);
 
-                    return File(pdf, "application/pdf", $"Computo_HojaServicio_{numActFijo}.pdf");
+                    return File(pdf, "application/pdf", $"Orden_{compData.ClaveAgenda}_Computo_HojaServicio_{numActFijo}.pdf");
                 }
 
                 return Json(new { success = false, message = "No se encontró el equipo" });

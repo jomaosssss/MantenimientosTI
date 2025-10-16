@@ -73,7 +73,7 @@ namespace MantenimientosTI.Controllers
                 var password = _configuration["EmailSettings:Password"];
                 var fromAddress = _configuration["EmailSettings:FromAddress"];
 
-                // Obtener correos de usuarios con ClaveRol = 1 Y RecibirReporte = "SI"
+                // OBTENER CORREOS DE USUARIOS CON ClaveRol = 1 Y RecibirReporte = "SI"
                 var correosDestinatarios = await _context.Usuarios
                     .Where(u => u.ClaveRol == 1 &&
                                u.RecibirReporte == "SI" &&
@@ -81,10 +81,9 @@ namespace MantenimientosTI.Controllers
                     .Select(u => u.Correo)
                     .ToListAsync();
 
-                // Verificar que haya destinatarios
                 if (!correosDestinatarios.Any())
                 {
-                    _logger?.LogWarning("No se encontraron usuarios con ClaveRol=1 y RecibirReporte=SI para enviar el reporte");
+                    _logger?.LogWarning("No se encontraron destinatarios válidos");
                     return false;
                 }
 
@@ -97,11 +96,21 @@ namespace MantenimientosTI.Controllers
 
                 var cuerpoHTML = GenerarCuerpoCorreoHTML(mesActual, reporteCFE, reporteAC, reporteComputo);
 
-                using var client = new SmtpClient(smtpServer, port)
+                using var client = new SmtpClient(smtpServer, port);
+
+                // VERIFICAR SI HAY CONTRASEÑA O NO
+                if (!string.IsNullOrEmpty(password))
                 {
-                    Credentials = new NetworkCredential(username, password),
-                    EnableSsl = true
-                };
+                    client.Credentials = new NetworkCredential(username, password);
+                }
+                else
+                {
+                    _logger?.LogInformation("Intentando envío sin contraseña (autenticación por red)");
+                    // No establecer credenciales - el servidor puede autenticar por IP
+                }
+
+                client.EnableSsl = false; // El puerto 25 normalmente no usa SSL
+                client.Timeout = 30000;
 
                 using var message = new MailMessage
                 {
@@ -111,7 +120,6 @@ namespace MantenimientosTI.Controllers
                     IsBodyHtml = true
                 };
 
-                // Agrega todos loc correos de usuarios con ClaveRol = 1 Y RecibirReporte = "SI"
                 foreach (var correo in correosDestinatarios)
                 {
                     if (!string.IsNullOrWhiteSpace(correo))
@@ -122,7 +130,7 @@ namespace MantenimientosTI.Controllers
 
                 if (message.Bcc.Count == 0)
                 {
-                    _logger?.LogWarning("No hay correos válidos para usuarios con ClaveRol=1 y RecibirReporte=SI");
+                    _logger?.LogWarning("No hay correos válidos para enviar");
                     return false;
                 }
 
@@ -135,7 +143,7 @@ namespace MantenimientosTI.Controllers
 
                 await client.SendMailAsync(message);
 
-                _logger?.LogInformation($"Reporte enviado exitosamente a {message.Bcc.Count} destinatarios con ClaveRol=1 y RecibirReporte=SI");
+                _logger?.LogInformation($"Reporte enviado exitosamente a {message.Bcc.Count} destinatarios");
                 return true;
             }
             catch (Exception ex)
@@ -206,6 +214,9 @@ namespace MantenimientosTI.Controllers
             sb.AppendLine(@"
                     <p><em>Se adjunta el archivo Excel con el detalle completo de los mantenimientos de todas la zonas.</em></p>
                     <p>Saludos.</p>
+                    <div class='info-box'>
+                        <p>Este correo se envía en automático, favor de no responderlo.</p>
+                    </div>
                 </div>
             </body>
             </html>");

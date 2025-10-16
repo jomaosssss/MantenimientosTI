@@ -165,11 +165,21 @@ namespace MantenimientosTI.Services
 
                 var cuerpoHTML = GenerarCuerpoCorreoHTMLProgramado(mesActual, reporteCFE, reporteAC, reporteComputo);
 
-                using var client = new SmtpClient(smtpServer, port)
+                using var client = new SmtpClient(smtpServer, port);
+
+                // VERIFICAR SI HAY CONTRASEÑA O NO - MODIFICACIÓN PARA CFE
+                if (!string.IsNullOrEmpty(password))
                 {
-                    Credentials = new NetworkCredential(username, password),
-                    EnableSsl = true
-                };
+                    client.Credentials = new NetworkCredential(username, password);
+                }
+                else
+                {
+                    logger.LogInformation("Intentando envío sin contraseña (autenticación por red CFE)");
+                    // No establecer credenciales - el servidor puede autenticar por IP
+                }
+
+                client.EnableSsl = false; // El puerto 25 normalmente no usa SSL
+                client.Timeout = 30000;
 
                 using var message = new MailMessage
                 {
@@ -179,7 +189,7 @@ namespace MantenimientosTI.Services
                     IsBodyHtml = true
                 };
 
-                // Agrega todos loc correos de usuarios con ClaveRol = 1 Y RecibirReporte = "SI"
+                // Agrega todos los correos de usuarios con ClaveRol = 1 Y RecibirReporte = "SI"
                 foreach (var correo in correosDestinatarios)
                 {
                     if (!string.IsNullOrWhiteSpace(correo))
@@ -212,6 +222,8 @@ namespace MantenimientosTI.Services
                 return false;
             }
         }
+
+        // ========== MÉTODOS RESTANTES SIN CAMBIOS ==========
 
         private string GenerarCuerpoCorreoHTMLProgramado(string mesActual,
             List<ReporteResumen> reporteCFE, List<ReporteResumen> reporteAC, List<ReporteResumen> reporteComputo)
@@ -274,6 +286,9 @@ namespace MantenimientosTI.Services
             sb.AppendLine(@"
                     <p><em>Se adjunta el archivo Excel con el detalle completo de los mantenimientos de todas la zonas.</em></p>
                     <p>Saludos.</p>
+                    <div class='info-box'>
+                        <p>Este correo se envía en automático, favor de no responderlo.</p>
+                    </div>
                 </div>
             </body>
             </html>");
@@ -607,7 +622,6 @@ namespace MantenimientosTI.Services
                 // Calcular días entre fecha programada y fecha de atención
                 if (item.Fecha_Atencion.HasValue)
                 {
-                    // Convertir DateOnly a DateTime correctamente
                     var fechaProgramadaDateTime = new DateTime(item.Fecha_Programada.Year, item.Fecha_Programada.Month, item.Fecha_Programada.Day);
                     var fechaAtencionDateTime = new DateTime(item.Fecha_Atencion.Value.Year, item.Fecha_Atencion.Value.Month, item.Fecha_Atencion.Value.Day);
 
@@ -739,7 +753,6 @@ namespace MantenimientosTI.Services
                 // Calcular días entre fecha programada y fecha de atención
                 if (item.Fecha_Atencion.HasValue)
                 {
-                    // Convertir DateOnly a DateTime correctamente
                     var fechaProgramadaDateTime = new DateTime(item.Fecha_Programada.Year, item.Fecha_Programada.Month, item.Fecha_Programada.Day);
                     var fechaAtencionDateTime = new DateTime(item.Fecha_Atencion.Value.Year, item.Fecha_Atencion.Value.Month, item.Fecha_Atencion.Value.Day);
 
@@ -878,7 +891,6 @@ namespace MantenimientosTI.Services
                 // Calcular días entre fecha programada y fecha de atención
                 if (item.Fecha_Atencion.HasValue)
                 {
-                    // Convertir DateOnly a DateTime correctamente
                     var fechaProgramadaDateTime = new DateTime(item.Fecha_Programada.Year, item.Fecha_Programada.Month, item.Fecha_Programada.Day);
                     var fechaAtencionDateTime = new DateTime(item.Fecha_Atencion.Value.Year, item.Fecha_Atencion.Value.Month, item.Fecha_Atencion.Value.Day);
 

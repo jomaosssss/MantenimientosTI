@@ -4,16 +4,19 @@ using Microsoft.EntityFrameworkCore;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using MantenimientosTI.Models.ViewModels;
+using MantenimientosTI.Services;
 
 namespace MantenimientosTI.Controllers
 {
     public class AgendaController : Controller
     {
         private readonly MantenimientosTIContext _dbocontext;
+        private readonly BitacoraService _bitacora;
 
-        public AgendaController(MantenimientosTIContext context)
+        public AgendaController(MantenimientosTIContext context, BitacoraService bitacora)
         {
             _dbocontext = context;
+            _bitacora = bitacora;
         }
 
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
@@ -367,7 +370,18 @@ namespace MantenimientosTI.Controllers
                 }
 
                 // Guardar solo si hay registros válidos
+                // Guardar solo si hay registros válidos
                 _dbocontext.Agenda.AddRange(lista);
+
+                // REGISTRO EN BITÁCORA - CARGA CSV EXITOSA
+                var usuario = User.Identity?.Name;
+                var rpe = HttpContext.Session.GetString("Rpe");
+                var rol = HttpContext.Session.GetString("NombreRol");
+                var zona = HttpContext.Session.GetString("NombreZona");
+                var centro = HttpContext.Session.GetString("ClaveDivision");
+
+                _bitacora.RegistrarCargaCSV(usuario, rpe, rol, zona, centro, "PREVENTIVOS", lineasProcesadas);
+
                 _dbocontext.SaveChanges();
 
                 return Json(new
@@ -511,17 +525,27 @@ namespace MantenimientosTI.Controllers
                 // Solo se puede cancelar directamente si está pendiente
                 if (agendaItem.Estatus != "PENDIENTE")
                 {
-                    return Json(new { success = false, message = $"No se puede cancelar una cita con estatus '{agendaItem.Estatus}'." });
+                    return Json(new { success = false, message = $"No se puede cancelar un mantenimiento con estatus '{agendaItem.Estatus}'." });
                 }
 
                 agendaItem.Estatus = "CANCELADO";
+
+                // REGISTRO EN BITÁCORA - CANCELACIÓN DIRECTA
+                var usuario = User.Identity.Name;
+                var rpe = HttpContext.Session.GetString("Rpe");
+                var rol = HttpContext.Session.GetString("NombreRol");
+                var zona = HttpContext.Session.GetString("NombreZona");
+                var centro = HttpContext.Session.GetString("ClaveDivision");
+
+                _bitacora.RegistrarConfirmacionCancelacion(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático");
+
                 await _dbocontext.SaveChangesAsync();
 
-                return Json(new { success = true, message = "La cita ha sido cancelada directamente." });
+                return Json(new { success = true, message = "El mantenimiento ha sido cancelada directamente." });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Ocurrió un error al cancelar la cita: " + ex.Message });
+                return Json(new { success = false, message = "Ocurrió un error al cancelar el mantenimiento: " + ex.Message });
             }
         }
 
@@ -545,9 +569,19 @@ namespace MantenimientosTI.Controllers
                 }
 
                 agendaItem.Estatus = "PRE-CANCELADO";
+
+                // REGISTRO EN BITÁCORA - PRE-CANCELACIÓN
+                var usuario = User.Identity.Name;
+                var rpe = HttpContext.Session.GetString("Rpe");
+                var rol = HttpContext.Session.GetString("NombreRol");
+                var zona = HttpContext.Session.GetString("NombreZona");
+                var centro = HttpContext.Session.GetString("ClaveDivision");
+
+                _bitacora.RegistrarPreCancelacion(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático");
+
                 await _dbocontext.SaveChangesAsync();
 
-                return Json(new { success = true, message = "La cita ha sido marcada como pre-cancelada. Un administrador debe confirmar la cancelación." });
+                return Json(new { success = true, message = "El mantenimeinto ha sido marcado como pre-cancelada. Un administrador debe confirmar la cancelación." });
             }
             catch (Exception ex)
             {
@@ -574,11 +608,20 @@ namespace MantenimientosTI.Controllers
                 {
                     return Json(new { success = false, message = $"Esta cita no está en estatus 'Pre-cancelado'." });
                 }
-
                 agendaItem.Estatus = "CANCELADO";
+
+                // REGISTRO EN BITÁCORA - CONFIRMACIÓN DE CANCELACIÓN
+                var usuario = User.Identity.Name;
+                var rpe = HttpContext.Session.GetString("Rpe");
+                var rol = HttpContext.Session.GetString("NombreRol");
+                var zona = HttpContext.Session.GetString("NombreZona");
+                var centro = HttpContext.Session.GetString("ClaveDivision");
+
+                _bitacora.RegistrarConfirmacionCancelacion(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático");
+
                 await _dbocontext.SaveChangesAsync();
 
-                return Json(new { success = true, message = "La cancelación de la cita ha sido confirmada." });
+                return Json(new { success = true, message = "La cancelación del mantenimiento ha sido confirmada." });
             }
             catch (Exception ex)
             {
@@ -606,9 +649,20 @@ namespace MantenimientosTI.Controllers
                 }
 
                 agendaItem.Estatus = "PENDIENTE";
+
+                // REGISTRO EN BITÁCORA - REACTIVACIÓN
+                var usuario = User.Identity.Name;
+                var rpe = HttpContext.Session.GetString("Rpe");
+                var rol = HttpContext.Session.GetString("NombreRol");
+                var zona = HttpContext.Session.GetString("NombreZona");
+                var centro = HttpContext.Session.GetString("ClaveDivision");
+
+                _bitacora.RegistrarActividad(usuario, "REACTIVACION_MTTO",
+                    $"Reactivación de agenda | Orden: {idAgenda} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}");
+
                 await _dbocontext.SaveChangesAsync();
 
-                return Json(new { success = true, message = "La cita ha sido reactivada y ahora está pendiente." });
+                return Json(new { success = true, message = "El mantenimiento ha sido reactivado y ahora está pendiente." });
             }
             catch (Exception ex)
             {
@@ -618,6 +672,7 @@ namespace MantenimientosTI.Controllers
 
         [Authorize(Roles = "ADMINISTRADOR")]
         public async Task<IActionResult> AprobarCancelaciones()
+
         {
             string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
             int claveRol = HttpContext.Session.GetInt32("Rol") ?? 0;
@@ -765,6 +820,16 @@ namespace MantenimientosTI.Controllers
                 };
 
                 _dbocontext.Agenda.Add(nuevoCorrectivo);
+
+                // REGISTRO EN BITÁCORA - AGENDAR CORRECTIVO
+                var usuario = User.Identity.Name;
+                var rpe = HttpContext.Session.GetString("Rpe");
+                var rol = HttpContext.Session.GetString("NombreRol");
+                var zona = HttpContext.Session.GetString("NombreZona");
+                var centro = HttpContext.Session.GetString("ClaveDivision");
+
+                _bitacora.RegistrarCargaMantenimientoCorrectivo(usuario, rpe, rol, zona, centro, 1);
+
                 _dbocontext.SaveChanges();
 
                 // Retornar respuesta exitosa

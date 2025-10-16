@@ -57,7 +57,7 @@
                     <div class="col-md-4">
                         <div class="form-group">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label class="form-label mb-0">Problemas:</label>
+                                <label class="form-label mb-0">Problemas: <span class="text-danger">*</span></label>
                                 <span class="char-counter" id="contador-problemas">300 caracteres restantes</span>
                             </div>
                             <textarea id="problemas" class="form-control" rows="3" placeholder="Describa los problemas encontrados"></textarea>
@@ -66,7 +66,7 @@
                     <div class="col-md-4">
                         <div class="form-group">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label class="form-label mb-0">Diagnóstico:</label>
+                                <label class="form-label mb-0">Diagnóstico: <span class="text-danger">*</span></label>
                                 <span class="char-counter" id="contador-diagnostico">300 caracteres restantes</span>
                             </div>
                             <textarea id="diagnostico" class="form-control" rows="3" placeholder="Describa el diagnóstico técnico"></textarea>
@@ -75,7 +75,7 @@
                     <div class="col-md-4">
                         <div class="form-group">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label class="form-label mb-0">Observaciones:</label>
+                                <label class="form-label mb-0">Observaciones: <span class="text-danger">*</span></label>
                                 <span class="char-counter" id="contador-observaciones">300 caracteres restantes</span>
                             </div>
                             <textarea id="observaciones" class="form-control" rows="3" placeholder="Agregue cualquier observación adicional"></textarea>
@@ -86,7 +86,7 @@
                 <div class="row mb-4">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label">Foto antes del mantenimiento:</label>
+                            <label class="form-label">Foto antes del mantenimiento: <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="file" id="fotoAntes" class="form-control" accept="image/*">
                                 <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoAntes"><i class="bi bi-x-circle"></i> Limpiar</button>
@@ -95,7 +95,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label">Foto durante el mantenimiento:</label>
+                            <label class="form-label">Foto durante el mantenimiento: <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="file" id="fotoDurante" class="form-control" accept="image/*">
                                 <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDurante"><i class="bi bi-x-circle"></i> Limpiar</button>
@@ -104,7 +104,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label">Foto después del mantenimiento:</label>
+                            <label class="form-label">Foto después del mantenimiento: <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="file" id="fotoDespues" class="form-control" accept="image/*">
                                 <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFotoDespues"><i class="bi bi-x-circle"></i> Limpiar</button>
@@ -116,7 +116,7 @@
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label">Hoja de servicio (PDF):</label>
+                            <label class="form-label">Hoja de servicio (PDF): <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="file" id="archivoPdf" class="form-control" accept=".pdf">
                                 <button class="btn btn-outline-secondary" type="button" id="btnLimpiarPdf"><i class="bi bi-x-circle"></i> Limpiar</button>
@@ -126,7 +126,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label class="form-label">Fecha de atención:</label>
+                            <label class="form-label">Fecha de atención: <span class="text-danger">*</span></label>
                             <input type="date" id="fechaAtencion" class="form-control">
                         </div>
                     </div>
@@ -163,8 +163,14 @@
             border-color: #dc3545 !important;
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
         }
+
+        /* Estilo para los asteriscos rojos */
+        .text-danger {
+            color: #dc3545 !important;
+        }
     </style>
     <script>
+        // Tu código JavaScript existente permanece igual...
         $(document).ready(function() {
             inicializarContadoresCaracteres();
 
@@ -275,7 +281,6 @@
         }
 
         function validarAntesDeConfirmar() {
-            // ... (Esta función permanece sin cambios)
             const fechaAtencion = $('#fechaAtencion').val();
             if (!fechaAtencion) {
                 mostrarAlerta('Campo requerido', 'Por favor seleccione la fecha de atención', 'warning');

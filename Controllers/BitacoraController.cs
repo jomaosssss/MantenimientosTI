@@ -47,10 +47,12 @@ namespace ProyectoMantenimientos.Controllers
             {
                 query = tipoFiltro switch
                 {
-                    "sesion" => query.Where(r => r.Accion.Contains("INICIO_SESION") || r.Accion.Contains("INFO_9.55.0")),
+                    "sesion" => query.Where(r => r.Accion.Contains("INICIO_SESION") || r.Accion.Contains("INFO_9.55.0") || r.Accion.Contains("LOGOUT_SISTEMA")),
                     "usuarios" => query.Where(r => r.Accion.Contains("USUARIO")),
                     "admin" => query.Where(r => r.Descripcion.Contains("ADMIN") || r.Usuario.Contains("ADMIN")),
                     "tecnico" => query.Where(r => r.Descripcion.Contains("TÉCNICO") || r.Usuario.Contains("TECNICO") || r.Descripcion.Contains("MEM03")),
+                    "mantenimientos" => query.Where(r => r.Accion.Contains("CARGA_MTTO") || r.Accion.Contains("TERMINACION_MTTO") || r.Accion.Contains("PRECANCELACION_MTTO") || r.Accion.Contains("CONFIRMACION_CANCELACION")),
+                    "csv" => query.Where(r => r.Accion.Contains("CARGA_CSV")),
                     _ => query
                 };
             }
