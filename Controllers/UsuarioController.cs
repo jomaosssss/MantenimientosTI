@@ -141,10 +141,11 @@ namespace ProyectoMantenimientos.Controllers
                     HttpContext.Session.SetString("Correo", usuarioAdmin.Correo);
 
                     // Registro en bitacora (usuario local (no del directorio activo))
+                    // Para técnicos (línea ~180)
                     await _bitacora.RegistrarYGuardarAsync(
                         HttpContext.Session.GetString("NombreUsuario"),
-                        BitacoraAcciones.InicioSesionAdmin,
-                        $"El administrador {usuarioAdmin.Rpe} inició sesión localmente."
+                        BitacoraAcciones.InicioSesionTecnico,  // ✅ Ahora devolverá "INICIO_SESION_TECNICO"
+                        $"El usuario {usuario.Rpe} inició sesión."
                     );
 
                     return RedirectToAction("Inicio", "Home");
