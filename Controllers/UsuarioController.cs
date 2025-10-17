@@ -142,10 +142,11 @@ namespace ProyectoMantenimientos.Controllers
 
                     // Registro en bitacora (usuario local (no del directorio activo))
                     // Para técnicos (línea ~180)
+                    var descripcionAdmin = $"Inicio de sesión | RPE: {usuarioAdmin.Rpe} | Rol: {usuarioAdmin.ClaveRolNavigation?.Nombre} | Zona: {usuarioAdmin.CatZona?.NombreZona}";
                     await _bitacora.RegistrarYGuardarAsync(
                         HttpContext.Session.GetString("NombreUsuario"),
-                        BitacoraAcciones.InicioSesionTecnico,  // ✅ Ahora devolverá "INICIO_SESION_TECNICO"
-                        $"El usuario {usuarioAdmin.Rpe} inició sesión."
+                        BitacoraAcciones.InicioSesionAdmin,
+                        descripcionAdmin  // ✅ CON FORMATO DE PIPES
                     );
 
                     return RedirectToAction("Inicio", "Home");
@@ -228,10 +229,11 @@ namespace ProyectoMantenimientos.Controllers
                             HttpContext.Session.SetString("Correo", usuario.Correo);
 
                             // Registro en bitacora del usuario del directorio activo
+                            var descripcionTecnico = $"Inicio de sesión | RPE: {usuario.Rpe} | Rol: {usuario.ClaveRolNavigation?.Nombre} | Zona: {usuario.CatZona?.NombreZona}";
                             await _bitacora.RegistrarYGuardarAsync(
                                 HttpContext.Session.GetString("NombreUsuario"),
                                 BitacoraAcciones.InicioSesionTecnico,
-                                $"El usuario {usuario.Rpe} inició sesión."
+                                descripcionTecnico  // ✅ CON FORMATO DE PIPES
                             );
 
                             return RedirectToAction("Inicio", "Home");
