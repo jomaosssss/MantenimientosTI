@@ -8,6 +8,7 @@
     // Obtener el mes actual y siguiente
     var mesActual = DateTime.Now.ToString("MMMM", new CultureInfo("es-ES")).ToUpper();
     var mesSiguiente = DateTime.Now.AddMonths(1).ToString("MMMM", new CultureInfo("es-ES")).ToUpper();
+    var mesAnterior = DateTime.Now.AddMonths(-1).ToString("MMMM", new CultureInfo("es-ES")).ToUpper();
 }
 <style>
     /* Estilos para las filas de la tabla */
@@ -28,6 +29,98 @@
         border-radius: 3px;
     }
 
+    /* ESTILOS MEJORADOS PARA LAS TARJETAS */
+    .stats-card {
+        border-radius: 12px;
+        min-height: 100px;
+        border: none;
+        transition: all 0.3s ease;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stats-card-content {
+        padding: 0.9rem;
+    }
+
+    .stats-badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.6em;
+        font-weight: 600;
+    }
+
+    .stats-number {
+        font-size: 1.7rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    .stats-icon {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    /* Contenedor flex para las tarjetas */
+    .cards-container {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* Colores de las tarjetas - ACTUALIZADO: NARANJA EN LUGAR DE ROJO */
+    .card-orange {
+        background-color: #fd7e14;
+    }
+    /* Naranja Bootstrap */
+    .card-blue {
+        background-color: #0d6efd;
+    }
+
+    .card-green {
+        background-color: #28a745;
+    }
+
+    .card-yellow {
+        background-color: #ffc107;
+    }
+
+    .card-gray {
+        background-color: #808080;
+    }
+
+    /* Efectos hover mejorados - ACTUALIZADO PARA NARANJA */
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1) !important;
+    }
+
+    .card-orange:hover {
+        box-shadow: 0 6px 15px rgba(253, 126, 20, 0.25) !important;
+    }
+
+    .card-blue:hover {
+        box-shadow: 0 6px 15px rgba(13, 110, 253, 0.25) !important;
+    }
+
+    .card-green:hover {
+        box-shadow: 0 6px 15px rgba(40, 167, 69, 0.25) !important;
+    }
+
+    .card-yellow:hover {
+        box-shadow: 0 6px 15px rgba(255, 193, 7, 0.25) !important;
+    }
+
+    .card-gray:hover {
+        box-shadow: 0 6px 15px rgba(128, 128, 128, 0.25) !important;
+    }
+
     /* Para mantener la alineación en móviles */
     @@media (max-width: 768px) {
         .card-header {
@@ -38,29 +131,28 @@
         .leyenda-mantenimientos {
             margin-top: 10px;
         }
-        /* Estilos responsivos para tablas */
-        .table-responsive {
-            border: 1px solid #dee2e6;
-            border-radius: 0.375rem;
+
+        .cards-container {
+            gap: 8px;
         }
 
-            .table-responsive table {
-                min-width: 1000px;
-                margin-bottom: 0;
-            }
-
-        .card-body {
-            padding: 0.75rem;
+        .stats-card {
+            min-height: 90px;
+            flex: 1 1 calc(50% - 8px);
         }
 
-        .table-responsive .btn {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.8rem;
+        .stats-number {
+            font-size: 1.5rem;
         }
 
-        .table-responsive th,
-        .table-responsive td {
-            white-space: nowrap;
+        .stats-icon {
+            width: 38px;
+            height: 38px;
+            font-size: 1.1rem;
+        }
+
+        .stats-badge {
+            font-size: 0.7rem;
         }
     }
 
@@ -78,34 +170,35 @@
         .card-body {
             padding: 0.5rem;
         }
+
+        .stats-card-content {
+            padding: 0.7rem;
+        }
+
+        .stats-number {
+            font-size: 1.4rem;
+        }
+
+        .stats-card {
+            flex: 1 1 100%;
+            min-height: 85px;
+        }
+
+        .cards-container {
+            gap: 6px;
+        }
+
+        .stats-badge {
+            font-size: 0.68rem;
+        }
     }
 
-    .hover-scale {
-        transition: all 0.3s ease;
-    }
-
-    /* Efecto para tarjeta verde */
-    .card[style*="background-color: #28a745"]:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(40, 167, 69, 0.2) !important;
-    }
-
-    /* Efecto para tarjeta amarilla */
-    .card[style*="background-color: #ffc107"]:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(255, 193, 7, 0.2) !important;
-    }
-
-    /* Efecto para tarjeta azul */
-    .card[style*="background-color: #0d6efd"]:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(13, 110, 253, 0.2) !important;
-    }
-
-    /* Efecto para tarjeta roja */
-    .card[style*="background-color: #808080"]:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(128, 128, 128, 0.2) !important;
+    /* Para pantallas grandes */
+    @@media (min-width: 1200px) {
+        .stats-card {
+            flex: 1;
+            min-width: 0;
+        }
     }
 
     /* Mejoras generales para tablas */
@@ -118,11 +211,15 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
+
+    .text-orange {
+        color: #fd7e14 !important;
+    }
 </style>
 
-<div class="container mt-5">
+<div class="container mt-4">
 
-    <div class="card mt-4 shadow-sm rounded">
+    <div class="card mt-3 shadow-sm rounded">
 
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h2 class="mb-0">Bienvenid@@, @CultureInfo.CurrentCulture.TextInfo.ToTitleCase(Context.Session.GetString("NombreUsuario")?.ToLower() ?? "")</h2>
@@ -139,72 +236,85 @@
         </div>
 
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-xl-3 col-md-4 col-sm-6">
-                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #0d6efd; min-height: 100px;">
-                        <div class="card-body p-3 d-flex flex-column justify-content-center">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-white text-primary mb-1 fw-bold" style="font-size: 0.75rem;">PROGRAMADOS @mesActual</span>
-                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.ProgramadosCount</h2>
-                                </div>
-                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-calendar-alt text-primary" style="font-size: 1.5rem;"></i>
-                                </div>
+            <!-- CONTENEDOR FLEX PARA LAS 5 TARJETAS -->
+            <div class="cards-container mb-3">
+                <!-- Tarjeta Naranja - Pendientes Mes Anterior -->
+                <div class="card stats-card card-orange">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-orange mb-1">PENDIENTES @mesAnterior</span>
+                                <h2 class="stats-number text-white">@Model.PendientesMesAnteriorCount</h2>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-4 col-sm-6">
-                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #28a745; min-height: 100px;">
-                        <div class="card-body p-3 d-flex flex-column justify-content-center">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-white text-success mb-1 fw-bold" style="font-size: 0.75rem;">TERMINADOS @mesActual</span>
-                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.TerminadosCount</h2>
-                                </div>
-                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
-                                </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-orange"></i>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-4 col-sm-6">
-                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #ffc107; min-height: 100px;">
-                        <div class="card-body p-3 d-flex flex-column justify-content-center">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-white text-warning mb-1 fw-bold" style="font-size: 0.75rem;">PENDIENTES @mesActual</span>
-                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.PendientesCount</h2>
-                                </div>
-                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-spinner text-warning" style="font-size: 1.5rem;"></i>
-                                </div>
+                <!-- Tarjeta Azul - Programados Mes Actual -->
+                <div class="card stats-card card-blue">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-primary mb-1">PROGRAMADOS @mesActual</span>
+                                <h2 class="stats-number text-white">@Model.ProgramadosCount</h2>
+                            </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-calendar-alt text-primary"></i>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-4 col-sm-6">
-                    <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #808080; min-height: 100px;">
-                        <div class="card-body p-3 d-flex flex-column justify-content-center">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-white text-black-50 mb-1 fw-bold" style="font-size: 0.75rem;">PROGRAMADOS @mesSiguiente</span>
-                                    <h2 class="text-white mb-0" style="font-size: 1.75rem;">@Model.ProgramadosProximoMesCount</h2>
-                                </div>
-                                <div class="icon-shape bg-white rounded-circle p-2 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-calendar-alt text-black-50" style="font-size: 1.5rem;"></i>
-                                </div>
+                <!-- Tarjeta Verde - Terminados Mes Actual -->
+                <div class="card stats-card card-green">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-success mb-1">TERMINADOS @mesActual</span>
+                                <h2 class="stats-number text-white">@Model.TerminadosCount</h2>
+                            </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-check-circle text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta Amarilla - Pendientes Mes Actual -->
+                <div class="card stats-card card-yellow">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-warning mb-1">PENDIENTES @mesActual</span>
+                                <h2 class="stats-number text-white">@Model.PendientesCount</h2>
+                            </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-spinner text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta Gris - Programados Próximo Mes -->
+                <div class="card stats-card card-gray">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-dark mb-1">PROGRAMADOS @mesSiguiente</span>
+                                <h2 class="stats-number text-white">@Model.ProgramadosProximoMesCount</h2>
+                            </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-calendar-alt text-dark"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <p class="text-dark text-center mt-3 mb-3 h3">Mantenimientos pendientes. ¡Buena suerte!</p>
+            <p class="text-dark text-center mt-3 mb-3 h4">Mantenimientos pendientes. ¡Buena suerte!</p>
 
             <!-- TABLA CFEMÁTICOS CON ACCIONES -->
             <div class="card mb-4">
@@ -489,7 +599,7 @@
         </div>
     </div>
 
-    <!-- MODALES -->
+    <!-- MODALES (PERMANECEN IGUAL) -->
     <div class="modal fade" id="modalInfo" tabindex="-1" aria-labelledby="modalInfoLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content rounded">

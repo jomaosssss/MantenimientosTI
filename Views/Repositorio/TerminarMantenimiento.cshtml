@@ -261,9 +261,8 @@
                             $('#filaNumCajero').hide();
                         }
 
-                        // Establecer fecha actual
-                        const hoy = new Date().toISOString().split('T')[0];
-                        $('#fechaAtencion').val(hoy);
+                        // CAMBIO: Dejar fecha de atención vacía
+                        $('#fechaAtencion').val('');
 
                         // Mostrar el cuerpo del formulario y el footer
                         $('#form-body, #footer-form').show();
@@ -281,41 +280,128 @@
         }
 
         function validarAntesDeConfirmar() {
-            const fechaAtencion = $('#fechaAtencion').val();
-            if (!fechaAtencion) {
-                mostrarAlerta('Campo requerido', 'Por favor seleccione la fecha de atención', 'warning');
+            // 1. Validar campos de texto obligatorios - PROBLEMAS
+            const problemas = $('#problemas').val().trim();
+            if (!problemas) {
+                mostrarAlerta('Campo requerido', 'El campo "Problemas" es obligatorio', 'warning');
+                $('#problemas').focus();
                 return;
             }
+            if (problemas.length > 300) {
+                mostrarAlerta('Texto demasiado largo', 'El campo "Problemas" no debe exceder los 300 caracteres', 'warning');
+                $('#problemas').focus();
+                return;
+            }
+
+            // 2. Validar campos de texto obligatorios - DIAGNÓSTICO
+            const diagnostico = $('#diagnostico').val().trim();
+            if (!diagnostico) {
+                mostrarAlerta('Campo requerido', 'El campo "Diagnóstico" es obligatorio', 'warning');
+                $('#diagnostico').focus();
+                return;
+            }
+            if (diagnostico.length > 300) {
+                mostrarAlerta('Texto demasiado largo', 'El campo "Diagnóstico" no debe exceder los 300 caracteres', 'warning');
+                $('#diagnostico').focus();
+                return;
+            }
+
+            // 3. Validar campos de texto obligatorios - OBSERVACIONES
+            const observaciones = $('#observaciones').val().trim();
+            if (!observaciones) {
+                mostrarAlerta('Campo requerido', 'El campo "Observaciones" es obligatorio', 'warning');
+                $('#observaciones').focus();
+                return;
+            }
+            if (observaciones.length > 300) {
+                mostrarAlerta('Texto demasiado largo', 'El campo "Observaciones" no debe exceder los 300 caracteres', 'warning');
+                $('#observaciones').focus();
+                return;
+            }
+
+            // 4. Validar FOTO ANTES
+            const fotoAntes = $('#fotoAntes')[0].files[0];
+            if (!fotoAntes) {
+                mostrarAlerta('Archivo requerido', 'La foto "Antes" del mantenimiento es obligatoria', 'warning');
+                $('#fotoAntes').focus();
+                return;
+            }
+            // Validar tipo y tamaño de foto antes
+            const extensionAntes = fotoAntes.name.split('.').pop().toLowerCase();
+            const extensionesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
+            if (!extensionesPermitidas.includes(extensionAntes)) {
+                mostrarAlerta('Formato incorrecto', 'La foto "Antes" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
+                return;
+            }
+            if (fotoAntes.size > 2 * 1024 * 1024) {
+                mostrarAlerta('Imagen muy grande', 'La foto "Antes" no debe exceder los 2MB', 'warning');
+                return;
+            }
+
+            // 5. Validar FOTO DURANTE
+            const fotoDurante = $('#fotoDurante')[0].files[0];
+            if (!fotoDurante) {
+                mostrarAlerta('Archivo requerido', 'La foto "Durante" del mantenimiento es obligatoria', 'warning');
+                $('#fotoDurante').focus();
+                return;
+            }
+            // Validar tipo y tamaño de foto durante
+            const extensionDurante = fotoDurante.name.split('.').pop().toLowerCase();
+            if (!extensionesPermitidas.includes(extensionDurante)) {
+                mostrarAlerta('Formato incorrecto', 'La foto "Durante" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
+                return;
+            }
+            if (fotoDurante.size > 2 * 1024 * 1024) {
+                mostrarAlerta('Imagen muy grande', 'La foto "Durante" no debe exceder los 2MB', 'warning');
+                return;
+            }
+
+            // 6. Validar FOTO DESPUÉS
+            const fotoDespues = $('#fotoDespues')[0].files[0];
+            if (!fotoDespues) {
+                mostrarAlerta('Archivo requerido', 'La foto "Después" del mantenimiento es obligatoria', 'warning');
+                $('#fotoDespues').focus();
+                return;
+            }
+            // Validar tipo y tamaño de foto después
+            const extensionDespues = fotoDespues.name.split('.').pop().toLowerCase();
+            if (!extensionesPermitidas.includes(extensionDespues)) {
+                mostrarAlerta('Formato incorrecto', 'La foto "Después" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
+                return;
+            }
+            if (fotoDespues.size > 2 * 1024 * 1024) {
+                mostrarAlerta('Imagen muy grande', 'La foto "Después" no debe exceder los 2MB', 'warning');
+                return;
+            }
+
+            // 7. Validar HOJA DE SERVICIO (PDF)
             const archivoPdf = $('#archivoPdf')[0].files[0];
             if (!archivoPdf) {
                 mostrarAlerta('Archivo requerido', 'La hoja de servicio es obligatoria', 'warning');
+                $('#archivoPdf').focus();
                 return;
             }
-            if (archivoPdf.name.split('.').pop().toLowerCase() !== 'pdf') {
+            // Validar tipo de archivo PDF
+            const extensionPdf = archivoPdf.name.split('.').pop().toLowerCase();
+            if (extensionPdf !== 'pdf') {
                 mostrarAlerta('Formato incorrecto', 'Solo se permiten archivos PDF', 'warning');
                 return;
             }
+            // Validar tamaño del PDF
             if (archivoPdf.size > 5 * 1024 * 1024) {
                 mostrarAlerta('Archivo muy grande', 'La hoja de servicio no debe exceder los 5MB', 'warning');
                 return;
             }
 
-            // Validar tamaño y tipo de todas las imágenes
-            const fotos = [$('#fotoAntes')[0].files[0], $('#fotoDurante')[0].files[0], $('#fotoDespues')[0].files[0]];
-            const extensionesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
-            for (const file of fotos) {
-                if(file) { // solo si el archivo existe
-                     if (!extensionesPermitidas.includes(file.name.split('.').pop().toLowerCase())) {
-                        mostrarAlerta('Formato incorrecto', `El archivo '${file.name}' no es una imagen válida.`, 'warning');
-                        return;
-                    }
-                     if (file.size > 2 * 1024 * 1024) {
-                        mostrarAlerta('Imagen muy grande', `La imagen '${file.name}' no debe exceder los 2MB.`, 'warning');
-                        return;
-                    }
-                }
+            // 8. Validar FECHA DE ATENCIÓN (último)
+            const fechaAtencion = $('#fechaAtencion').val();
+            if (!fechaAtencion) {
+                mostrarAlerta('Campo requerido', 'Por favor seleccione la fecha de atención', 'warning');
+                $('#fechaAtencion').focus();
+                return;
             }
 
+            // Si todas las validaciones pasan, proceder con la confirmación
             confirmarTerminacion();
         }
 
@@ -328,7 +414,7 @@
                 confirmButtonText: 'Sí, terminar',
                 cancelButtonText: 'Cancelar',
                 reverseButtons: true,
-                customClass: { confirmButton: 'btn btn-success mx-2', cancelButton: 'btn btn-secondary mx-2' },
+                customClass: { confirmButton: 'btn btn-success mx-2', cancelButton: 'btn btn-danger mx-2' },
                 buttonsStyling: false,
             }).then((result) => {
                 if (result.isConfirmed) {

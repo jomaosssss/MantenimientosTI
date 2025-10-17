@@ -82,6 +82,14 @@ namespace ProyectoMantenimientos.Controllers
                 DateTime.DaysInMonth(primerDiaProximoMes.Year, primerDiaProximoMes.Month)
             );
 
+            // Para obtener el primer y último día del mes ANTERIOR
+            var primerDiaMesAnterior = primerDiaMes.AddMonths(-1);
+            var ultimoDiaMesAnterior = new DateOnly(
+                primerDiaMesAnterior.Year,
+                primerDiaMesAnterior.Month,
+                DateTime.DaysInMonth(primerDiaMesAnterior.Year, primerDiaMesAnterior.Month)
+            );
+
             // Para todas las consultas excluyendo con estatus CANCELADO
             var estatusExcluidos = new List<string> { "CANCELADO" };
 
@@ -123,6 +131,16 @@ namespace ProyectoMantenimientos.Controllers
                            a.FechaProgramada >= primerDiaProximoMes &&
                            a.FechaProgramada <= ultimoDiaProximoMes);
 
+            // NUEVA CONSULTA: PENDIENTES DEL MES ANTERIOR (PENDIENTE y PRE-CANCELADO)
+            var pendientesMesAnteriorQuery = _dbocontext.Agenda
+                .Include(a => a.NumActFijoNavigation)
+                    .ThenInclude(e => e.CatCentro)
+                        .ThenInclude(c => c.CatAgencium)
+                .Where(a => (a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO") &&
+                           !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaMesAnterior &&
+                           a.FechaProgramada <= ultimoDiaMesAnterior);
+
             // Filtro para mostrar conteos por zona si no es administrador
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
@@ -140,6 +158,10 @@ namespace ProyectoMantenimientos.Controllers
                 proximoMesQuery = proximoMesQuery
                     .Where(a => a.NumActFijoNavigation != null &&
                             a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+
+                pendientesMesAnteriorQuery = pendientesMesAnteriorQuery
+                    .Where(a => a.NumActFijoNavigation != null &&
+                               a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
             }
 
             // Obtener los conteos
@@ -147,6 +169,7 @@ namespace ProyectoMantenimientos.Controllers
             int pendientesCount = pendientesQuery.Count();
             int programadosCount = programadosQuery.Count();
             int proximoMesCount = proximoMesQuery.Count();
+            int pendientesMesAnteriorCount = pendientesMesAnteriorQuery.Count();
 
             // Consulta de registros con estatus PENDIENTE o PRE-CANCELADO para las tablas
             var agendaQuery = _dbocontext.Agenda
@@ -254,7 +277,8 @@ namespace ProyectoMantenimientos.Controllers
                 TerminadosCount = terminadosCount,
                 PendientesCount = pendientesCount,
                 ProgramadosCount = programadosCount,
-                ProgramadosProximoMesCount = proximoMesCount
+                ProgramadosProximoMesCount = proximoMesCount,
+                PendientesMesAnteriorCount = pendientesMesAnteriorCount // Nueva propiedad
             };
 
             return View(vmInicio);
