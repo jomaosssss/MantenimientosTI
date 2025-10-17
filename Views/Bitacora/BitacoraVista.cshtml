@@ -207,8 +207,6 @@
         return descripcion.Contains("|") ||
                descripcion.Contains("RPE:") ||
                descripcion.Contains("Zona:") ||
-               descripcion.Contains("Agencia:") ||
-               descripcion.Contains("Centro:") ||
                descripcion.Contains("Rol:");
     }
 
@@ -222,11 +220,7 @@
             detalles.Add("Rol: " + ExtraerValor(descripcion, "Rol:"));
         if (descripcion.Contains("Zona:"))
             detalles.Add("Zona: " + ExtraerValor(descripcion, "Zona:"));
-        if (descripcion.Contains("Agencia:"))
-            detalles.Add("Agencia: " + ExtraerValor(descripcion, "Agencia:"));
-        if (descripcion.Contains("Centro:"))
-            detalles.Add("Centro: " + ExtraerValor(descripcion, "Centro:"));
-
+        
         return detalles;
     }
 

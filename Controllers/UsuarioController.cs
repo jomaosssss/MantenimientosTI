@@ -145,7 +145,7 @@ namespace ProyectoMantenimientos.Controllers
                     await _bitacora.RegistrarYGuardarAsync(
                         HttpContext.Session.GetString("NombreUsuario"),
                         BitacoraAcciones.InicioSesionTecnico,  // ✅ Ahora devolverá "INICIO_SESION_TECNICO"
-                        $"El usuario {usuario.Rpe} inició sesión."
+                        $"El usuario {usuarioAdmin.Rpe} inició sesión."
                     );
 
                     return RedirectToAction("Inicio", "Home");
@@ -264,11 +264,10 @@ namespace ProyectoMantenimientos.Controllers
             var rpe = HttpContext.Session.GetString("Rpe");
             var rol = HttpContext.Session.GetString("NombreRol");
             var zona = HttpContext.Session.GetString("NombreZona");
-            var centro = HttpContext.Session.GetString("ClaveDivision");
 
             if (!string.IsNullOrEmpty(usuario))
             {
-                await _bitacora.RegistrarLogoutAsync(usuario, rpe, rol, zona, centro);
+                await _bitacora.RegistrarLogoutAsync(usuario, rpe, rol, zona);
             }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

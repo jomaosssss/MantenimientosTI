@@ -40,9 +40,9 @@ namespace MantenimientosTI.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task RegistrarLogoutAsync(string usuario, string rpe, string rol, string zona, string centro)
+        public async Task RegistrarLogoutAsync(string usuario, string rpe, string rol, string zona)
         {
-            var descripcion = $"Cierre de sesión | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
+            var descripcion = $"Cierre de sesión | RPE: {rpe} | Rol: {rol} | Zona: {zona}";
             await RegistrarYGuardarAsync(usuario, "LOGOUT_SISTEMA", descripcion);
         }
 
