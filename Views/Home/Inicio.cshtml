@@ -252,7 +252,7 @@
                                         </td>
                                         <td class="text-center">
                                             <button class="btn btn-sm btn-outline-dark btn-descargar-pdf" data-bs-toggle="modal" data-bs-target="#modalPdf">
-                                                <i class="bi bi-file-earmark-pdf me-1"></i>Descargar
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>
                                             </button>
                                         </td>
                                         <td class="text-center">
@@ -344,7 +344,7 @@
                                         </td>
                                         <td class="text-center">
                                             <button class="btn btn-sm btn-outline-dark btn-descargar-pdf btnGenerarPdf">
-                                                <i class="bi bi-file-earmark-pdf me-1"></i>Descargar
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>
                                             </button>
                                         </td>
                                         <td class="text-center">
@@ -438,7 +438,7 @@
                                         </td>
                                         <td class="text-center">
                                             <button class="btn btn-sm btn-outline-dark btn-descargar-pdf btnGenerarPdf">
-                                                <i class="bi bi-file-earmark-pdf me-1"></i>Descargar
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>
                                             </button>
                                         </td>
                                         <td class="text-center">
@@ -812,15 +812,6 @@
                 var tipoEquipo = fila.data('tipo-equipo');
                 var fechaProgramada = fila.find('td:first').text().trim();
 
-                var prefix = 'HojaServicio';
-                if (tipoEquipo.toUpperCase().includes('CFECAM')) {
-                    prefix += 'CFECAM';
-                } else if (tipoEquipo.toUpperCase().includes('CFETURNO')) {
-                    prefix += 'CFETURNO';
-                } else {
-                    prefix += 'EquipoAC';
-                }
-
                 var $btn = $(this);
                 $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
 
@@ -830,18 +821,30 @@
                     data: {
                         numActFijo: numActFijo,
                         fechaProgramada: fechaProgramada,
-                        responsable: "TECNICO_DE_ZONA",
+                        responsable: "TÉCNICO DE ZONA",
                         nombreTecnico: "@Context.Session.GetString("NombreUsuario")",
                         tipoEquipo: tipoEquipo
                     },
                     xhrFields: {
                         responseType: 'blob'
                     },
-                    success: function(data) {
+                    success: function(data, status, xhr) {
                         var url = URL.createObjectURL(data);
                         var a = document.createElement('a');
                         a.href = url;
-                        a.download = prefix + '_' + numActFijo + '.pdf';
+
+                        var contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                        var fileName = 'documento.pdf';
+
+                        if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+                            var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                            var matches = filenameRegex.exec(contentDisposition);
+                            if (matches != null && matches[1]) {
+                                fileName = matches[1].replace(/['"]/g, '');
+                            }
+                        }
+
+                        a.download = fileName;
                         document.body.appendChild(a);
                         a.click();
                         setTimeout(function() {
@@ -853,66 +856,28 @@
                         alert('Error al generar el PDF: ' + xhr.responseText);
                     },
                     complete: function() {
-                        $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf me-1"></i>Descargar');
+                        $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf me-1"></i>');
                     }
                 });
             });
 
-        // Para generar PDFs de Equipos de Atención a Clientes - VERSIÓN CORREGIDA
-        $('#tablaAC').on('click', '.btnGenerarPdf', function() {
-            var fila = $(this).closest('tr');
-            var numActFijo = fila.data('num-act-fijo');
-            var tipoEquipo = fila.data('tipo-equipo');
-            var fechaProgramada = fila.find('td:first').text().trim();
+            // Para generar PDFs de Equipos de Cómputo
+            $('#tablaEC').on('click', '.btnGenerarPdf', function() {
+                var fila = $(this).closest('tr');
+                var numActFijo = fila.data('num-act-fijo');
+                var fechaProgramada = fila.find('td:first').text().trim();
 
-            var $btn = $(this);
-            $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
-
-            $.ajax({
-                url: '/Home/GenerarHojaServicio',
-                type: 'POST',
-                data: {
-                    numActFijo: numActFijo,
-                    fechaProgramada: fechaProgramada,
-                    responsable: "TÉCNICO DE ZONA",
-                    nombreTecnico: "@Context.Session.GetString("NombreUsuario")",
-                    tipoEquipo: tipoEquipo
-                },
-                xhrFields: {
-                    responseType: 'blob'
-                },
-                success: function(data, status, xhr) {
-                    var url = URL.createObjectURL(data);
-                    var a = document.createElement('a');
-                    a.href = url;
-
-                    var contentDisposition = xhr.getResponseHeader('Content-Disposition');
-                    var fileName = 'documento.pdf';
-
-                    if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
-                        var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                        var matches = filenameRegex.exec(contentDisposition);
-                        if (matches != null && matches[1]) {
-                            fileName = matches[1].replace(/['"]/g, '');
-                        }
-                    }
-
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(function() {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 100);
-                },
-                error: function(xhr) {
-                    alert('Error al generar el PDF: ' + xhr.responseText);
-                },
-                complete: function() {
-                    $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf me-1"></i>Descargar');
-                }
+                $.get('/Home/ObtenerDatosComputo', { numActFijo: numActFijo }, function(data) {
+                    $('#numActFijoPdfComputo').val(numActFijo);
+                    $('#fechaProgramadaPdfComputo').val(fechaProgramada);
+                    $('#rpeAsignado').text(data.rpe);
+                    $('#nombreAsignado').text(data.nombre);
+                    $('#rpeComputo').val('');
+                    $('#nombreComputo').val('');
+                    $('#camposModificacion').hide();
+                    $('#modalPdfComputo').modal('show');
+                });
             });
-        });
 
             // Mostrar/ocultar campo de técnico externo
             $('#responsable').change(function() {
@@ -925,16 +890,93 @@
                 }
             });
 
-        // Generar PDF para CFEmáticos - VERSIÓN CORREGIDA
-        $('#btnGenerarPdf').click(function() {
-            if ($('#formHojaServicio')[0].checkValidity()) {
-                var formData = $('#formHojaServicio').serialize();
-                var $btn = $(this);
+            // Generar PDF para CFEmáticos
+            $('#btnGenerarPdf').click(function() {
+                if ($('#formHojaServicio')[0].checkValidity()) {
+                    var formData = $('#formHojaServicio').serialize();
+                    var $btn = $(this);
 
+                    $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
+
+                    $.ajax({
+                        url: '/Home/GenerarHojaServicio',
+                        type: 'POST',
+                        data: formData,
+                        xhrFields: {
+                            responseType: 'blob'
+                        },
+                        success: function(data, status, xhr) {
+                            var url = URL.createObjectURL(data);
+                            var a = document.createElement('a');
+                            a.href = url;
+
+                            var contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                            var fileName = 'documento.pdf';
+
+                            if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+                                var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                                var matches = filenameRegex.exec(contentDisposition);
+                                if (matches != null && matches[1]) {
+                                    fileName = matches[1].replace(/['"]/g, '');
+                                }
+                            }
+
+                            a.download = fileName;
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(function() {
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                $('#modalPdf').modal('hide');
+                            }, 100);
+                        },
+                        error: function(xhr) {
+                            alert('Error al generar el PDF: ' + xhr.responseText);
+                        },
+                        complete: function() {
+                            $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF');
+                        }
+                    });
+                } else {
+                    $('#formHojaServicio')[0].reportValidity();
+                }
+            });
+
+            // Funciones para Equipos de Cómputo
+            $('#btnContinuarComputo').click(function() {
+                descargarPdfComputo(false);
+            });
+
+            $('#btnModificarComputo').click(function() {
+                $('#camposModificacion').show();
+            });
+
+            $('#btnDescargarComputo').click(function() {
+                descargarPdfComputo(true);
+            });
+
+            function descargarPdfComputo(usarDatosModificados) {
+                var formData = {
+                    numActFijo: $('#numActFijoPdfComputo').val(),
+                    fechaProgramada: $('#fechaProgramadaPdfComputo').val(),
+                    responsable: "TÉCNICO DE ZONA",
+                    nombreTecnico: "@Context.Session.GetString("NombreUsuario")"
+                };
+
+                if (usarDatosModificados) {
+                    if (!$('#rpeComputo').val() || !$('#nombreComputo').val()) {
+                        alert('Por favor complete ambos campos (RPE y Nombre)');
+                        return;
+                    }
+                    formData.rpe = $('#rpeComputo').val();
+                    formData.nombre = $('#nombreComputo').val();
+                }
+
+                var $btn = $('#btnDescargarComputo, #btnContinuarComputo').filter(':visible');
                 $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
 
                 $.ajax({
-                    url: '/Home/GenerarHojaServicio',
+                    url: '/Home/GenerarHojaServicioComputo',
                     type: 'POST',
                     data: formData,
                     xhrFields: {
@@ -962,96 +1004,19 @@
                         setTimeout(function() {
                             document.body.removeChild(a);
                             URL.revokeObjectURL(url);
-                            $('#modalPdf').modal('hide');
+                            $('#modalPdfComputo').modal('hide');
                         }, 100);
                     },
                     error: function(xhr) {
                         alert('Error al generar el PDF: ' + xhr.responseText);
                     },
                     complete: function() {
-                        $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF');
+                        $btn.prop('disabled', false).html(usarDatosModificados ?
+                            '<i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF' :
+                            '<i class="bi bi-check-circle me-2"></i>Sí, Descargar PDF');
                     }
                 });
-            } else {
-                $('#formHojaServicio')[0].reportValidity();
             }
-        });
-
-            // Funciones para Equipos de Cómputo
-            $('#btnContinuarComputo').click(function() {
-                descargarPdfComputo(false);
-            });
-
-            $('#btnModificarComputo').click(function() {
-                $('#camposModificacion').show();
-            });
-
-            $('#btnDescargarComputo').click(function() {
-                descargarPdfComputo(true);
-            });
-
-function descargarPdfComputo(usarDatosModificados) {
-    var formData = {
-        numActFijo: $('#numActFijoPdfComputo').val(),
-        fechaProgramada: $('#fechaProgramadaPdfComputo').val(),
-        responsable: "TÉCNICO DE ZONA",
-        nombreTecnico: "@Context.Session.GetString("NombreUsuario")"
-    };
-
-    if (usarDatosModificados) {
-        if (!$('#rpeComputo').val() || !$('#nombreComputo').val()) {
-            alert('Por favor complete ambos campos (RPE y Nombre)');
-            return;
-        }
-        formData.rpe = $('#rpeComputo').val();
-        formData.nombre = $('#nombreComputo').val();
-    }
-
-    var $btn = $('#btnDescargarComputo, #btnContinuarComputo').filter(':visible');
-    $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
-
-    $.ajax({
-        url: '/Home/GenerarHojaServicioComputo',
-        type: 'POST',
-        data: formData,
-        xhrFields: {
-            responseType: 'blob'
-        },
-        success: function(data, status, xhr) {
-            var url = URL.createObjectURL(data);
-            var a = document.createElement('a');
-            a.href = url;
-
-            var contentDisposition = xhr.getResponseHeader('Content-Disposition');
-            var fileName = 'documento.pdf';
-
-            if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
-                var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                var matches = filenameRegex.exec(contentDisposition);
-                if (matches != null && matches[1]) {
-                    fileName = matches[1].replace(/['"]/g, '');
-                }
-            }
-
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(function() {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                $('#modalPdfComputo').modal('hide');
-            }, 100);
-        },
-        error: function(xhr) {
-            alert('Error al generar el PDF: ' + xhr.responseText);
-        },
-        complete: function() {
-            $btn.prop('disabled', false).html(usarDatosModificados ?
-                '<i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF' :
-                '<i class="bi bi-check-circle me-2"></i>Sí, Descargar PDF');
-        }
-    });
-}
         });
     </script>
 }

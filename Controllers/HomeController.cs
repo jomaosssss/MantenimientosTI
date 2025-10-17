@@ -357,7 +357,8 @@ namespace ProyectoMantenimientos.Controllers
                         nombreResponsable,
                         cfData.TipoMantenimiento);
 
-                    return File(pdf, "application/pdf", $"Orden_{cfData.ClaveAgenda}_HojaServicioCFEmatico_{numActFijo}.pdf");
+                    // ? CORREGIDO: Usar número de cajero en lugar del activo fijo
+                    return File(pdf, "application/pdf", $"Orden_{cfData.ClaveAgenda}_HojaServicioCFEmatico_{cfData.NumCajero}.pdf");
                 }
 
                 // 2) Buscar en Equipos de Atención a Clientes
