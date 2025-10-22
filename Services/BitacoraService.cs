@@ -66,7 +66,7 @@ namespace MantenimientosTI.Services
 
         public void RegistrarPreCancelacion(string usuario, string rpe, string rol, string zona, string centro, string claveAgenda, string equipo)
         {
-            var descripcion = $"Solicitud de pre-cancelación | Orden: {claveAgenda} | Equipo: {equipo} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
+            var descripcion = $"Solicitud de cancelación | Orden: {claveAgenda} | Equipo: {equipo} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
             RegistrarActividad(usuario, "PRECANCELACION_MTTO", descripcion);
         }
 

@@ -233,7 +233,7 @@ namespace ProyectoMantenimientos.Controllers
                             await _bitacora.RegistrarYGuardarAsync(
                                 HttpContext.Session.GetString("NombreUsuario"),
                                 BitacoraAcciones.InicioSesionTecnico,
-                                descripcionTecnico  // ✅ CON FORMATO DE PIPES
+                                descripcionTecnico  
                             );
 
                             return RedirectToAction("Inicio", "Home");
@@ -319,7 +319,6 @@ namespace ProyectoMantenimientos.Controllers
                 estatus = usuario.Estatus
             });
         }
-
         [HttpPost]
         public async Task<IActionResult> ActualizarUsuario([FromBody] UsuarioEditModel model)
         {
@@ -346,12 +345,25 @@ namespace ProyectoMantenimientos.Controllers
                 usuario.Correo = model.Correo;
                 usuario.Estatus = model.Estatus;
 
-                // 3. Prepara el registro de bitácora
+                // ✅ 3. BITÁCORA CORREGIDA - CON FORMATO DE PIPES
                 var adminQueActualiza = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
-                var descripcion = $"Actualizó los datos del usuario '{usuario.Nombre} {usuario.ApellidoP}' con RPE '{model.Rpe}'.";
-                _bitacora.RegistrarActividad(adminQueActualiza, "ACTUALIZAR_USUARIO", descripcion);
 
-                // 4. Guarda ambos cambios (actualización y bitácora) en una sola transacción
+                // Obtener nombres del rol y zona
+                var rolUsuario = await _dbocontext.CatRols
+                    .Where(r => r.ClaveRol == model.ClaveRol)
+                    .Select(r => r.Nombre)
+                    .FirstOrDefaultAsync() ?? "Sin rol";
+
+                var zonaUsuario = await _dbocontext.CatZonas
+                    .Where(z => z.ClaveZona == model.ClaveZona)
+                    .Select(z => z.NombreZona)
+                    .FirstOrDefaultAsync() ?? "Sin zona";
+
+                // ✅ FORMATO CON PIPES para información adicional
+                var descripcion = $"Actualizó los datos del usuario '{model.Nombre} {model.ApellidoP}' | RPE: {model.Rpe} | Rol: {rolUsuario} | Zona: {zonaUsuario}";
+
+                await _bitacora.RegistrarYGuardarAsync(adminQueActualiza, BitacoraAcciones.ActualizarUsuario, descripcion);
+
                 await _dbocontext.SaveChangesAsync();
 
                 return Json(new { success = true });
@@ -375,7 +387,6 @@ namespace ProyectoMantenimientos.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Usamos 'AnyAsync' para una consulta asíncrona más eficiente
             if (await _dbocontext.Usuarios.AnyAsync(u => u.Rpe == model.Rpe))
             {
                 return Json(new { success = false, message = "El RPE ya está registrado" });
@@ -402,11 +413,24 @@ namespace ProyectoMantenimientos.Controllers
                 };
                 _dbocontext.Usuarios.Add(nuevoUsuario);
 
-                // 2. Prepara el registro de bitácora
+                // ✅ 2. BITÁCORA CORREGIDA - CON FORMATO DE PIPES
                 var adminQueCrea = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
-                var descripcion = $"Creó al nuevo usuario '{model.Nombre} {model.ApellidoP}' con RPE '{model.Rpe}'.";
-                // Usamos el método que solo prepara, sin guardar
-                _bitacora.RegistrarActividad(adminQueCrea, "CREAR_USUARIO", descripcion);
+
+                // Obtener nombres del rol y zona
+                var rolNuevoUsuario = await _dbocontext.CatRols
+                    .Where(r => r.ClaveRol == model.ClaveRol)
+                    .Select(r => r.Nombre)
+                    .FirstOrDefaultAsync() ?? "Sin rol";
+
+                var zonaNuevoUsuario = await _dbocontext.CatZonas
+                    .Where(z => z.ClaveZona == model.ClaveZona)
+                    .Select(z => z.NombreZona)
+                    .FirstOrDefaultAsync() ?? "Sin zona";
+
+                // ✅ FORMATO CON PIPES para información adicional
+                var descripcion = $"Creó al nuevo usuario '{model.Nombre} {model.ApellidoP}' | RPE: {model.Rpe} | Rol: {rolNuevoUsuario} | Zona: {zonaNuevoUsuario}";
+
+                await _bitacora.RegistrarYGuardarAsync(adminQueCrea, BitacoraAcciones.CrearUsuario, descripcion);
 
                 // 3. Guarda ambos cambios en una sola transacción
                 await _dbocontext.SaveChangesAsync();
@@ -415,7 +439,6 @@ namespace ProyectoMantenimientos.Controllers
             }
             catch (DbUpdateException ex)
             {
-                // Esta excepción nos dará más detalles si algo falla en la base de datos
                 return Json(new { success = false, message = "Error al guardar en la base de datos: " + (ex.InnerException?.Message ?? ex.Message) });
             }
             catch (Exception ex)
