@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using MantenimientosTI.Models.ViewModels;
 using MantenimientosTI.Services;
+using Microsoft.Extensions.Logging;
 
 namespace MantenimientosTI.Controllers
 {
@@ -12,11 +13,14 @@ namespace MantenimientosTI.Controllers
     {
         private readonly MantenimientosTIContext _dbocontext;
         private readonly BitacoraService _bitacora;
+        private readonly ILogger<AgendaController> _logger;
 
-        public AgendaController(MantenimientosTIContext context, BitacoraService bitacora)
+
+        public AgendaController(MantenimientosTIContext context, BitacoraService bitacora, ILogger<AgendaController> logger)
         {
             _dbocontext = context;
             _bitacora = bitacora;
+            _logger = logger;
         }
 
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
@@ -509,6 +513,81 @@ return Json(new
             }
         }
 
+        [HttpGet]
+        public IActionResult ObtenerEquiposComputoPorCentro(string division, string zona, string agencia, string centro)
+        {
+            try
+            {
+                var equipos = _dbocontext.EquipoComputos
+                    .Include(ec => ec.NumActFijoNavigation)
+                    .Include(ec => ec.ClaveTipoEquipoNavigation)
+                    .Where(ec => ec.NumActFijoNavigation.ClaveDivision == division &&
+                                ec.NumActFijoNavigation.ClaveZona == zona &&
+                                ec.NumActFijoNavigation.ClaveAgencia == agencia &&
+                                ec.NumActFijoNavigation.ClaveCentro == centro)
+                    .Select(ec => new
+                    {
+                        value = ec.NumActFijo,
+                        numActFijo = ec.NumActFijo,
+                        tipoEquipo = ec.ClaveTipoEquipoNavigation.NombreTipoEquipo
+                    })
+                    .ToList() // ← Ejecuta la consulta SQL aquí
+                    .Select(ec => new
+                    {
+                        value = ec.value,
+                        text = $"{ec.numActFijo} - {ec.tipoEquipo}",
+                        numActFijo = ec.numActFijo
+                    })
+                    .OrderBy(ec => ec.text)
+                    .ToList();
+
+                return Json(new { success = true, data = equipos });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener equipos de cómputo para centro {Centro}", centro);
+                return Json(new { success = false, message = "Error interno al cargar los equipos" });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult ObtenerEquiposACPorCentro(string division, string zona, string agencia, string centro)
+        {
+            try
+            {
+                var equipos = _dbocontext.EquipoAcs
+                    .Include(eac => eac.NumActFijoNavigation)
+                    .Include(eac => eac.ClaveTipoEquipoNavigation)
+                    .Where(eac => eac.NumActFijoNavigation.ClaveDivision == division &&
+                                 eac.NumActFijoNavigation.ClaveZona == zona &&
+                                 eac.NumActFijoNavigation.ClaveAgencia == agencia &&
+                                 eac.NumActFijoNavigation.ClaveCentro == centro)
+                    .Select(eac => new
+                    {
+                        value = eac.NumActFijo,
+                        numActFijo = eac.NumActFijo,
+                        tipoEquipo = eac.ClaveTipoEquipoNavigation.NombreTipoEquipo
+                    })
+                    .ToList() // ← Ejecuta la consulta SQL aquí
+                    .Select(eac => new
+                    {
+                        value = eac.value,
+                        text = $"{eac.numActFijo} - {eac.tipoEquipo}",
+                        numActFijo = eac.numActFijo
+                    })
+                    .OrderBy(eac => eac.text)
+                    .ToList();
+
+                return Json(new { success = true, data = equipos });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener equipos AC para centro {Centro}", centro);
+                return Json(new { success = false, message = "Error interno al cargar los equipos" });
+            }
+        }
+
+
         [HttpPost]
         [Authorize(Roles = "ADMINISTRADOR")]
         public async Task<IActionResult> CancelarDirecto(int idAgenda)
@@ -756,7 +835,7 @@ return Json(new
         }
 
         [HttpPost]
-        public IActionResult AgendarCorrectivo(string numActFijo, string fechaProgramada)
+        public IActionResult AgendarCorrectivo(string numActFijo, string fechaProgramada, string tipoEquipo = "CFEMatico")
         {
             try
             {
@@ -780,12 +859,6 @@ return Json(new
                 catch
                 {
                     return Json(new { success = false, message = "Formato de fecha inválido. Use YYYY-MM-DD" });
-                }
-
-                // Validar que la fecha no sea en el pasado
-                if (fechaProgramadaDate < DateOnly.FromDateTime(DateTime.Now))
-                {
-                    return Json(new { success = false, message = "No puede agendar mantenimientos para fechas pasadas" });
                 }
 
                 // Verificar si el activo fijo existe
@@ -821,8 +894,8 @@ return Json(new
 
                 _dbocontext.Agenda.Add(nuevoCorrectivo);
 
-                // REGISTRO EN BITÁCORA - AGENDAR CORRECTIVO
-                var usuario = User.Identity.Name;
+                // REGISTRO EN BITÁCORA
+                var usuario = User.Identity?.Name;
                 var rpe = HttpContext.Session.GetString("Rpe");
                 var rol = HttpContext.Session.GetString("NombreRol");
                 var zona = HttpContext.Session.GetString("NombreZona");
@@ -832,16 +905,24 @@ return Json(new
 
                 _dbocontext.SaveChanges();
 
-                // Retornar respuesta exitosa
+                // Determinar el tipo de equipo para el mensaje
+                string tipoEquipoBitacora = tipoEquipo switch
+                {
+                    "Computo" => "Equipo de Cómputo",
+                    "AtencionCliente" => "Equipo de Atención a Clientes",
+                    _ => "CFEMático"
+                };
+
                 return Json(new
                 {
                     success = true,
-                    message = "Mantenimiento correctivo agendado exitosamente",
+                    message = $"Mantenimiento correctivo agendado exitosamente para {tipoEquipoBitacora}",
                     data = new
                     {
                         numActFijo = nuevoCorrectivo.NumActFijo,
                         fechaProgramada = nuevoCorrectivo.FechaProgramada.ToString("dd/MM/yyyy"),
-                        tipo = "Correctivo"
+                        tipo = "Correctivo",
+                        tipoEquipo = tipoEquipoBitacora
                     }
                 });
             }
