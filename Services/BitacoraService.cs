@@ -23,7 +23,7 @@ namespace MantenimientosTI.Services
                 Descripcion = descripcion,
                 IdEntidadAfectada = idEntidad
             };
-            _context.Add(registro);
+            _context.RegistroActividad.Add(registro);
         }
 
         public async Task RegistrarYGuardarAsync(string usuario, string accion, string descripcion, int? idEntidad = null)
@@ -36,7 +36,7 @@ namespace MantenimientosTI.Services
                 Descripcion = descripcion,
                 IdEntidadAfectada = idEntidad
             };
-            _context.Add(registro);
+            _context.RegistroActividad.Add(registro);
             await _context.SaveChangesAsync();
         }
 
@@ -74,6 +74,41 @@ namespace MantenimientosTI.Services
         {
             var descripcion = $"Confirmación de cancelación | Orden: {claveAgenda} | Equipo: {equipo} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
             RegistrarActividad(usuario, "CONFIRMACION_CANCELACION", descripcion);
+        }
+
+        // ✅ NUEVOS MÉTODOS CORREGIDOS - USANDO RegistroActividad
+        public void RegistrarPreCancelacionConMotivo(string usuario, string rpe, string rol, string zona, string centro, string idAgenda, string tipoEquipo, string motivo, string justificacion)
+        {
+            var descripcion = $"Solicitud de cancelación | Orden: {idAgenda} | Tipo: {tipoEquipo} | Motivo: {motivo} | Justificación: {justificacion} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
+
+            var registro = new RegistroActividad
+            {
+                FechaHora = DateTime.Now,
+                Usuario = usuario,
+                Accion = "SOLICITUD_CANCELACION_MTTO",
+                Descripcion = descripcion,
+                IdEntidadAfectada = int.TryParse(idAgenda, out int id) ? id : null
+            };
+
+            _context.RegistroActividad.Add(registro);
+            _context.SaveChanges();
+        }
+
+        public void RegistrarConfirmacionCancelacionConMotivo(string usuario, string rpe, string rol, string zona, string centro, string idAgenda, string tipoEquipo, string motivo, string justificacion)
+        {
+            var descripcion = $"Cancelación directa | Orden: {idAgenda} | Tipo: {tipoEquipo} | Motivo: {motivo} | Justificación: {justificacion} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
+
+            var registro = new RegistroActividad
+            {
+                FechaHora = DateTime.Now,
+                Usuario = usuario,
+                Accion = "CANCELACION_DIRECTA_MTTO",
+                Descripcion = descripcion,
+                IdEntidadAfectada = int.TryParse(idAgenda, out int id) ? id : null
+            };
+
+            _context.RegistroActividad.Add(registro);
+            _context.SaveChanges();
         }
     }
 }

@@ -590,15 +590,27 @@ return Json(new
 
         [HttpPost]
         [Authorize(Roles = "ADMINISTRADOR")]
-        public async Task<IActionResult> CancelarDirecto(int idAgenda)
+        public async Task<IActionResult> CancelarDirecto(int idAgenda, string motivo, string justificacion)
         {
             try
             {
+                // VALIDACIÓN DEL LÍMITE DE CARACTERES (250)
+                if (!string.IsNullOrEmpty(justificacion) && justificacion.Length > 250)
+                {
+                    return Json(new { success = false, message = "La justificación no puede exceder los 250 caracteres." });
+                }
+
                 var agendaItem = await _dbocontext.Agenda.FindAsync(idAgenda);
 
                 if (agendaItem == null)
                 {
-                    return Json(new { success = false, message = "No se encontró la cita en la agenda." });
+                    return Json(new { success = false, message = "No se encontró el mantenimiento en la agenda." });
+                }
+
+                // Validar campos obligatorios
+                if (string.IsNullOrWhiteSpace(motivo))
+                {
+                    return Json(new { success = false, message = "El motivo de cancelación es requerido." });
                 }
 
                 // Solo se puede cancelar directamente si está pendiente
@@ -607,20 +619,27 @@ return Json(new
                     return Json(new { success = false, message = $"No se puede cancelar un mantenimiento con estatus '{agendaItem.Estatus}'." });
                 }
 
+                // Actualizar campos de cancelación
                 agendaItem.Estatus = "CANCELADO";
+                agendaItem.MotivoCancelacion = motivo;
+                agendaItem.JustificacionCancelacion = justificacion;
+                agendaItem.FechaSolicitudCancelacion = DateTime.Now;
+                agendaItem.UsuarioSolicitudCancelacion = User.Identity?.Name;
+                agendaItem.FechaAprobacionCancelacion = DateTime.Now;
+                agendaItem.UsuarioAprobacionCancelacion = User.Identity?.Name;
 
-                // REGISTRO EN BITÁCORA - CANCELACIÓN DIRECTA
-                var usuario = User.Identity.Name;
+                // REGISTRO EN BITÁCORA - CANCELACIÓN DIRECTA CON MOTIVO
+                var usuario = User.Identity?.Name;
                 var rpe = HttpContext.Session.GetString("Rpe");
                 var rol = HttpContext.Session.GetString("NombreRol");
                 var zona = HttpContext.Session.GetString("NombreZona");
                 var centro = HttpContext.Session.GetString("ClaveDivision");
 
-                _bitacora.RegistrarConfirmacionCancelacion(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático");
+                _bitacora.RegistrarConfirmacionCancelacionConMotivo(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático", motivo, justificacion);
 
                 await _dbocontext.SaveChangesAsync();
 
-                return Json(new { success = true, message = "El mantenimiento ha sido cancelada directamente." });
+                return Json(new { success = true, message = "El mantenimiento ha sido cancelado directamente." });
             }
             catch (Exception ex)
             {
@@ -630,37 +649,63 @@ return Json(new
 
         [HttpPost]
         [Authorize(Roles = "TÉCNICO DE ZONA")]
-        public async Task<IActionResult> PreCancelar(int idAgenda)
+        public async Task<IActionResult> PreCancelar(int idAgenda, string motivo, string justificacion)
         {
             try
             {
+                // VALIDACIÓN DEL LÍMITE DE CARACTERES (250)
+                if (!string.IsNullOrEmpty(justificacion) && justificacion.Length > 250)
+                {
+                    return Json(new { success = false, message = "La justificación no puede exceder los 250 caracteres." });
+                }
+
                 var agendaItem = await _dbocontext.Agenda.FindAsync(idAgenda);
 
                 if (agendaItem == null)
                 {
-                    return Json(new { success = false, message = "No se encontró la cita en la agenda." });
+                    return Json(new { success = false, message = "No se encontró el mantenimiento en la agenda." });
+                }
+
+                // Validar campos obligatorios
+                if (string.IsNullOrWhiteSpace(motivo))
+                {
+                    return Json(new { success = false, message = "El motivo de cancelación es requerido." });
+                }
+
+                if (string.IsNullOrWhiteSpace(justificacion))
+                {
+                    return Json(new { success = false, message = "La justificación es requerida." });
                 }
 
                 // Solo se puede pre-cancelar si está pendiente
                 if (agendaItem.Estatus != "PENDIENTE")
                 {
-                    return Json(new { success = false, message = $"No se puede cancelar una cita con estatus '{agendaItem.Estatus}'." });
+                    return Json(new { success = false, message = $"No se puede cancelar un mantenimiento con estatus '{agendaItem.Estatus}'." });
                 }
 
+                // Actualizar campos de cancelación
                 agendaItem.Estatus = "PRE-CANCELADO";
+                agendaItem.MotivoCancelacion = motivo;
+                agendaItem.JustificacionCancelacion = justificacion;
+                agendaItem.FechaSolicitudCancelacion = DateTime.Now;
+                agendaItem.UsuarioSolicitudCancelacion = User.Identity?.Name;
 
-                // REGISTRO EN BITÁCORA - PRE-CANCELACIÓN
-                var usuario = User.Identity.Name;
+                // REGISTRO EN BITÁCORA - PRE-CANCELACIÓN CON MOTIVO
+                var usuario = User.Identity?.Name;
                 var rpe = HttpContext.Session.GetString("Rpe");
                 var rol = HttpContext.Session.GetString("NombreRol");
                 var zona = HttpContext.Session.GetString("NombreZona");
                 var centro = HttpContext.Session.GetString("ClaveDivision");
 
-                _bitacora.RegistrarPreCancelacion(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático");
+                _bitacora.RegistrarPreCancelacionConMotivo(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático", motivo, justificacion);
 
                 await _dbocontext.SaveChangesAsync();
 
-                return Json(new { success = true, message = "El mantenimeinto ha sido marcado como pre-cancelada. Un administrador debe confirmar la cancelación." });
+                return Json(new
+                {
+                    success = true,
+                    message = "La solicitud de cancelación ha sido enviada. Un administrador debe confirmarla."
+                });
             }
             catch (Exception ex)
             {
@@ -679,18 +724,22 @@ return Json(new
 
                 if (agendaItem == null)
                 {
-                    return Json(new { success = false, message = "No se encontró la cita en la agenda." });
+                    return Json(new { success = false, message = "No se encontró el mantenimiento en la agenda." });
                 }
 
-                // Solo se puede confirmar la cancelación si está pre-canceladas
+                // Solo se puede confirmar la cancelación si está pre-cancelado
                 if (agendaItem.Estatus != "PRE-CANCELADO")
                 {
-                    return Json(new { success = false, message = $"Esta cita no está en estatus 'Pre-cancelado'." });
+                    return Json(new { success = false, message = "Este mantenimiento no está en estatus 'Pre-cancelado'." });
                 }
+
+                // Actualizar campos de aprobación
                 agendaItem.Estatus = "CANCELADO";
+                agendaItem.FechaAprobacionCancelacion = DateTime.Now;
+                agendaItem.UsuarioAprobacionCancelacion = User.Identity?.Name;
 
                 // REGISTRO EN BITÁCORA - CONFIRMACIÓN DE CANCELACIÓN
-                var usuario = User.Identity.Name;
+                var usuario = User.Identity?.Name;
                 var rpe = HttpContext.Session.GetString("Rpe");
                 var rol = HttpContext.Session.GetString("NombreRol");
                 var zona = HttpContext.Session.GetString("NombreZona");
@@ -751,12 +800,11 @@ return Json(new
 
         [Authorize(Roles = "ADMINISTRADOR")]
         public async Task<IActionResult> AprobarCancelaciones()
-
         {
             string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
             int claveRol = HttpContext.Session.GetInt32("Rol") ?? 0;
 
-            // Consulta base para citas pre-canceladas
+            // Consulta base para citas pre-canceladas - INCLUYENDO LOS MOTIVOS
             var agendaQuery = _dbocontext.Agenda
                 .Include(a => a.NumActFijoNavigation)
                     .ThenInclude(e => e.CatCentro)
@@ -765,7 +813,7 @@ return Json(new
                 .Include(a => a.ClaveTipoMttoNavigation)
                 .Where(a => a.Estatus == "PRE-CANCELADO");
 
-            // Filtro por zona si no es administrador (método es solo para admin, por si acaso)
+            // Filtro por zona si no es administrador
             if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 agendaQuery = agendaQuery
@@ -775,14 +823,13 @@ return Json(new
 
             var agenda = await agendaQuery.ToListAsync();
 
-            // Convertir a VMAgendaVista usando la misma lógica que en Inicio
             var citasPrecanceladas = new List<VMAgendaVista>();
 
             foreach (var item in agenda)
             {
                 string tipo = "CFEMÁTICO";
 
-                // Determinar el tipo de equipo (misma lógica que en Inicio)
+                // Determinar el tipo de equipo
                 var equipoAc = _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
@@ -804,13 +851,13 @@ return Json(new
                 else if (equipoComputo?.ClaveTipoEquipoNavigation != null)
                     tipo = equipoComputo.ClaveTipoEquipoNavigation.NombreTipoEquipo;
 
-                // Obtener datos de ubicación (misma lógica que en Inicio)
+                // Obtener datos de ubicación
                 var centro = item.NumActFijoNavigation?.CatCentro;
                 var nombreCentro = item.NumActFijoNavigation?.CatCentro?.NombreCentro ?? "Sin centro";
                 var nombreAgencia = centro?.CatAgencium?.NombreAgencia ?? "Sin agencia";
                 var nombreZona = centro?.CatAgencium?.CatZona?.NombreZona ?? "Sin zona";
 
-                // Crear ViewModel
+                // Crear ViewModel CON LOS MOTIVOS
                 var viewModel = new VMAgendaVista
                 {
                     NumActFijo = item.NumActFijo,
@@ -823,9 +870,14 @@ return Json(new
                     NumCajero = equipoCfematico?.NumCajero ?? "N/A",
                     TipoMantenimiento = item.ClaveTipoMttoNavigation?.NombreTipoM ?? "PREVENTIVO",
                     ClaveAgenda = item.ClaveAgenda,
-                    // Para equipos de cómputo
                     UsuarioAsignado = equipoComputo != null ?
-                        $"{equipoComputo.Rpe} - {equipoComputo.NombreRpe}" : "N/A"
+                        $"{equipoComputo.Rpe} - {equipoComputo.NombreRpe}" : "N/A",
+
+                    // NUEVOS CAMPOS DE MOTIVOS
+                    MotivoCancelacion = item.MotivoCancelacion,
+                    JustificacionCancelacion = item.JustificacionCancelacion,
+                    UsuarioSolicitudCancelacion = item.UsuarioSolicitudCancelacion,
+                    FechaSolicitudCancelacion = item.FechaSolicitudCancelacion
                 };
 
                 citasPrecanceladas.Add(viewModel);

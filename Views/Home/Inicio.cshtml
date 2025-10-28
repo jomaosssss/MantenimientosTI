@@ -534,172 +534,307 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
     <script>
-        $(document).ready(function () {
-            var esAdmin = @User.IsInRole("ADMINISTRADOR").ToString().ToLower();
+            $(document).ready(function () {
+        var esAdmin = @User.IsInRole("ADMINISTRADOR").ToString().ToLower();
 
-            // Configuración para las tablas
-            $('#tablaCFEmaticos, #tablaAC, #tablaEC').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+        // Configuración para las tablas
+        $('#tablaCFEmaticos, #tablaAC, #tablaEC').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+            }
+        });
+
+        function mostrarModalCancelacion(idAgenda, esAdmin) {
+            const titulo = esAdmin ? 'Cancelar Mantenimiento' : 'Solicitar Cancelación';
+            const textoConfirmacion = esAdmin ?
+                'Este mantenimiento será cancelado permanentemente.' :
+                'Esta solicitud de cancelación será enviada a un administrador para su aprobación.';
+
+            Swal.fire({
+                title: titulo,
+                html: `
+                    <div class="text-start">
+                        <p>${textoConfirmacion}</p>
+                        <div class="mb-3">
+                            <label for="motivoCancelacion" class="form-label">Motivo de cancelación:</label>
+                            <select class="form-select" id="motivoCancelacion" required>
+                                <option value="">Seleccione un motivo</option>
+                                <option value="ERROR_DE_REDACCION">Error de redacción</option>
+                                <option value="REPROGRAMACION">Reprogramación necesaria</option>
+                                <option value="PERSONAL_NO_DISPONIBLE">Personal no disponible</option>
+                                <option value="OTRO">Otro</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="justificacionCancelacion" class="form-label">
+                                Justificación detallada:
+                                <small class="text-muted float-end">
+                                    <span id="contadorCaracteres">0</span>/250 caracteres
+                                </small>
+                            </label>
+                            <textarea class="form-control" id="justificacionCancelacion"
+                                      rows="4"
+                                      maxlength="250"
+                                      placeholder="Describa detalladamente el motivo de la cancelación..."
+                                      required></textarea>
+                            <div class="form-text">
+                                <span id="caracteresRestantes" class="text-muted">250 caracteres restantes</span>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: esAdmin ? '#d33' : '#3085d6',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: esAdmin ? 'Sí, cancelar' : 'Sí, solicitar',
+                cancelButtonText: 'Cancelar',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const motivo = document.getElementById('motivoCancelacion').value;
+                    const justificacion = document.getElementById('justificacionCancelacion').value;
+
+                    if (!motivo) {
+                        Swal.showValidationMessage('Por favor seleccione un motivo');
+                        return false;
+                    }
+                    if (!justificacion.trim()) {
+                        Swal.showValidationMessage('Por favor ingrese una justificación');
+                        return false;
+                    }
+                    if (justificacion.trim().length < 10) {
+                        Swal.showValidationMessage('La justificación debe tener al menos 10 caracteres');
+                        return false;
+                    }
+                    if (justificacion.trim().length > 250) {
+                        Swal.showValidationMessage('La justificación no puede exceder los 250 caracteres');
+                        return false;
+                    }
+
+                    return { motivo, justificacion };
+                },
+                didOpen: () => {
+                    const textarea = document.getElementById('justificacionCancelacion');
+                    const contador = document.getElementById('contadorCaracteres');
+                    const restantes = document.getElementById('caracteresRestantes');
+
+                    // Event listener para el contador
+                    textarea.addEventListener('input', function() {
+                        // Asegurar que no pase de 250
+                        if (this.value.length > 250) {
+                            this.value = this.value.substring(0, 250);
+                        }
+
+                        const longitud = this.value.length;
+                        contador.textContent = longitud;
+                        const caracteresRestantes = 250 - longitud;
+                        restantes.textContent = `${caracteresRestantes} caracteres restantes`;
+
+                        // Cambiar color según el límite
+                        if (longitud > 200) {
+                            contador.className = 'text-warning fw-bold';
+                            restantes.className = 'text-warning fw-bold';
+                        } else if (longitud >= 250) {
+                            contador.className = 'text-danger fw-bold';
+                            restantes.className = 'text-danger fw-bold';
+                        } else {
+                            contador.className = 'text-muted';
+                            restantes.className = 'text-muted';
+                        }
+                    });
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const { motivo, justificacion } = result.value;
+                    if (esAdmin) {
+                        cancelarDirecto(idAgenda, motivo, justificacion);
+                    } else {
+                        preCancelar(idAgenda, motivo, justificacion);
+                    }
                 }
             });
+        }
 
-            $('.display').on('click', '.btn-cancelar-directo', function() {
-                var id = $(this).data('id');
-                var fila = $(this).closest('tr');
-                var button = $(this);
+        // Función para actualizar el contador de caracteres
+        function actualizarContadorJustificacion() {
+            const textarea = document.getElementById('justificacionCancelacion');
+            const contador = document.getElementById('contadorCaracteres');
+            const restantes = document.getElementById('caracteresRestantes');
 
-                Swal.fire({
-                    title: '¿Cancelar mantenimiento?',
-                    text: "Este mantenimiento será cancelado permanentemente.",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Sí, cancelar',
-                    cancelButtonText: 'No'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.post('@Url.Action("CancelarDirecto", "Agenda")', { idAgenda: id })
-                            .done(function(response) {
-                                if (response.success) {
-                                    Swal.fire('¡Cancelado!', response.message, 'success');
+            if (textarea && contador && restantes) {
+                const longitud = textarea.value.length;
+                contador.textContent = longitud;
+                const caracteresRestantes = 500 - longitud;
+                restantes.textContent = `${caracteresRestantes} caracteres restantes`;
 
-                                    // Actualizar la fila
-                                    var celdaEstatus = fila.find('.estatus-agenda');
-                                    celdaEstatus.html('<span class="badge bg-secondary">CANCELADO</span>');
+                // Cambiar color según el límite
+                if (longitud > 450) {
+                    contador.className = 'text-warning fw-bold';
+                    restantes.className = 'text-warning fw-bold';
+                } else if (longitud >= 500) {
+                    contador.className = 'text-danger fw-bold';
+                    restantes.className = 'text-danger fw-bold';
+                } else {
+                    contador.className = 'text-muted';
+                    restantes.className = 'text-muted';
+                }
+            }
+        }
 
-                                    var celdaAcciones = button.closest('td');
-                                    celdaAcciones.html('<span class="text-muted">N/A</span>');
-                                } else {
-                                    Swal.fire('Error', response.message, 'error');
-                                }
-                            })
-                            .fail(function() {
-                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
-                            });
-                    }
-                });
+        function cancelarDirecto(idAgenda, motivo, justificacion) {
+            const fila = $(`tr[data-clave-agenda="${idAgenda}"]`);
+            const button = fila.find('.btn-cancelar-directo');
+
+            $.post('@Url.Action("CancelarDirecto", "Agenda")', {
+                idAgenda: idAgenda,
+                motivo: motivo,
+                justificacion: justificacion
+            })
+            .done(function(response) {
+                if (response.success) {
+                    Swal.fire('¡Cancelado!', response.message, 'success');
+                    // Actualizar la fila
+                    const celdaEstatus = fila.find('.estatus-agenda');
+                    celdaEstatus.html('<span class="badge bg-secondary">CANCELADO</span>');
+
+                    const celdaAcciones = button.closest('td');
+                    celdaAcciones.html('<span class="text-muted">N/A</span>');
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
+            })
+            .fail(function() {
+                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
             });
+        }
 
-            $('.display').on('click', '.btn-precancelar', function() {
-                var id = $(this).data('id');
-                var fila = $(this).closest('tr');
-                var button = $(this);
+        function preCancelar(idAgenda, motivo, justificacion) {
+            const fila = $(`tr[data-clave-agenda="${idAgenda}"]`);
+            const button = fila.find('.btn-precancelar');
 
-                Swal.fire({
-                    title: '¿Solicitar Cancelación?',
-                    text: "Este mantenimiento se marcará como pre-cancelado y un administrador deberá confirmarla.",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Sí, solicitar',
-                    cancelButtonText: 'No'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.post('@Url.Action("PreCancelar", "Agenda")', { idAgenda: id })
-                            .done(function(response) {
-                                if (response.success) {
-                                    Swal.fire('¡Hecho!', response.message, 'success');
+            $.post('@Url.Action("PreCancelar", "Agenda")', {
+                idAgenda: idAgenda,
+                motivo: motivo,
+                justificacion: justificacion
+            })
+            .done(function(response) {
+                if (response.success) {
+                    Swal.fire('¡Solicitud Enviada!', response.message, 'success');
+                    // Actualizar la fila
+                    const celdaEstatus = fila.find('.estatus-agenda');
+                    celdaEstatus.html('<span class="badge bg-warning text-dark">PRE-CANCELADO</span>');
 
-                                    // Actualizar la fila
-                                    var celdaEstatus = fila.find('.estatus-agenda');
-                                    celdaEstatus.html('<span class="badge bg-warning text-dark">PRE-CANCELADO</span>');
-
-                                    var celdaAcciones = button.closest('td');
-                                    if (esAdmin) {
-                                        celdaAcciones.html('<button class="btn btn-success btn-sm btn-confirmar-cancelacion" data-id="' + id + '" title="Confirmar Cancelación"><i class="bi bi-check-circle"></i></button> <button class="btn btn-danger btn-sm btn-rechazar-cancelacion" data-id="' + id + '" title="Rechazar Cancelación"><i class="bi bi-x-circle"></i></button>');
-                                    } else {
-                                        celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
-                                    }
-                                } else {
-                                    Swal.fire('Error', response.message, 'error');
-                                }
-                            })
-                            .fail(function() {
-                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
-                            });
+                    const celdaAcciones = button.closest('td');
+                    if (esAdmin) {
+                        celdaAcciones.html(`
+                            <button class="btn btn-success btn-sm btn-confirmar-cancelacion" data-id="${idAgenda}" title="Confirmar Cancelación">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm btn-rechazar-cancelacion" data-id="${idAgenda}" title="Rechazar Cancelación">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        `);
+                    } else {
+                        celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
                     }
-                });
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
+            })
+            .fail(function() {
+                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
             });
+        }
 
-            $('.display').on('click', '.btn-confirmar-cancelacion', function() {
-                var id = $(this).data('id');
-                var fila = $(this).closest('tr');
+        // EVENT HANDLERS ACTUALIZADOS
+        $('.display').on('click', '.btn-cancelar-directo', function() {
+            const id = $(this).data('id');
+            mostrarModalCancelacion(id, true); // true = esAdmin
+        });
 
-                Swal.fire({
-                    title: '¿Confirmar Cancelación?',
-                    text: "La pre-cancelación será confirmada permanentemente.",
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Sí, confirmar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.post('@Url.Action("ConfirmarCancelacion", "Agenda")', { idAgenda: id })
-                            .done(function(response) {
-                                if (response.success) {
-                                    Swal.fire('¡Confirmada!', response.message, 'success');
+        $('.display').on('click', '.btn-precancelar', function() {
+            const id = $(this).data('id');
+            mostrarModalCancelacion(id, false); // false = no esAdmin
+        });
 
-                                    var celdaEstatus = fila.find('.estatus-agenda');
-                                    celdaEstatus.html('<span class="badge bg-secondary">CANCELADO</span>');
+        // ✅ MANTENER ESTAS FUNCIONES (NO CAMBIAN)
+        $('.display').on('click', '.btn-confirmar-cancelacion', function() {
+            var id = $(this).data('id');
+            var fila = $(this).closest('tr');
 
-                                    var celdaAcciones = fila.find('td:last');
-                                    celdaAcciones.html('<span class="text-muted">N/A</span>');
+            Swal.fire({
+                title: '¿Confirmar Cancelación?',
+                text: "La pre-cancelación será confirmada permanentemente.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, confirmar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("ConfirmarCancelacion", "Agenda")', { idAgenda: id })
+                        .done(function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Confirmada!', response.message, 'success');
+
+                                var celdaEstatus = fila.find('.estatus-agenda');
+                                celdaEstatus.html('<span class="badge bg-secondary">CANCELADO</span>');
+
+                                var celdaAcciones = fila.find('td:last');
+                                celdaAcciones.html('<span class="text-muted">N/A</span>');
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
+                            }
+                        })
+                        .fail(function() {
+                            Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                        });
+                }
+            });
+        });
+
+        $('.display').on('click', '.btn-rechazar-cancelacion', function() {
+            var id = $(this).data('id');
+            var fila = $(this).closest('tr');
+
+            Swal.fire({
+                title: '¿Rechazar Cancelación?',
+                text: "El mantenimiento volverá a estatus PENDIENTE.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, rechazar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("ReactivarAgenda", "Agenda")', { idAgenda: id })
+                        .done(function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Rechazada!', 'El mantenimiento ha sido reactivado.', 'success');
+
+                                var celdaEstatus = fila.find('.estatus-agenda');
+                                celdaEstatus.html('<span class="badge bg-info">PENDIENTE</span>');
+
+                                var celdaAcciones = fila.find('td:last');
+                                if (esAdmin) {
+                                    celdaAcciones.html('<button class="btn btn-danger btn-sm btn-cancelar-directo" data-id="' + id + '">Cancelar</button>');
                                 } else {
-                                    Swal.fire('Error', response.message, 'error');
+                                    celdaAcciones.html('<button class="btn btn-warning btn-sm btn-precancelar" data-id="' + id + '">Cancelar</button>');
                                 }
-                            })
-                            .fail(function() {
-                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
-                            });
-                    }
-                });
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
+                            }
+                        })
+                        .fail(function() {
+                            Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                        });
+                }
             });
+        });
 
-            $('.display').on('click', '.btn-rechazar-cancelacion', function() {
-                var id = $(this).data('id');
-                var fila = $(this).closest('tr');
-
-                Swal.fire({
-                    title: '¿Rechazar Cancelación?',
-                    text: "El mantenimiento volverá a estatus PENDIENTE.",
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#28a745',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Sí, rechazar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.post('@Url.Action("ReactivarAgenda", "Agenda")', { idAgenda: id })
-                            .done(function(response) {
-                                if (response.success) {
-                                    Swal.fire('¡Rechazada!', 'El mantenimiento ha sido reactivado.', 'success');
-
-                                    var celdaEstatus = fila.find('.estatus-agenda');
-                                    celdaEstatus.html('<span class="badge bg-info">PENDIENTE</span>');
-
-                                    var celdaAcciones = fila.find('td:last');
-                                    if (esAdmin) {
-                                        celdaAcciones.html('<button class="btn btn-danger btn-sm btn-cancelar-directo" data-id="' + id + '">Cancelar</button>');
-                                    } else {
-                                        celdaAcciones.html('<button class="btn btn-warning btn-sm btn-precancelar" data-id="' + id + '">Cancelar</button>');
-                                    }
-                                } else {
-                                    Swal.fire('Error', response.message, 'error');
-                                }
-                            })
-                            .fail(function() {
-                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
-                            });
-                    }
-                });
-            });
-
+        
             $('[data-bs-target="#modalInfo"]').on('click', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');
