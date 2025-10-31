@@ -23,7 +23,6 @@ namespace MantenimientosTI.Services
             _configuration = configuration;
         }
 
-        // Reemplaza TODO el método ExecuteAsync en ScheduledEmailService.cs
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Servicio de correo programado iniciado.");
@@ -42,17 +41,37 @@ namespace MantenimientosTI.Services
                     var configDiaDb = await context.Configuraciones
                         .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_DIA", stoppingToken);
 
-                    var configHoraDb = await context.Configuraciones
-                        .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_HORA", stoppingToken);
+                    var configHorasDb = await context.Configuraciones
+                        .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_HORAS", stoppingToken);
 
                     string diaProgramadoStr;
-                    TimeOnly horaProgramada;
+                    List<TimeOnly> horasProgramadas = new List<TimeOnly>();
 
-                    if (configDiaDb != null && configHoraDb != null && TimeOnly.TryParse(configHoraDb.Valor, out horaProgramada))
+                    if (configDiaDb != null && configHorasDb != null)
                     {
                         // Usar configuración de la Base de Datos
                         diaProgramadoStr = configDiaDb.Valor;
-                        _logger.LogInformation($"Usando programación de BD: {diaProgramadoStr} a las {horaProgramada}");
+
+                        // Deserializar las horas programadas
+                        try
+                        {
+                            var horasList = System.Text.Json.JsonSerializer.Deserialize<List<string>>(configHorasDb.Valor);
+                            if (horasList != null)
+                            {
+                                foreach (var horaStr in horasList)
+                                {
+                                    if (TimeOnly.TryParse(horaStr, out var hora))
+                                    {
+                                        horasProgramadas.Add(hora);
+                                    }
+                                }
+                            }
+                            _logger.LogInformation($"Usando programación de BD: {diaProgramadoStr} con {horasProgramadas.Count} horarios");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error al deserializar horas programadas");
+                        }
                     }
                     else
                     {
@@ -66,10 +85,11 @@ namespace MantenimientosTI.Services
                         }
 
                         diaProgramadoStr = scheduleConfig.GetValue<string>("DayOfWeek") ?? "Friday";
-                        horaProgramada = new TimeOnly(
+                        var horaProgramada = new TimeOnly(
                             scheduleConfig.GetValue<int>("Hour"),
                             scheduleConfig.GetValue<int>("Minute")
                         );
+                        horasProgramadas.Add(horaProgramada);
                         _logger.LogInformation($"Usando programación de appsettings: {diaProgramadoStr} a las {horaProgramada}");
                     }
 
@@ -80,54 +100,77 @@ namespace MantenimientosTI.Services
                         diaProgramado = DayOfWeek.Friday;
                     }
 
-                    // 3. Verificar si es hora de ejecutar
-                    var ahoraLocal = DateTime.Now; // Usamos hora Local del servidor
-
-                    bool esDia = ahoraLocal.DayOfWeek == diaProgramado;
-                    bool esHora = ahoraLocal.Hour == horaProgramada.Hour && ahoraLocal.Minute == horaProgramada.Minute;
-
-                    if (esDia && esHora)
+                    // 3. Verificar si tenemos horarios programados
+                    if (!horasProgramadas.Any())
                     {
-                        _logger.LogInformation("Día y hora programada coinciden. Verificando última ejecución...");
+                        _logger.LogWarning("No se encontraron horarios válidos programados");
+                        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                        continue;
+                    }
 
-                        // 4. Verificar que no se haya ejecutado HOY
-                        var configUltimaEjecucion = await context.Configuraciones
-                            .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_ULTIMA_EJECUCION", stoppingToken);
+                    // 4. Verificar si es hora de ejecutar para algún horario
+                    var ahoraLocal = DateTime.Now; // Usamos hora Local del servidor
+                    bool esDia = ahoraLocal.DayOfWeek == diaProgramado;
 
-                        DateTime? ultimaEjecucion = null;
-                        if (configUltimaEjecucion != null && DateTime.TryParse(configUltimaEjecucion.Valor, out var fechaUltima))
+                    if (esDia)
+                    {
+                        foreach (var horaProgramada in horasProgramadas)
                         {
-                            ultimaEjecucion = fechaUltima;
-                        }
+                            bool esHora = ahoraLocal.Hour == horaProgramada.Hour &&
+                                          ahoraLocal.Minute == horaProgramada.Minute;
 
-                        // Si no hay registro o si el registro es de un día anterior
-                        if (!ultimaEjecucion.HasValue || ultimaEjecucion.Value.Date < ahoraLocal.Date)
-                        {
-                            _logger.LogInformation("Ejecutando envío programado de reporte...");
-                            await EnviarReporteProgramado();
-
-                            // 5. Guardar la hora de esta ejecución
-                            if (configUltimaEjecucion == null)
+                            if (esHora)
                             {
-                                context.Configuraciones.Add(new Configuracion
+                                _logger.LogInformation($"Día y hora programada coinciden ({horaProgramada}). Verificando última ejecución...");
+
+                                // 5. Verificar que no se haya ejecutado en esta hora específica HOY
+                                var claveUltimaEjecucion = $"PROGRAMACION_REPORTE_ULTIMA_EJECUCION_{horaProgramada:HHmm}";
+
+                                var configUltimaEjecucion = await context.Configuraciones
+                                    .FirstOrDefaultAsync(c => c.ClaveConfiguracion == claveUltimaEjecucion, stoppingToken);
+
+                                DateTime? ultimaEjecucion = null;
+                                if (configUltimaEjecucion != null && DateTime.TryParse(configUltimaEjecucion.Valor, out var fechaUltima))
                                 {
-                                    ClaveConfiguracion = "PROGRAMACION_REPORTE_ULTIMA_EJECUCION",
-                                    Valor = ahoraLocal.ToString("O"), // Formato ISO
-                                    Descripcion = "Última fecha de ejecución del reporte programado"
-                                });
-                            }
-                            else
-                            {
-                                configUltimaEjecucion.Valor = ahoraLocal.ToString("O");
-                            }
-                            await context.SaveChangesAsync(stoppingToken);
+                                    ultimaEjecucion = fechaUltima;
+                                }
 
-                            _logger.LogInformation("Envío programado completado y fecha de ejecución actualizada.");
+                                // Si no hay registro o si el registro es de un día anterior
+                                if (!ultimaEjecucion.HasValue || ultimaEjecucion.Value.Date < ahoraLocal.Date)
+                                {
+                                    _logger.LogInformation($"Ejecutando envío programado de reporte a las {horaProgramada}...");
+                                    await EnviarReporteProgramado();
+
+                                    // 6. Guardar la hora de esta ejecución específica
+                                    if (configUltimaEjecucion == null)
+                                    {
+                                        context.Configuraciones.Add(new Configuracion
+                                        {
+                                            ClaveConfiguracion = claveUltimaEjecucion,
+                                            Valor = ahoraLocal.ToString("O"), // Formato ISO
+                                            Descripcion = $"Última fecha de ejecución del reporte programado a las {horaProgramada}"
+                                        });
+                                    }
+                                    else
+                                    {
+                                        configUltimaEjecucion.Valor = ahoraLocal.ToString("O");
+                                    }
+                                    await context.SaveChangesAsync(stoppingToken);
+
+                                    _logger.LogInformation($"Envío programado completado a las {horaProgramada} y fecha de ejecución actualizada.");
+                                }
+                                else
+                                {
+                                    _logger.LogInformation($"El reporte programado ya se ejecutó hoy a las {horaProgramada}.");
+                                }
+                            }
                         }
-                        else
-                        {
-                            _logger.LogInformation("El reporte programado ya se ejecutó hoy.");
-                        }
+                    }
+
+                    // 7. Log opcional para debugging (solo una vez cada cierto tiempo para no saturar los logs)
+                    if (DateTime.Now.Minute % 30 == 0) // Cada 30 minutos
+                    {
+                        _logger.LogDebug($"Servicio activo - Verificando programación: {diaProgramado} a las {string.Join(", ", horasProgramadas)}");
                     }
                 }
                 catch (Exception ex)
@@ -135,7 +178,7 @@ namespace MantenimientosTI.Services
                     _logger.LogError(ex, "Error en el servicio de correo programado.");
                 }
 
-                // 6. Esperar 1 minuto antes de verificar nuevamente
+                // 8. Esperar 1 minuto antes de verificar nuevamente
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }
@@ -184,8 +227,7 @@ namespace MantenimientosTI.Services
 
                 _logger.LogInformation($"Enviando reporte programado del MES ACTUAL: {primerDiaMesActual:dd/MM/yyyy} - {ultimoDiaMesActual:dd/MM/yyyy}");
 
-                var resultado = await reporteService.EnviarCorreoConExcel(primerDiaMesActual, ultimoDiaMesActual);
-
+                var resultado = await reporteService.EnviarCorreoConExcel(primerDiaMesActual, ultimoDiaMesActual, null);
                 if (resultado)
                 {
                     logger.LogInformation($"Reporte programado del MES ACTUAL {primerDiaMesActual:dd/MM/yyyy} al {ultimoDiaMesActual:dd/MM/yyyy} enviado exitosamente.");

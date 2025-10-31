@@ -108,8 +108,8 @@
                     </a>
 
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
-                        @if (User.IsInRole("ADMINISTRADOR"))
+@*                         <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
+ *@                        @if (User.IsInRole("ADMINISTRADOR"))
                         {
                             <li><a class="dropdown-item" href="@Url.Action("Configuracion", "Configuracion")"><i class="fas fa-cog me-2"></i>Configuracion</a></li>
                         }
@@ -137,6 +137,13 @@
                         {
                             <a href="/Dashboard/Dashboard" class="nav-link ajax-link text-white">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                Dashboard
+                            </a>
+                        }
+                        else if (User.IsInRole("TÉCNICO DE ZONA"))
+                        {
+                            <a href="/Dashboard/DashboardTecnico" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-eye"></i></div>
                                 Dashboard
                             </a>
                         }
@@ -170,20 +177,11 @@
                                     Mantenimientos preventivos
                                 </a>
 
-                                <a class="nav-link collapsed text-white" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCorrectivo" aria-expanded="false" aria-controls="collapseCorrectivo">
-                                    <div class="sb-nav-link-icon"><i class="fas fa-triangle-exclamation"></i></div>
+                                <a class="nav-link text-white ajax-link" href="/Agenda/AgendarCorrectivos">
+                                    <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
                                     Mantenimiento correctivo
-                                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                                 </a>
 
-                                <div class="collapse" id="collapseCorrectivo" data-bs-parent="#collapseMantenimientos">
-                                    <nav class="sb-sidenav-menu-nested nav flex-column ps-3">
-
-                                        <a class="nav-link text-white ajax-link" href="/Agenda/AgendarCorrectivos">
-                                            CFEmático
-                                        </a>
-                                    </nav>
-                                </div>
                             </nav>
                         </div>
 

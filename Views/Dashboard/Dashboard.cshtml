@@ -88,6 +88,7 @@
         gap: 10px;
         flex-wrap: wrap;
     }
+
     /* Colores tarjetas nuevas */
     .card-orange {
         background-color: #fd7e14;
@@ -108,11 +109,11 @@
     .card-gray {
         background-color: #808080;
     }
-    /* Usando gris más oscuro */
+
     .text-orange {
         color: #fd7e14 !important;
     }
-    /* Para texto naranja */
+
     /* Efectos hover tarjetas nuevas */
     .stats-card:hover {
         transform: translateY(-3px);
@@ -138,7 +139,6 @@
     .card-gray:hover {
         box-shadow: 0 6px 15px rgba(108, 117, 125, 0.25) !important;
     }
-    /* Sombra gris */
 
     /* Estilos para el selector de hora personalizado */
     .input-group .form-select {
@@ -159,6 +159,93 @@
         background-color: #f8f9fa;
         border-color: #dee2e6;
         font-weight: 600;
+    }
+
+    /* Estilos para las gráficas */
+    .color-box {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        display: inline-block;
+    }
+
+    .legend-container {
+        border-top: 1px solid #f0f0f0;
+        padding-top: 8px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 160px;
+        min-height: 160px;
+    }
+
+    /* Asegurar que la tarjeta de reportes no se estire */
+    .card-reportes {
+        height: auto !important;
+        min-height: auto;
+    }
+
+    /* Agrega esto en tu sección de estilos */
+    .chart-container {
+        position: relative;
+        height: 160px;
+        min-height: 160px;
+    }
+
+    .position-absolute {
+        z-index: 1;
+    }
+
+    /* Estilos para los controles de filtro de gráficas */
+    .filtro-graficas {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid #e9ecef;
+    }
+
+    .card-header .form-control-sm {
+        font-size: 0.8rem;
+    }
+
+    .card-header .btn-sm {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Estilos para animaciones de gráficas */
+    .chart-fade-in {
+        animation: chartFadeIn 1s ease-out;
+    }
+
+    @@keyframes chartFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .card-fade-in {
+        animation: cardFadeIn 0.6s ease-out;
+    }
+
+    @@keyframes cardFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     /* Media queries para responsividad */
@@ -185,6 +272,15 @@
         .stats-badge {
             font-size: 0.7rem;
         }
+
+        .filtro-graficas .d-flex {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+            .filtro-graficas .d-flex > * {
+                width: 100%;
+            }
     }
 
     @@media (max-width: 576px) {
@@ -308,26 +404,147 @@
                 <div class="col-lg-8 col-md-12">
                     <div class="card h-100 shadow-sm">
                         <div class="card-header bg-light border-bottom">
-                            <h5 class="mb-0 text-secondary"><i class="fas fa-chart-line me-2"></i> Gráficas de Avance de Mantenimientos</h5>
+                            <h5 class="mb-0 text-secondary"><i class="fas fa-chart-pie me-2"></i> Avances de mantenimientos</h5>
                         </div>
-                        <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 300px;">
-                            <span class="text-muted fst-italic">Proximamente.</span>
+                        <div class="card-body">
+                            <!-- Controles de filtro para gráficas -->
+                            <div class="filtro-graficas">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                        <label class="form-label mb-0 text-nowrap">Rango de fechas:</label>
+                                        <input type="date" class="form-control form-control-sm" id="filtroFechaInicio"
+                                               style="max-width: 150px;" title="Fecha Inicio">
+                                        <span class="text-muted">a</span>
+                                        <input type="date" class="form-control form-control-sm" id="filtroFechaFin"
+                                               style="max-width: 150px;" title="Fecha Fin">
+                                        <label class="form-label mb-0 text-nowrap ms-3">Zona:</label>
+                                        <select class="form-select form-select-sm" id="filtroZona" style="max-width: 150px;">
+                                            <option value="TODAS">TODAS</option>
+                                            @foreach (var zona in Model.Zonas)
+                                            {
+                                                <option value="@zona.ClaveZona">@zona.NombreZona</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <button id="btnFiltrarGraficas" class="btn btn-success btn-sm">
+                                        <i class="fas fa-filter me-1"></i>Filtrar
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted" id="infoFiltroGraficas">
+                                        Mostrando datos del mes actual para TODAS las zonas
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- CONTENEDOR PARA MENSAJES DE GRÁFICAS -->
+                            <div id="mensajeGraficas" class="mt-2 small"></div>
+
+                            @{
+                                var zonasConDatos = Model.GraficasZonas.Where(z => z.TieneDatos).ToList();
+                            }
+
+                            @if (zonasConDatos.Any())
+                            {
+                                <div class="row g-3" id="contenedorGraficas">
+                                    @foreach (var zona in zonasConDatos)
+                                    {
+                                        <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 card-fade-in">
+                                            <div class="card border-0 shadow-sm h-100">
+                                                <div class="card-header bg-light py-2">
+                                                    <h6 class="mb-0 text-center text-dark" style="font-size: 0.85rem; font-weight: normal;">@zona.NombreZona</h6>
+                                                </div>
+                                                <div class="card-body p-2 d-flex flex-column">
+                                                    <div class="chart-container flex-grow-1 position-relative">
+                                                        <canvas id="chart-@zona.Zona"
+                                                                data-item='@Json.Serialize(zona)'
+                                                                data-tiene-datos="true"
+                                                                data-tipo="zonas"></canvas>
+                                                    </div>
+                                                    <div class="legend-container mt-2">
+                                                        <div class="d-flex justify-content-center flex-wrap gap-2">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="color-box bg-success me-1"></div>
+                                                                <small class="text-muted">Terminados: @zona.Terminados</small>
+                                                            </div>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="color-box bg-warning me-1"></div>
+                                                                <small class="text-muted">Pendientes: @zona.Pendientes</small>
+                                                            </div>
+                                                            @if (zona.Otros > 0)
+                                                            {
+                                                                <div class="d-flex align-items-center">
+                                                                    <div class="color-box bg-secondary me-1"></div>
+                                                                    <small class="text-muted">Otros: @zona.Otros</small>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-4">
+                                    <span class="text-muted fst-italic">No hay datos disponibles para mostrar.</span>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-4 col-md-12">
-                    <div class="card h-100 shadow-sm">
+                    <div class="card shadow-sm card-reportes">
                         <div class="card-header bg-light border-bottom">
-                            <h5 class="mb-0 text-secondary"><i class="fas fa-envelope me-2"></i>Gestión de Reportes</h5>
+                            <h5 class="mb-0 text-secondary"><i class="fas fa-envelope me-2"></i>Gestión de reportes</h5>
                         </div>
                         <div class="card-body p-3 d-flex flex-column">
                             <div class="mb-3 pb-3 border-bottom">
                                 <h6><i class="fas fa-paper-plane me-1 text-success"></i> Envío Manual</h6>
+
+                                <!-- Botón para desplegar/contraer la lista de usuarios -->
+                                <div class="mb-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 d-flex justify-content-between align-items-center" id="btnSeleccionarUsuarios">
+                                        <span>
+                                            <i class="fas fa-users me-1"></i> Seleccionar usuarios
+                                        </span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Contenedor de la lista de usuarios (inicialmente oculto) -->
+                                <div id="contenedorUsuarios" class="mt-2" style="display: none;">
+                                    <div class="card">
+                                        <div class="card-body py-2">
+                                            <h6 class="card-title">Usuarios administradores</h6>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="seleccionarTodos">
+                                                <label class="form-check-label" for="seleccionarTodos">
+                                                    Seleccionar todos
+                                                </label>
+                                            </div>
+                                            <hr class="my-2">
+                                            <div id="listaUsuarios">
+                                                <!-- Aquí se cargarán los usuarios dinámicamente -->
+                                                <div class="text-center">
+                                                    <div class="spinner-border spinner-border-sm" role="status">
+                                                        <span class="visually-hidden">Cargando...</span>
+                                                    </div>
+                                                    <small class="text-muted">Cargando usuarios...</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div id="mensajeResultado" class="mt-2 small"></div>
+
+                                <!-- El resto del formulario existente -->
                                 <div class="mb-2 mt-2">
-@*                                     <label class="form-label small fw-bold mb-1">Rango de Fechas</label>
- *@                                    <div class="row g-2">
+                                    <div class="row g-2">
                                         <div class="col-6">
                                             <input type="date" class="form-control form-control-sm" id="fechaInicio" title="Fecha Inicio">
                                         </div>
@@ -352,10 +569,12 @@
                             <div class="mt-auto">
                                 <h6><i class="fas fa-clock me-1 text-success"></i> Programación Semanal</h6>
                                 <div id="mensajeProgramacion" class="mt-2 small"></div>
+
                                 <div class="mb-2 mt-2">
-@*                                     <label class="form-label small fw-bold mb-1">¿Cuándo enviar?</label>
- *@                                    <div class="row g-2">
-                                        <div class="col-6">
+                                    <!-- Día de la semana -->
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Día de envío:</label>
                                             <select class="form-select form-select-sm" id="diaSemanaProgramado">
                                                 <option value="Monday">Lunes</option>
                                                 <option value="Tuesday">Martes</option>
@@ -366,40 +585,82 @@
                                                 <option value="Sunday">Domingo</option>
                                             </select>
                                         </div>
-                                        <div class="col-6">
+                                    </div>
+
+                                    <!-- Primer horario -->
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Primer envío:</label>
                                             <div class="input-group input-group-sm">
-                                                <select class="form-select" id="horaProgramadaHoras" style="min-width: 55px;">
+                                                <select class="form-select" id="horaProgramadaHoras1" style="min-width: 55px;">
+                                                    <option value="01">01</option>
+                                                    <option value="02">02</option>
+                                                    <option value="03">03</option>
+                                                    <option value="04">04</option>
+                                                    <option value="05">05</option>
+                                                    <option value="06">06</option>
                                                     <option value="07">07</option>
                                                     <option value="08">08</option>
                                                     <option value="09">09</option>
                                                     <option value="10">10</option>
                                                     <option value="11">11</option>
                                                     <option value="12">12</option>
-                                                    <option value="13">13</option>
-                                                    <option value="14">14</option>
-                                                    <option value="15">15</option>
-                                                    <option value="16">16</option>
-                                                    <option value="17">17</option>
-                                                    <option value="18">18</option>
                                                 </select>
                                                 <span class="input-group-text px-1">:</span>
-                                                <select class="form-select" id="horaProgramadaMinutos" style="min-width: 55px;">
+                                                <select class="form-select" id="horaProgramadaMinutos1" style="min-width: 55px;">
                                                     <option value="00">00</option>
                                                     <option value="15">15</option>
                                                     <option value="30">30</option>
                                                     <option value="45">45</option>
                                                 </select>
-                                                <select class="form-select" id="horaProgramadaPeriodo" style="min-width: 55px;">
+                                                <select class="form-select" id="horaProgramadaPeriodo1" style="min-width: 55px;">
                                                     <option value="AM">AM</option>
                                                     <option value="PM">PM</option>
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Segundo horario -->
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Segundo envío (opcional):</label>
+                                            <div class="input-group input-group-sm">
+                                                <select class="form-select" id="horaProgramadaHoras2" style="min-width: 55px;">
+                                                    <option value="">--</option>
+                                                    <option value="01">01</option>
+                                                    <option value="02">02</option>
+                                                    <option value="03">03</option>
+                                                    <option value="04">04</option>
+                                                    <option value="05">05</option>
+                                                    <option value="06">06</option>
+                                                    <option value="07">07</option>
+                                                    <option value="08">08</option>
+                                                    <option value="09">09</option>
+                                                    <option value="10">10</option>
+                                                    <option value="11">11</option>
+                                                    <option value="12">12</option>
+                                                </select>
+                                                <span class="input-group-text px-1">:</span>
+                                                <select class="form-select" id="horaProgramadaMinutos2" style="min-width: 55px;">
+                                                    <option value="00">00</option>
+                                                    <option value="15">15</option>
+                                                    <option value="30">30</option>
+                                                    <option value="45">45</option>
+                                                </select>
+                                                <select class="form-select" id="horaProgramadaPeriodo2" style="min-width: 55px;">
+                                                    <option value="AM">AM</option>
+                                                    <option value="PM">PM</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div class="mt-1">
                                         <small class="text-muted fst-italic" id="infoProgramacion" style="font-size: 0.8em;"></small>
                                     </div>
                                 </div>
+
                                 <div class="d-grid gap-2 mb-3">
                                     <button id="btnProgramarEnvio" class="btn btn-success btn-sm">
                                         <i class="fas fa-save me-1"></i>Guardar Programación
@@ -408,6 +669,7 @@
                                         <i class="fas fa-trash me-1"></i>Eliminar Programación
                                     </button>
                                 </div>
+
                                 <div class="p-2 bg-light rounded border">
                                     <small class="text-muted" style="font-size: 0.8em;">
                                         <i class="fas fa-info-circle me-1"></i>
@@ -426,17 +688,17 @@
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Agregar Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         $(document).ready(function() {
             // --- FUNCIONES AUXILIARES ---
             function mostrarAlerta(mensaje, tipo, contenedor = '#mensajeResultado') {
-                // Limpiar alertas anteriores en ese contenedor
                 $(contenedor).empty();
-                // Determinar icono y clase
                 const icono = (tipo === 'success') ? 'fa-check-circle' : 'fa-exclamation-circle';
                 const claseAlerta = `alert-${tipo}`;
 
-                // Crear y mostrar la nueva alerta
                 const alertaHtml = `
                     <div class="alert ${claseAlerta} alert-dismissible fade show" role="alert">
                         <i class="fas ${icono} me-2"></i>
@@ -445,29 +707,159 @@
                     </div>`;
                 $(contenedor).html(alertaHtml);
 
-                // Opcional: Desvanecer alerta de éxito después de unos segundos
                 if (tipo === 'success') {
                     setTimeout(() => {
                         $(contenedor).find('.alert').fadeOut(500, function() { $(this).remove(); });
-                    }, 5000); // 5 segundos
+                    }, 5000);
                 }
             }
 
-            // Función para obtener la hora del selector personalizado
-            function obtenerHoraSeleccionada() {
-                let horas = $('#horaProgramadaHoras').val();
-                let minutos = $('#horaProgramadaMinutos').val();
-                let periodo = $('#horaProgramadaPeriodo').val();
+            // --- FUNCIONES PARA GESTIÓN DE USUARIOS ---
+            function cargarUsuariosAdministradores() {
+                $.get('@Url.Action("ObtenerUsuariosAdministradores", "Dashboard")')
+                    .done(function(response) {
+                        if (response.success) {
+                            actualizarListaUsuarios(response.usuarios);
+                        } else {
+                            $('#listaUsuarios').html('<div class="text-danger small">Error al cargar usuarios</div>');
+                        }
+                    })
+                    .fail(function() {
+                        $('#listaUsuarios').html('<div class="text-danger small">Error de conexión</div>');
+                    });
+            }
 
-                // Convertir a formato 24 horas
-                if (periodo === 'PM' && horas !== '12') {
-                    horas = String(parseInt(horas) + 12);
-                } else if (periodo === 'AM' && horas === '12') {
-                    horas = '00';
+            function actualizarListaUsuarios(usuarios) {
+                const listaUsuarios = $('#listaUsuarios');
+
+                if (usuarios.length === 0) {
+                    listaUsuarios.html('<div class="text-muted small">No hay usuarios administradores registrados</div>');
+                    return;
                 }
 
-                return `${horas.padStart(2, '0')}:${minutos}`;
+                let html = '';
+                usuarios.forEach(usuario => {
+                    const nombreCompleto = `${usuario.nombre} ${usuario.apellidoP} ${usuario.apellidoM}`;
+                    html += `
+                        <div class="form-check">
+                            <input class="form-check-input usuario-checkbox" type="checkbox"
+                                   value="${usuario.rpe}" id="usuario-${usuario.rpe}">
+                            <label class="form-check-label" for="usuario-${usuario.rpe}">
+                                ${nombreCompleto} <small class="text-muted">(${usuario.correo})</small>
+                            </label>
+                        </div>
+                    `;
+                });
+
+                listaUsuarios.html(html);
             }
+
+            function obtenerUsuariosSeleccionados() {
+                const usuariosSeleccionados = [];
+                $('.usuario-checkbox:checked').each(function() {
+                    usuariosSeleccionados.push($(this).val());
+                });
+                return usuariosSeleccionados;
+            }
+
+            // --- FUNCIONES PARA PROGRAMACIÓN DE ENVÍOS (MÚLTIPLES HORARIOS) ---
+            function obtenerHorasSeleccionadas() {
+                const horas = [];
+
+                // Primer horario (obligatorio)
+                const hora1 = obtenerHoraSeleccionada(1);
+                if (hora1) {
+                    horas.push(hora1);
+                }
+
+                // Segundo horario (opcional)
+                const hora2 = obtenerHoraSeleccionada(2);
+                if (hora2) {
+                    horas.push(hora2);
+                }
+
+                return horas;
+            }
+
+        function obtenerHoraSeleccionada(numero) {
+            let horas = $(`#horaProgramadaHoras${numero}`).val();
+            let minutos = $(`#horaProgramadaMinutos${numero}`).val();
+            let periodo = $(`#horaProgramadaPeriodo${numero}`).val();
+
+            // Si no se seleccionó hora para el segundo horario
+            if (numero === 2 && !horas) {
+                return null;
+            }
+
+            // Convertir a número para operaciones matemáticas
+            let horasNum = parseInt(horas);
+
+            // CORRECCIÓN: Lógica de conversión AM/PM a 24 horas
+            if (periodo === 'PM') {
+                if (horasNum !== 12) {
+                    horasNum += 12;
+                }
+                // Si es 12 PM, se queda como 12 (mediodía)
+            } else if (periodo === 'AM') {
+                if (horasNum === 12) {
+                    horasNum = 0; // 12 AM = medianoche
+                }
+                // Para otras horas AM, se quedan igual
+            }
+
+            // Formatear a string con 2 dígitos
+            return `${horasNum.toString().padStart(2, '0')}:${minutos}`;
+        }
+
+        function actualizarInfoProgramacion() {
+            const diaVal = $('#diaSemanaProgramado').val();
+            const horas = obtenerHorasSeleccionadas();
+            const diaTexto = $('#diaSemanaProgramado option:selected').text();
+
+            if (diaVal && horas.length > 0) {
+                try {
+                    const horasFormateadas = horas.map(hora => {
+                        // Validar formato de hora
+                        if (!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(hora)) {
+                            throw new Error(`Formato de hora inválido: ${hora}`);
+                        }
+
+                        const [horasStr, minutosStr] = hora.split(':');
+                        let horasNum = parseInt(horasStr);
+                        const minutosNum = parseInt(minutosStr);
+
+                        // Convertir a formato 12 horas para mostrar
+                        let periodo = 'AM';
+                        if (horasNum >= 12) {
+                            periodo = 'PM';
+                            if (horasNum > 12) {
+                                horasNum -= 12;
+                            }
+                        }
+                        if (horasNum === 0) {
+                            horasNum = 12; // Medianoche
+                        }
+
+                        return `${horasNum}:${minutosStr.toString().padStart(2, '0')} ${periodo}`;
+                    });
+
+                    let mensaje = `El reporte se enviará cada ${diaTexto} `;
+
+                    if (horasFormateadas.length === 1) {
+                        mensaje += `a las ${horasFormateadas[0]}`;
+                    } else {
+                        mensaje += `a las ${horasFormateadas[0]} y ${horasFormateadas[1]}`;
+                    }
+
+                    $('#infoProgramacion').text(mensaje);
+                } catch(e) {
+                    $('#infoProgramacion').text('Hora inválida. Verifica los horarios.');
+                    console.error('Error al formatear horas:', e);
+                }
+            } else {
+                $('#infoProgramacion').text('Selecciona día y al menos un horario.');
+            }
+        }
 
             // --- CARGA INICIAL Y CONFIGURACIÓN ---
             function cargarConfiguracionActual() {
@@ -503,7 +895,7 @@
                              return;
                         }
                         const diffTime = Math.abs(fin - inicio);
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir ambos días
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
                         $('#infoReporte').text(`Reporte del ${inicio.toLocaleDateString('es-ES')} hasta el ${fin.toLocaleDateString('es-ES')} (${diffDays} días)`);
                     } catch (e) {
                          $('#infoReporte').text('Fechas inválidas.');
@@ -513,61 +905,322 @@
                 }
             }
 
-             function actualizarInfoProgramacion() {
-                const diaVal = $('#diaSemanaProgramado').val();
-                const hora = obtenerHoraSeleccionada();
-                const diaTexto = $('#diaSemanaProgramado option:selected').text();
+            // --- FUNCIONES PARA FILTRAR GRÁFICAS ---
+            function establecerFechasPorDefectoGraficas() {
+                const hoy = new Date();
+                const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
 
-                if (diaVal && hora) {
-                    try{
-                        // Formatear hora a AM/PM
-                        const horaDate = new Date(`1970-01-01T${hora}`);
-                        const horaFormateada = horaDate.toLocaleTimeString('es-ES', {
-                            hour: '2-digit', minute: '2-digit', hour12: true
-                        });
-                        $('#infoProgramacion').text(`El reporte se enviará cada ${diaTexto} a las ${horaFormateada}`);
-                    } catch(e){
-                         $('#infoProgramacion').text('Hora inválida.');
+                $('#filtroFechaInicio').val(primerDiaMes.toISOString().split('T')[0]);
+                $('#filtroFechaFin').val(ultimoDiaMes.toISOString().split('T')[0]);
+                actualizarInfoFiltroGraficas();
+            }
+
+            function actualizarInfoFiltroGraficas() {
+                const fechaInicio = $('#filtroFechaInicio').val();
+                const fechaFin = $('#filtroFechaFin').val();
+                const zonaSeleccionada = $('#filtroZona').val();
+                const zonaTexto = $('#filtroZona option:selected').text();
+
+                if (fechaInicio && fechaFin) {
+                    try {
+                        const inicio = new Date(fechaInicio + 'T00:00:00');
+                        const fin = new Date(fechaFin + 'T00:00:00');
+                        if (inicio > fin) {
+                            $('#infoFiltroGraficas').text('La fecha de inicio no puede ser mayor a la fecha fin.');
+                            return;
+                        }
+                        const diffTime = Math.abs(fin - inicio);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                        if (zonaSeleccionada === 'TODAS') {
+                            $('#infoFiltroGraficas').text(`Mostrando datos del ${inicio.toLocaleDateString('es-ES')} al ${fin.toLocaleDateString('es-ES')} (${diffDays} días) para TODAS las zonas`);
+                        } else {
+                            $('#infoFiltroGraficas').text(`Mostrando datos del ${inicio.toLocaleDateString('es-ES')} al ${fin.toLocaleDateString('es-ES')} (${diffDays} días) para la zona: ${zonaTexto}`);
+                        }
+                    } catch (e) {
+                        $('#infoFiltroGraficas').text('Fechas inválidas.');
                     }
                 } else {
-                    $('#infoProgramacion').text('Selecciona día y hora.');
+                    if (zonaSeleccionada === 'TODAS') {
+                        $('#infoFiltroGraficas').text('Mostrando datos del mes actual para TODAS las zonas');
+                    } else {
+                        $('#infoFiltroGraficas').text(`Mostrando datos del mes actual para la zona: ${zonaTexto}`);
+                    }
                 }
             }
 
-            function establecerValoresPorDefecto() {
-                const ahora = new Date();
-                // Mes actual para envío manual
-                const primerDiaMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-                const ultimoDiaMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0);
-                $('#fechaInicio').val(primerDiaMes.toISOString().split('T')[0]);
-                $('#fechaFin').val(ultimoDiaMes.toISOString().split('T')[0]);
+            function cargarGraficasConFiltro(fechaInicio, fechaFin, zonaSeleccionada) {
+                const btn = $('#btnFiltrarGraficas');
+                //btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Filtrando...');
 
-                // Programación semanal por defecto (Viernes 7:30 AM)
-                $('#diaSemanaProgramado').val('Friday');
-                $('#horaProgramadaHoras').val('07');
-                $('#horaProgramadaMinutos').val('30');
-                $('#horaProgramadaPeriodo').val('AM');
+                // Limpiar mensajes anteriores en el contenedor de gráficas
+                $('#mensajeGraficas').empty();
 
-                // Actualizar textos informativos
-                actualizarInfoReporte();
-                actualizarInfoProgramacion();
+                let url = '';
+                let data = {};
+
+                if (zonaSeleccionada === 'TODAS') {
+                    url = '@Url.Action("ObtenerDatosGraficasPorFecha", "Dashboard")';
+                    data = { fechaInicio: fechaInicio, fechaFin: fechaFin };
+                } else {
+                    url = '@Url.Action("ObtenerDatosGraficasAgenciasPorZona", "Dashboard")';
+                    data = {
+                        fechaInicio: fechaInicio,
+                        fechaFin: fechaFin,
+                        zonaSeleccionada: zonaSeleccionada
+                    };
+                }
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        if (response.success) {
+                            actualizarGraficas(response.datosGraficas, response.tipo || 'zonas');
+                            //mostrarAlerta('Gráficas actualizadas correctamente.', 'success', '#mensajeGraficas');
+                        } else {
+                            mostrarAlerta(response.message || 'Error al cargar las gráficas.', 'danger', '#mensajeGraficas');
+                        }
+                    },
+                    error: function(xhr) {
+                        const errorMsg = xhr.responseJSON?.message || 'Error de conexión al cargar las gráficas.';
+                        mostrarAlerta(errorMsg, 'danger', '#mensajeGraficas');
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html('<i class="fas fa-filter me-1"></i>Filtrar');
+                    }
+                });
             }
 
+            function actualizarGraficas(datosGraficas, tipo) {
+                // Destruir gráficas existentes
+                $('canvas[id^="chart-"]').each(function() {
+                    const chart = Chart.getChart(this);
+                    if (chart) {
+                        chart.destroy();
+                    }
+                });
+
+                // Limpiar contenedor de gráficas
+                const contenedorGraficas = $('#contenedorGraficas');
+                contenedorGraficas.empty();
+
+                // Filtrar solo elementos con datos
+                const datosConGraficas = datosGraficas.filter(item => item.tieneDatos);
+
+                // Crear nuevas gráficas según el tipo
+                if (datosConGraficas.length === 0) {
+                    contenedorGraficas.html(`
+                        <div class="col-12">
+                            <div class="text-center py-4">
+                                <span class="text-muted fst-italic">No hay datos disponibles para mostrar.</span>
+                            </div>
+                        </div>
+                    `);
+                    return;
+                }
+
+                datosConGraficas.forEach((item, index) => {
+                    const id = tipo === 'agencias' ? item.agencia : (tipo === 'centros' ? item.centro : item.zona);
+                    const nombre = tipo === 'agencias' ? item.nombreAgencia : (tipo === 'centros' ? item.nombreCentro : item.nombreZona);
+
+                    const graficaHtml = `
+                        <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 card-fade-in" style="animation-delay: ${index * 0.1}s">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-light py-2">
+                                    <h6 class="mb-0 text-center text-dark" style="font-size: 0.85rem; font-weight: normal;">${nombre}</h6>
+                                </div>
+                                <div class="card-body p-2 d-flex flex-column">
+                                    <div class="chart-container flex-grow-1 position-relative">
+                                        <canvas id="chart-${id}"
+                                                data-item='${JSON.stringify(item)}'
+                                                data-tiene-datos="true"
+                                                data-tipo="${tipo}"></canvas>
+                                    </div>
+                                    <div class="legend-container mt-2">
+                                        <div class="d-flex justify-content-center flex-wrap gap-2">
+                                            <div class="d-flex align-items-center">
+                                                <div class="color-box bg-success me-1"></div>
+                                                <small class="text-muted">Terminados: ${item.terminados}</small>
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <div class="color-box bg-warning me-1"></div>
+                                                <small class="text-muted">Pendientes: ${item.pendientes}</small>
+                                            </div>
+                                            ${item.otros > 0 ? `
+                                            <div class="d-flex align-items-center">
+                                                <div class="color-box bg-secondary me-1"></div>
+                                                <small class="text-muted">Otros: ${item.otros}</small>
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    contenedorGraficas.append(graficaHtml);
+                });
+
+                // Re-inicializar gráficas después de un pequeño delay para permitir la animación CSS
+                setTimeout(inicializarGraficas, 300);
+            }
+
+            function inicializarGraficas() {
+                $('canvas[id^="chart-"]').each(function(index) {
+                    const canvas = $(this)[0];
+                    const item = $(this).data('item');
+                    const tieneDatos = $(this).data('tiene-datos');
+
+                    // Solo inicializar si tiene datos
+                    if (!tieneDatos || !item) {
+                        return;
+                    }
+
+                    const total = item.terminados + item.pendientes + item.otros;
+                    const data = {
+                        labels: ['Terminados', 'Pendientes', 'Otros'],
+                        datasets: [{
+                            data: [item.terminados, item.pendientes, item.otros],
+                            backgroundColor: [
+                                '#28a745', // Verde
+                                '#ffc107', // Amarillo
+                                '#6c757d'  // Gris
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 8
+                        }]
+                    };
+
+                    const config = {
+                        type: 'pie',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.raw || 0;
+                                            const percentage = Math.round((value / total) * 100);
+                                            return `${label}: ${value} (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeOutQuart',
+                                animateScale: true,
+                                animateRotate: true
+                            }
+                        }
+                    };
+
+                    // Destruir gráfica existente si hay una
+                    const chartExistente = Chart.getChart(canvas);
+                    if (chartExistente) {
+                        chartExistente.destroy();
+                    }
+
+                    // Agregar delay escalonado para animaciones
+                    setTimeout(() => {
+                        new Chart(canvas, config);
+                        $(canvas).addClass('chart-fade-in');
+                    }, index * 200);
+                });
+            }
+
+        function establecerValoresPorDefecto() {
+            const ahora = new Date();
+            const primerDiaMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+            const ultimoDiaMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0);
+            $('#fechaInicio').val(primerDiaMes.toISOString().split('T')[0]);
+            $('#fechaFin').val(ultimoDiaMes.toISOString().split('T')[0]);
+
+            $('#diaSemanaProgramado').val('Friday');
+
+            // Establecer valores por defecto más razonables
+            $('#horaProgramadaHoras1').val('01');
+            $('#horaProgramadaMinutos1').val('00');
+            $('#horaProgramadaPeriodo1').val('PM');
+
+            // Segundo horario vacío por defecto
+            $('#horaProgramadaHoras2').val('');
+            $('#horaProgramadaMinutos2').val('00');
+            $('#horaProgramadaPeriodo2').val('PM');
+
+            actualizarInfoReporte();
+            actualizarInfoProgramacion();
+        }
+
             // --- MANEJADORES DE EVENTOS ---
+
+            // Eventos para el selector de usuarios
+            $('#btnSeleccionarUsuarios').click(function() {
+                const contenedor = $('#contenedorUsuarios');
+                const iconoFlecha = $(this).find('i.fa-chevron-down, i.fa-chevron-up');
+
+                if (contenedor.is(':visible')) {
+                    contenedor.slideUp();
+                    iconoFlecha.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                } else {
+                    contenedor.slideDown();
+                    iconoFlecha.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                    // Cargar usuarios si es la primera vez
+                    if ($('#listaUsuarios').children().length === 1) {
+                        cargarUsuariosAdministradores();
+                    }
+                }
+            });
+
+            // Seleccionar/deseleccionar todos
+            $('#seleccionarTodos').change(function() {
+                $('.usuario-checkbox').prop('checked', $(this).is(':checked'));
+            });
+
+            // Actualizar "Seleccionar todos" cuando se cambien checkboxes individuales
+            $('#listaUsuarios').on('change', '.usuario-checkbox', function() {
+                const totalCheckboxes = $('.usuario-checkbox').length;
+                const checkedCount = $('.usuario-checkbox:checked').length;
+                $('#seleccionarTodos').prop('checked', totalCheckboxes === checkedCount);
+            });
+
+            // Eventos para fechas y programación
             $('#fechaInicio, #fechaFin').change(actualizarInfoReporte);
-            $('#diaSemanaProgramado, #horaProgramadaHoras, #horaProgramadaMinutos, #horaProgramadaPeriodo').change(actualizarInfoProgramacion);
+            $('#diaSemanaProgramado, #horaProgramadaHoras1, #horaProgramadaMinutos1, #horaProgramadaPeriodo1, #horaProgramadaHoras2, #horaProgramadaMinutos2, #horaProgramadaPeriodo2').change(actualizarInfoProgramacion);
+            $('#filtroFechaInicio, #filtroFechaFin, #filtroZona').change(actualizarInfoFiltroGraficas);
 
             // Botón Enviar Manual
             $('#btnEnviarCorreo').click(function() {
                 const btn = $(this);
                 const fechaInicio = $('#fechaInicio').val();
                 const fechaFin = $('#fechaFin').val();
+                const usuariosSeleccionados = obtenerUsuariosSeleccionados();
 
                 if (!fechaInicio || !fechaFin) {
-                    mostrarAlerta('Por favor, selecciona el rango de fechas.', 'warning', '#mensajeResultado'); return;
+                    mostrarAlerta('Por favor, selecciona el rango de fechas.', 'warning', '#mensajeResultado');
+                    return;
                 }
                 if (new Date(fechaInicio) > new Date(fechaFin)) {
-                    mostrarAlerta('La fecha de inicio no puede ser mayor a la fecha fin.', 'warning', '#mensajeResultado'); return;
+                    mostrarAlerta('La fecha de inicio no puede ser mayor a la fecha fin.', 'warning', '#mensajeResultado');
+                    return;
+                }
+
+                // Si no se seleccionaron usuarios, usar los que tienen reportes activados por defecto
+                if (usuariosSeleccionados.length === 0) {
+                    if (!confirm('No has seleccionado usuarios específicos. ¿Deseas enviar el reporte a todos los administradores que tienen habilitados los reportes?')) {
+                        return;
+                    }
                 }
 
                 btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Enviando...');
@@ -577,13 +1230,17 @@
                     url: '@Url.Action("EnviarCorreoPrueba", "Dashboard")',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ fechaInicio: fechaInicio, fechaFin: fechaFin }),
+                    data: JSON.stringify({
+                        fechaInicio: fechaInicio,
+                        fechaFin: fechaFin,
+                        usuarios: usuariosSeleccionados
+                    }),
                     success: function(response) {
                         mostrarAlerta(response.message, response.success ? 'success' : 'danger', '#mensajeResultado');
                     },
                     error: function(xhr) {
-                         const errorMsg = xhr.responseJSON?.message || 'Error de conexión al enviar el correo.';
-                         mostrarAlerta(errorMsg, 'danger', '#mensajeResultado');
+                        const errorMsg = xhr.responseJSON?.message || 'Error de conexión al enviar el correo.';
+                        mostrarAlerta(errorMsg, 'danger', '#mensajeResultado');
                     },
                     complete: function() {
                         btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Enviar Ahora');
@@ -591,21 +1248,24 @@
                 });
             });
 
-            // Botón Programar Semanal
+            // Botón Programar Semanal (actualizado para múltiples horarios)
             $('#btnProgramarEnvio').click(function() {
                 const btn = $(this);
                 const diaSemana = $('#diaSemanaProgramado').val();
-                const horaProgramada = obtenerHoraSeleccionada();
+                const horasProgramadas = obtenerHorasSeleccionadas();
 
-                if (!diaSemana || !horaProgramada) {
-                    mostrarAlerta('Por favor, selecciona el día y la hora.', 'warning', '#mensajeProgramacion'); return;
+                if (!diaSemana || horasProgramadas.length === 0) {
+                    mostrarAlerta('Por favor, selecciona el día y al menos un horario.', 'warning', '#mensajeProgramacion');
+                    return;
                 }
 
-                 // Validar formato de hora simple (HH:MM)
-                 if (!/^\d{2}:\d{2}$/.test(horaProgramada)) {
-                     mostrarAlerta('El formato de hora debe ser HH:mm (ej. 09:30).', 'warning', '#mensajeProgramacion'); return;
-                 }
-
+                // Validar formato de horas
+                for (let hora of horasProgramadas) {
+                    if (!/^\d{2}:\d{2}$/.test(hora)) {
+                        mostrarAlerta('El formato de hora debe ser HH:mm (ej. 09:30).', 'warning', '#mensajeProgramacion');
+                        return;
+                    }
+                }
 
                 btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Programando...');
                 $('#mensajeProgramacion').empty();
@@ -614,16 +1274,19 @@
                     url: '@Url.Action("ProgramarEnvioCorreo", "Dashboard")',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ diaSemana: diaSemana, horaProgramada: horaProgramada }),
+                    data: JSON.stringify({
+                        diaSemana: diaSemana,
+                        horasProgramadas: horasProgramadas
+                    }),
                     success: function(response) {
                         mostrarAlerta(response.message, response.success ? 'success' : 'danger', '#mensajeProgramacion');
                         if(response.success) {
-                             cargarConfiguracionActual();
+                            cargarConfiguracionActual();
                         }
                     },
                     error: function(xhr) {
                         const errorMsg = xhr.responseJSON?.message || 'Error de conexión al programar.';
-                         mostrarAlerta(errorMsg, 'danger', '#mensajeProgramacion');
+                        mostrarAlerta(errorMsg, 'danger', '#mensajeProgramacion');
                     },
                     complete: function() {
                         btn.prop('disabled', false).html('<i class="fas fa-save me-2"></i>Guardar Programación');
@@ -655,7 +1318,7 @@
                             success: function(response) {
                                 mostrarAlerta(response.message, response.success ? 'success' : 'danger', '#mensajeProgramacion');
                                 if(response.success) {
-                                     cargarConfiguracionActual(); // Actualizar la info y ocultar el botón
+                                     cargarConfiguracionActual();
                                 }
                             },
                             error: function(xhr) {
@@ -663,8 +1326,6 @@
                                 mostrarAlerta(errorMsg, 'danger', '#mensajeProgramacion');
                             },
                             complete: function() {
-                                // El botón se ocultará si la eliminación fue exitosa (vía cargarConfiguracionActual),
-                                // así que solo re-habilitamos si hubo error.
                                 if (!$('#btnEliminarProgramacion').is(':hidden')) {
                                      btn.prop('disabled', false).html('<i class="fas fa-trash me-2"></i>Eliminar Programación');
                                 }
@@ -674,9 +1335,32 @@
                 });
             });
 
+            // Botón Filtrar Gráficas
+            $('#btnFiltrarGraficas').click(function() {
+                const fechaInicio = $('#filtroFechaInicio').val();
+                const fechaFin = $('#filtroFechaFin').val();
+                const zonaSeleccionada = $('#filtroZona').val();
+
+                if (!fechaInicio || !fechaFin) {
+                    mostrarAlerta('Por favor, selecciona el rango de fechas.', 'warning', '#mensajeGraficas');
+                    return;
+                }
+
+                if (new Date(fechaInicio) > new Date(fechaFin)) {
+                    mostrarAlerta('La fecha de inicio no puede ser mayor a la fecha fin.', 'warning', '#mensajeGraficas');
+                    return;
+                }
+
+                cargarGraficasConFiltro(fechaInicio, fechaFin, zonaSeleccionada);
+            });
+
             // --- INICIALIZACIÓN ---
             establecerValoresPorDefecto();
             cargarConfiguracionActual();
+            establecerFechasPorDefectoGraficas();
+
+            // Inicializar gráficas con un delay para permitir animaciones
+            setTimeout(inicializarGraficas, 800);
         });
     </script>
 }

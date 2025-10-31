@@ -50,6 +50,10 @@
             text-align: left;
             margin-bottom: 1rem;
         }
+
+        .texto-version {
+            color: red;
+        }
     </style>
 </head>
 <body>
@@ -85,6 +89,10 @@
 
             <footer class="mt-4">
                 © 2025 - Comision Federal de Electricidad
+                <div class="version-info texto-version">
+                    Versión @ViewBag.Version - @ViewBag.FechaActualizacion<br />
+                    @ViewBag.Ambiente
+                </div>
             </footer>
         </div>
     </div>

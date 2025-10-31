@@ -1,0 +1,777 @@
+﻿@{
+    ViewData["Title"] = "Dashboard Técnico";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@model MantenimientosTI.Controllers.DashboardTecnicoViewModel
+@using System.Globalization
+
+<style>
+    /* Estilos originales de tarjetas (Hover scale, etc.) */
+    .hover-scale {
+        transition: all 0.3s ease;
+    }
+
+        .hover-scale:hover {
+            transform: translateY(-5px);
+        }
+
+    .card-bg-primary:hover {
+        box-shadow: 0 10px 20px rgba(13, 110, 253, 0.2) !important;
+    }
+
+    .card-bg-success:hover {
+        box-shadow: 0 10px 20px rgba(40, 167, 69, 0.2) !important;
+    }
+
+    .card-bg-warning:hover {
+        box-shadow: 0 10px 20px rgba(255, 193, 7, 0.2) !important;
+    }
+
+    .card-bg-secondary:hover {
+        box-shadow: 0 10px 20px rgba(108, 117, 125, 0.2) !important;
+    }
+
+    .icon-shape {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-count {
+        border-radius: 15px;
+        min-height: 120px;
+        border: none;
+    }
+
+    /* ESTILOS MEJORADOS PARA LAS NUEVAS TARJETAS */
+    .stats-card {
+        border-radius: 12px;
+        min-height: 100px;
+        border: none;
+        transition: all 0.3s ease;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stats-card-content {
+        padding: 0.9rem;
+    }
+
+    .stats-badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.6em;
+        font-weight: 600;
+    }
+
+    .stats-number {
+        font-size: 1.7rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    .stats-icon {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .cards-container {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* Colores tarjetas nuevas */
+    .card-orange {
+        background-color: #fd7e14;
+    }
+
+    .card-blue {
+        background-color: #0d6efd;
+    }
+
+    .card-green {
+        background-color: #28a745;
+    }
+
+    .card-yellow {
+        background-color: #ffc107;
+    }
+
+    .card-gray {
+        background-color: #808080;
+    }
+
+    .text-orange {
+        color: #fd7e14 !important;
+    }
+
+    /* Efectos hover tarjetas nuevas */
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1) !important;
+    }
+
+    .card-orange:hover {
+        box-shadow: 0 6px 15px rgba(253, 126, 20, 0.25) !important;
+    }
+
+    .card-blue:hover {
+        box-shadow: 0 6px 15px rgba(13, 110, 253, 0.25) !important;
+    }
+
+    .card-green:hover {
+        box-shadow: 0 6px 15px rgba(40, 167, 69, 0.25) !important;
+    }
+
+    .card-yellow:hover {
+        box-shadow: 0 6px 15px rgba(255, 193, 7, 0.25) !important;
+    }
+
+    .card-gray:hover {
+        box-shadow: 0 6px 15px rgba(108, 117, 125, 0.25) !important;
+    }
+
+    /* Estilos para las gráficas */
+    .color-box {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        display: inline-block;
+    }
+
+    .legend-container {
+        border-top: 1px solid #f0f0f0;
+        padding-top: 8px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 160px;
+        min-height: 160px;
+    }
+
+    /* Asegurar que la tarjeta de reportes no se estire */
+    .card-reportes {
+        height: auto !important;
+        min-height: auto;
+    }
+
+    /* Agrega esto en tu sección de estilos */
+    .chart-container {
+        position: relative;
+        height: 160px;
+        min-height: 160px;
+    }
+
+    .position-absolute {
+        z-index: 1;
+    }
+
+    /* Estilos para los controles de filtro de gráficas */
+    .filtro-graficas {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid #e9ecef;
+    }
+
+    .card-header .form-control-sm {
+        font-size: 0.8rem;
+    }
+
+    .card-header .btn-sm {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Estilos para animaciones de gráficas */
+    .chart-fade-in {
+        animation: chartFadeIn 1s ease-out;
+    }
+
+    @@keyframes chartFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .card-fade-in {
+        animation: cardFadeIn 0.6s ease-out;
+    }
+
+    @@keyframes cardFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Media queries para responsividad */
+    @@media (max-width: 768px) {
+        .cards-container {
+            gap: 8px;
+        }
+
+        .stats-card {
+            min-height: 90px;
+            flex: 1 1 calc(50% - 8px);
+        }
+
+        .stats-number {
+            font-size: 1.5rem;
+        }
+
+        .stats-icon {
+            width: 38px;
+            height: 38px;
+            font-size: 1.1rem;
+        }
+
+        .stats-badge {
+            font-size: 0.7rem;
+        }
+
+        .filtro-graficas .d-flex {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+            .filtro-graficas .d-flex > * {
+                width: 100%;
+            }
+    }
+
+    @@media (max-width: 576px) {
+        .stats-card-content {
+            padding: 0.7rem;
+        }
+
+        .stats-number {
+            font-size: 1.4rem;
+        }
+
+        .stats-card {
+            flex: 1 1 100%;
+            min-height: 85px;
+        }
+
+        .cards-container {
+            gap: 6px;
+        }
+
+        .stats-badge {
+            font-size: 0.68rem;
+        }
+    }
+
+    @@media (min-width: 1200px) {
+        .stats-card {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Dashboard Técnico</h3>
+        </div>
+
+        <div class="card-body">
+            <div class="cards-container mb-4">
+                @{
+                    var culturaEs = new CultureInfo("es-ES");
+                    var mesActual = DateTime.Now.ToString("MMMM", culturaEs).ToUpper();
+                    var mesSiguiente = DateTime.Now.AddMonths(1).ToString("MMMM", culturaEs).ToUpper();
+                    var mesAnterior = DateTime.Now.AddMonths(-1).ToString("MMMM", culturaEs).ToUpper();
+                }
+
+                <div class="card stats-card card-orange">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-orange mb-1">PENDIENTES @mesAnterior</span>
+                                <h2 class="stats-number text-white">@Model.PendientesMesAnteriorCount</h2>
+                            </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-orange"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card stats-card card-blue">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-primary mb-1">PROGRAMADOS @mesActual</span>
+                                <h2 class="stats-number text-white">@Model.ProgramadosCount</h2>
+                            </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-calendar-alt text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card stats-card card-green">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-success mb-1">TERMINADOS @mesActual</span>
+                                <h2 class="stats-number text-white">@Model.TerminadosCount</h2>
+                            </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-check-circle text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card stats-card card-yellow">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-warning mb-1">PENDIENTES @mesActual</span>
+                                <h2 class="stats-number text-white">@Model.PendientesCount</h2>
+                            </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-spinner text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card stats-card card-gray">
+                    <div class="card-body stats-card-content d-flex flex-column justify-content-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="badge stats-badge bg-white text-secondary mb-1">PROGRAMADOS @mesSiguiente</span>
+                                <h2 class="stats-number text-white">@Model.ProgramadosProximoMesCount</h2>
+                            </div>
+                            <div class="stats-icon bg-white ms-2 flex-shrink-0">
+                                <i class="fas fa-calendar-check text-secondary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Gráficas - Ahora ocupa todo el ancho -->
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-light border-bottom">
+                            <h5 class="mb-0 text-secondary"><i class="fas fa-chart-pie me-2"></i> Avances de mantenimientos</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Controles de filtro para gráficas -->
+                            <div class="filtro-graficas">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                        <label class="form-label mb-0 text-nowrap">Rango de fechas:</label>
+                                        <input type="date" class="form-control form-control-sm" id="filtroFechaInicio"
+                                               style="max-width: 150px;" title="Fecha Inicio">
+                                        <span class="text-muted">a</span>
+                                        <input type="date" class="form-control form-control-sm" id="filtroFechaFin"
+                                               style="max-width: 150px;" title="Fecha Fin">
+                                        <label class="form-label mb-0 text-nowrap ms-3">Centro:</label>
+                                        <select class="form-select form-select-sm" id="filtroAgencia" style="max-width: 200px;">
+                                            <option value="TODAS">TODOS</option>
+                                            @foreach (var agencia in Model.Agencias)
+                                            {
+                                                <option value="@agencia.ClaveAgencia">@agencia.NombreAgencia</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <button id="btnFiltrarGraficas" class="btn btn-success btn-sm">
+                                        <i class="fas fa-filter me-1"></i>Filtrar
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted" id="infoFiltroGraficas">
+                                        Mostrando datos del mes actual para TODAS las agencias
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- CONTENEDOR PARA MENSAJES DE GRÁFICAS -->
+                            <div id="mensajeGraficas" class="mt-2 small"></div>
+
+                            @{
+                                var agenciasConDatos = Model.GraficasAgencias.Where(a => a.TieneDatos).ToList();
+                            }
+
+                            @if (agenciasConDatos.Any())
+                            {
+                                <div class="row g-3" id="contenedorGraficas">
+                                    @foreach (var agencia in agenciasConDatos)
+                                    {
+                                        <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 card-fade-in">
+                                            <div class="card border-0 shadow-sm h-100">
+                                                <div class="card-header bg-light py-2">
+                                                    <h6 class="mb-0 text-center text-dark" style="font-size: 0.85rem; font-weight: normal;">@agencia.NombreAgencia</h6>
+                                                </div>
+                                                <div class="card-body p-2 d-flex flex-column">
+                                                    <div class="chart-container flex-grow-1 position-relative">
+                                                        <canvas id="chart-@agencia.Agencia"
+                                                                data-item='@Json.Serialize(agencia)'
+                                                                data-tiene-datos="true"
+                                                                data-tipo="agencias"></canvas>
+                                                    </div>
+                                                    <div class="legend-container mt-2">
+                                                        <div class="d-flex justify-content-center flex-wrap gap-2">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="color-box bg-success me-1"></div>
+                                                                <small class="text-muted">Terminados: @agencia.Terminados</small>
+                                                            </div>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="color-box bg-warning me-1"></div>
+                                                                <small class="text-muted">Pendientes: @agencia.Pendientes</small>
+                                                            </div>
+                                                            @if (agencia.Otros > 0)
+                                                            {
+                                                                <div class="d-flex align-items-center">
+                                                                    <div class="color-box bg-secondary me-1"></div>
+                                                                    <small class="text-muted">Otros: @agencia.Otros</small>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-4">
+                                    <span class="text-muted fst-italic">No hay datos disponibles para mostrar.</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Agregar Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // --- FUNCIONES AUXILIARES ---
+            function mostrarAlerta(mensaje, tipo, contenedor = '#mensajeGraficas') {
+                $(contenedor).empty();
+                const icono = (tipo === 'success') ? 'fa-check-circle' : 'fa-exclamation-circle';
+                const claseAlerta = `alert-${tipo}`;
+
+                const alertaHtml = `
+                    <div class="alert ${claseAlerta} alert-dismissible fade show" role="alert">
+                        <i class="fas ${icono} me-2"></i>
+                        ${mensaje}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                $(contenedor).html(alertaHtml);
+
+                if (tipo === 'success') {
+                    setTimeout(() => {
+                        $(contenedor).find('.alert').fadeOut(500, function() { $(this).remove(); });
+                    }, 5000);
+                }
+            }
+
+            // --- FUNCIONES PARA FILTRAR GRÁFICAS ---
+            function establecerFechasPorDefectoGraficas() {
+                const hoy = new Date();
+                const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+
+                $('#filtroFechaInicio').val(primerDiaMes.toISOString().split('T')[0]);
+                $('#filtroFechaFin').val(ultimoDiaMes.toISOString().split('T')[0]);
+                actualizarInfoFiltroGraficas();
+            }
+
+            function actualizarInfoFiltroGraficas() {
+                const fechaInicio = $('#filtroFechaInicio').val();
+                const fechaFin = $('#filtroFechaFin').val();
+                const agenciaSeleccionada = $('#filtroAgencia').val();
+                const agenciaTexto = $('#filtroAgencia option:selected').text();
+
+                if (fechaInicio && fechaFin) {
+                    try {
+                        const inicio = new Date(fechaInicio + 'T00:00:00');
+                        const fin = new Date(fechaFin + 'T00:00:00');
+                        if (inicio > fin) {
+                            $('#infoFiltroGraficas').text('La fecha de inicio no puede ser mayor a la fecha fin.');
+                            return;
+                        }
+                        const diffTime = Math.abs(fin - inicio);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                        if (agenciaSeleccionada === 'TODAS') {
+                            $('#infoFiltroGraficas').text(`Mostrando datos del ${inicio.toLocaleDateString('es-ES')} al ${fin.toLocaleDateString('es-ES')} (${diffDays} días) para TODAS las agencias`);
+                        } else {
+                            $('#infoFiltroGraficas').text(`Mostrando datos del ${inicio.toLocaleDateString('es-ES')} al ${fin.toLocaleDateString('es-ES')} (${diffDays} días) para la agencia: ${agenciaTexto}`);
+                        }
+                    } catch (e) {
+                        $('#infoFiltroGraficas').text('Fechas inválidas.');
+                    }
+                } else {
+                    if (agenciaSeleccionada === 'TODAS') {
+                        $('#infoFiltroGraficas').text('Mostrando datos del mes actual para TODAS las agencias');
+                    } else {
+                        $('#infoFiltroGraficas').text(`Mostrando datos del mes actual para la agencia: ${agenciaTexto}`);
+                    }
+                }
+            }
+
+            function cargarGraficasConFiltro(fechaInicio, fechaFin, agenciaSeleccionada) {
+                const btn = $('#btnFiltrarGraficas');
+                //btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Filtrando...');
+
+                // Limpiar mensajes anteriores en el contenedor de gráficas
+                $('#mensajeGraficas').empty();
+
+                let url = '';
+                let data = {};
+
+                if (agenciaSeleccionada === 'TODAS') {
+                    url = '@Url.Action("ObtenerDatosGraficasAgenciaPorFecha", "Dashboard")';
+                    data = { fechaInicio: fechaInicio, fechaFin: fechaFin };
+                } else {
+                    url = '@Url.Action("ObtenerDatosGraficasCentrosPorAgencia", "Dashboard")';
+                    data = {
+                        fechaInicio: fechaInicio,
+                        fechaFin: fechaFin,
+                        agenciaSeleccionada: agenciaSeleccionada
+                    };
+                }
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        if (response.success) {
+                            actualizarGraficas(response.datosGraficas, response.tipo || 'agencias');
+                            //mostrarAlerta('Gráficas actualizadas correctamente.', 'success', '#mensajeGraficas');
+                        } else {
+                            mostrarAlerta(response.message || 'Error al cargar las gráficas.', 'danger', '#mensajeGraficas');
+                        }
+                    },
+                    error: function(xhr) {
+                        const errorMsg = xhr.responseJSON?.message || 'Error de conexión al cargar las gráficas.';
+                        mostrarAlerta(errorMsg, 'danger', '#mensajeGraficas');
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html('<i class="fas fa-filter me-1"></i>Filtrar');
+                    }
+                });
+            }
+
+        function actualizarGraficas(datosGraficas, tipo) {
+            // Destruir gráficas existentes
+            $('canvas[id^="chart-"]').each(function() {
+                const chart = Chart.getChart(this);
+                if (chart) {
+                    chart.destroy();
+                }
+            });
+
+            // Limpiar contenedor de gráficas
+            const contenedorGraficas = $('#contenedorGraficas');
+            contenedorGraficas.empty();
+
+            // Filtrar solo elementos con datos
+            const datosConGraficas = datosGraficas.filter(item => item.tieneDatos);
+
+            // Crear nuevas gráficas según el tipo
+            if (datosConGraficas.length === 0) {
+                contenedorGraficas.html(`
+                    <div class="col-12">
+                        <div class="text-center py-4">
+                            <span class="text-muted fst-italic">No hay datos disponibles para mostrar.</span>
+                        </div>
+                    </div>
+                `);
+                return;
+            }
+
+            datosConGraficas.forEach((item, index) => {
+                const id = tipo === 'agencias' ? item.agencia : (tipo === 'centros' ? item.centro : item.zona);
+                const nombre = tipo === 'agencias' ? item.nombreAgencia : (tipo === 'centros' ? item.nombreCentro : item.nombreZona);
+
+                const graficaHtml = `
+                    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 card-fade-in" style="animation-delay: ${index * 0.1}s">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light py-2">
+                                <h6 class="mb-0 text-center text-dark" style="font-size: 0.85rem; font-weight: normal;">${nombre}</h6>
+                            </div>
+                            <div class="card-body p-2 d-flex flex-column">
+                                <div class="chart-container flex-grow-1 position-relative">
+                                    <canvas id="chart-${id}"
+                                            data-item='${JSON.stringify(item)}'
+                                            data-tiene-datos="true"
+                                            data-tipo="${tipo}"></canvas>
+                                </div>
+                                <div class="legend-container mt-2">
+                                    <div class="d-flex justify-content-center flex-wrap gap-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-box bg-success me-1"></div>
+                                            <small class="text-muted">Terminados: ${item.terminados}</small>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-box bg-warning me-1"></div>
+                                            <small class="text-muted">Pendientes: ${item.pendientes}</small>
+                                        </div>
+                                        ${item.otros > 0 ? `
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-box bg-secondary me-1"></div>
+                                            <small class="text-muted">Otros: ${item.otros}</small>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                contenedorGraficas.append(graficaHtml);
+            });
+
+            // Re-inicializar gráficas después de un pequeño delay para permitir la animación CSS
+            setTimeout(inicializarGraficas, 300);
+        }
+
+        function inicializarGraficas() {
+            $('canvas[id^="chart-"]').each(function(index) {
+                const canvas = $(this)[0];
+                const item = $(this).data('item');
+                const tieneDatos = $(this).data('tiene-datos');
+
+                // Solo inicializar si tiene datos
+                if (!tieneDatos || !item) {
+                    return;
+                }
+
+                // ... el resto del código de inicialización permanece igual
+                const total = item.terminados + item.pendientes + item.otros;
+                const data = {
+                    labels: ['Terminados', 'Pendientes', 'Otros'],
+                    datasets: [{
+                        data: [item.terminados, item.pendientes, item.otros],
+                        backgroundColor: [
+                            '#28a745', // Verde
+                            '#ffc107', // Amarillo
+                            '#6c757d'  // Gris
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 8
+                    }]
+                };
+
+                const config = {
+                    type: 'pie',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeOutQuart',
+                            animateScale: true,
+                            animateRotate: true
+                        }
+                    }
+                };
+
+                // Destruir gráfica existente si hay una
+                const chartExistente = Chart.getChart(canvas);
+                if (chartExistente) {
+                    chartExistente.destroy();
+                }
+
+                // Agregar delay escalonado para animaciones
+                setTimeout(() => {
+                    new Chart(canvas, config);
+                    $(canvas).addClass('chart-fade-in');
+                }, index * 200);
+            });
+        }
+
+            // --- MANEJADORES DE EVENTOS ---
+            $('#filtroFechaInicio, #filtroFechaFin, #filtroAgencia').change(actualizarInfoFiltroGraficas);
+
+            // Botón Filtrar Gráficas
+            $('#btnFiltrarGraficas').click(function() {
+                const fechaInicio = $('#filtroFechaInicio').val();
+                const fechaFin = $('#filtroFechaFin').val();
+                const agenciaSeleccionada = $('#filtroAgencia').val();
+
+                if (!fechaInicio || !fechaFin) {
+                    mostrarAlerta('Por favor, selecciona el rango de fechas.', 'warning', '#mensajeGraficas');
+                    return;
+                }
+
+                if (new Date(fechaInicio) > new Date(fechaFin)) {
+                    mostrarAlerta('La fecha de inicio no puede ser mayor a la fecha fin.', 'warning', '#mensajeGraficas');
+                    return;
+                }
+
+                cargarGraficasConFiltro(fechaInicio, fechaFin, agenciaSeleccionada);
+            });
+
+            // --- INICIALIZACIÓN ---
+            establecerFechasPorDefectoGraficas();
+
+            // Inicializar gráficas con un delay para permitir animaciones
+            setTimeout(inicializarGraficas, 800);
+        });
+    </script>
+}

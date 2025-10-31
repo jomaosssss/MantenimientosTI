@@ -333,8 +333,8 @@
                 mostrarAlerta('Formato incorrecto', 'La foto "Antes" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
                 return;
             }
-            if (fotoAntes.size > 2 * 1024 * 1024) {
-                mostrarAlerta('Imagen muy grande', 'La foto "Antes" no debe exceder los 2MB', 'warning');
+            if (fotoAntes.size > 5 * 1024 * 1024) {
+                mostrarAlerta('Imagen muy grande', 'La foto "Antes" no debe exceder los 5MB', 'warning');
                 return;
             }
 
@@ -351,8 +351,8 @@
                 mostrarAlerta('Formato incorrecto', 'La foto "Durante" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
                 return;
             }
-            if (fotoDurante.size > 2 * 1024 * 1024) {
-                mostrarAlerta('Imagen muy grande', 'La foto "Durante" no debe exceder los 2MB', 'warning');
+            if (fotoDurante.size > 5 * 1024 * 1024) {
+                mostrarAlerta('Imagen muy grande', 'La foto "Durante" no debe exceder los 5MB', 'warning');
                 return;
             }
 
@@ -369,8 +369,8 @@
                 mostrarAlerta('Formato incorrecto', 'La foto "Después" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
                 return;
             }
-            if (fotoDespues.size > 2 * 1024 * 1024) {
-                mostrarAlerta('Imagen muy grande', 'La foto "Después" no debe exceder los 2MB', 'warning');
+            if (fotoDespues.size > 5 * 1024 * 1024) {
+                mostrarAlerta('Imagen muy grande', 'La foto "Después" no debe exceder los 5MB', 'warning');
                 return;
             }
 

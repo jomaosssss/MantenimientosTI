@@ -446,6 +446,114 @@ namespace MantenimientosTI.Controllers
         }
 
         [HttpGet]
+        public IActionResult ObtenerTiposEquipoPorCentro(string division, string zona, string agencia, string centro)
+        {
+            try
+            {
+                var tipos = new List<string>();
+
+                // Verificar si hay equipos cfematicos en el centro
+                var tieneCfematico = _dbocontext.EquipoCfematicos
+                    .Any(ec => ec.NumActFijoNavigation.ClaveDivision == division &&
+                              ec.NumActFijoNavigation.ClaveZona == zona &&
+                              ec.NumActFijoNavigation.ClaveAgencia == agencia &&
+                              ec.NumActFijoNavigation.ClaveCentro == centro);
+
+                if (tieneCfematico)
+                {
+                    tipos.Add("CFEMÁTICO");
+                }
+
+                // Obtener tipos de EquipoAc
+                var tiposAC = _dbocontext.EquipoAcs
+                    .Include(ea => ea.ClaveTipoEquipoNavigation)
+                    .Where(ea => ea.NumActFijoNavigation.ClaveDivision == division &&
+                                ea.NumActFijoNavigation.ClaveZona == zona &&
+                                ea.NumActFijoNavigation.ClaveAgencia == agencia &&
+                                ea.NumActFijoNavigation.ClaveCentro == centro)
+                    .Select(ea => ea.ClaveTipoEquipoNavigation.NombreTipoEquipo)
+                    .Distinct()
+                    .ToList();
+
+                tipos.AddRange(tiposAC);
+
+                // Obtener tipos de EquipoComputo
+                var tiposComputo = _dbocontext.EquipoComputos
+                    .Include(ec => ec.ClaveTipoEquipoNavigation)
+                    .Where(ec => ec.NumActFijoNavigation.ClaveDivision == division &&
+                                ec.NumActFijoNavigation.ClaveZona == zona &&
+                                ec.NumActFijoNavigation.ClaveAgencia == agencia &&
+                                ec.NumActFijoNavigation.ClaveCentro == centro)
+                    .Select(ec => ec.ClaveTipoEquipoNavigation.NombreTipoEquipo)
+                    .Distinct()
+                    .ToList();
+
+                tipos.AddRange(tiposComputo);
+
+                // Eliminar duplicados y ordenar
+                tipos = tipos.Distinct().OrderBy(t => t).ToList();
+
+                var data = tipos.Select(t => new { value = t, text = t }).ToList();
+
+                return Json(new { success = true, data = data });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult ObtenerActivosFijosPorCentroYTipo(string division, string zona, string agencia, string centro, string tipoEquipo)
+        {
+            try
+            {
+                List<object> activos = new List<object>();
+
+                if (tipoEquipo == "CFETURNO" || tipoEquipo == "CFECAM")
+                {
+                    // Buscar en EquipoAc
+                    activos = _dbocontext.EquipoAcs
+                        .Include(ea => ea.ClaveTipoEquipoNavigation)
+                        .Where(ea => ea.NumActFijoNavigation.ClaveDivision == division &&
+                                   ea.NumActFijoNavigation.ClaveZona == zona &&
+                                   ea.NumActFijoNavigation.ClaveAgencia == agencia &&
+                                   ea.NumActFijoNavigation.ClaveCentro == centro &&
+                                   ea.ClaveTipoEquipoNavigation.NombreTipoEquipo == tipoEquipo)
+                        .Select(ea => new
+                        {
+                            value = ea.NumActFijo,
+                            text = ea.NumActFijo
+                        })
+                        .ToList<object>();
+                }
+                else if (tipoEquipo == "PC" || tipoEquipo == "LAPTOP")
+                {
+                    // Buscar en EquipoComputo
+                    activos = _dbocontext.EquipoComputos
+                        .Include(ec => ec.ClaveTipoEquipoNavigation)
+                        .Where(ec => ec.NumActFijoNavigation.ClaveDivision == division &&
+                                   ec.NumActFijoNavigation.ClaveZona == zona &&
+                                   ec.NumActFijoNavigation.ClaveAgencia == agencia &&
+                                   ec.NumActFijoNavigation.ClaveCentro == centro &&
+                                   ec.ClaveTipoEquipoNavigation.NombreTipoEquipo == tipoEquipo)
+                        .Select(ec => new
+                        {
+                            value = ec.NumActFijo,
+                            text = ec.NumActFijo
+                        })
+                        .ToList<object>();
+                }
+
+                return Json(new { success = true, data = activos });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
         public IActionResult ObtenerCentrosPorAgencia(string division, string zona, string agencia)
         {
             if (string.IsNullOrEmpty(division) || string.IsNullOrEmpty(zona) || string.IsNullOrEmpty(agencia))

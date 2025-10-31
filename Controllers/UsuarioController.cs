@@ -33,6 +33,18 @@ namespace ProyectoMantenimientos.Controllers
         [HttpGet]
         public IActionResult Login()
         {
+            // Obtener las configuraciones necesarias
+            var configuraciones = _dbocontext.Configuraciones
+                .Where(c => c.ClaveConfiguracion == "VERSION" ||
+                           c.ClaveConfiguracion == "FECHA_ACTUALIZACION" ||
+                           c.ClaveConfiguracion == "AMBIENTE")
+                .ToDictionary(c => c.ClaveConfiguracion, c => c.Valor);
+
+            // Pasar las configuraciones al ViewBag
+            ViewBag.Version = configuraciones.GetValueOrDefault("VERSION", "N/A");
+            ViewBag.FechaActualizacion = configuraciones.GetValueOrDefault("FECHA_ACTUALIZACION", "N/A");
+            ViewBag.Ambiente = configuraciones.GetValueOrDefault("AMBIENTE", "N/A");
+
             return View();
         }
 
@@ -147,7 +159,14 @@ namespace ProyectoMantenimientos.Controllers
                         $"El administrador {usuarioAdmin.Rpe} inició sesión localmente."
                     );
 
-                    return RedirectToAction("Inicio", "Home");
+                    if (HttpContext.Session.GetString("NombreRol").Equals("ADMINISTRADOR"))
+                    {
+                        return RedirectToAction("Dashboard", "Dashboard");
+                    }
+                    else
+                    {
+                        return RedirectToAction("Inicio", "Home");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -233,7 +252,14 @@ namespace ProyectoMantenimientos.Controllers
                                 $"El usuario {usuario.Rpe} inició sesión."
                             );
 
-                            return RedirectToAction("Inicio", "Home");
+                            if (HttpContext.Session.GetString("NombreRol").Equals("ADMINISTRADOR"))
+                            {
+                                return RedirectToAction("Dashboard", "Dashboard");
+                            }
+                            else
+                            {
+                                return RedirectToAction("Inicio", "Home");
+                            }
                         }
                         else
                         {

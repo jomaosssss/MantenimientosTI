@@ -210,8 +210,8 @@ namespace MantenimientosTI.Controllers
 
                     if (fotoAntes != null && fotoAntes.Length > 0)
                     {
-                        if (fotoAntes.Length > 2 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Antes' no debe exceder los 2MB" });
+                        if (fotoAntes.Length > 5 * 1024 * 1024)
+                            return Json(new { success = false, message = "La foto 'Antes' no debe exceder los 5MB" });
 
                         foto.FotoAntes = await ProcesarImagen(fotoAntes);
                         seAgregoAlgunaFoto = true;
@@ -219,8 +219,8 @@ namespace MantenimientosTI.Controllers
 
                     if (fotoDurante != null && fotoDurante.Length > 0)
                     {
-                        if (fotoDurante.Length > 2 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Durante' no debe exceder los 2MB" });
+                        if (fotoDurante.Length > 5 * 1024 * 1024)
+                            return Json(new { success = false, message = "La foto 'Durante' no debe exceder los 5MB" });
 
                         foto.FotoDurante = await ProcesarImagen(fotoDurante);
                         seAgregoAlgunaFoto = true;
@@ -228,8 +228,8 @@ namespace MantenimientosTI.Controllers
 
                     if (fotoDespues != null && fotoDespues.Length > 0)
                     {
-                        if (fotoDespues.Length > 2 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Después' no debe exceder los 2MB" });
+                        if (fotoDespues.Length > 5 * 1024 * 1024)
+                            return Json(new { success = false, message = "La foto 'Después' no debe exceder los 5MB" });
 
                         foto.FotoDespues = await ProcesarImagen(fotoDespues);
                         seAgregoAlgunaFoto = true;

@@ -47,27 +47,49 @@
                     </div>
                 </div>
 
+                <!-- NUEVO: Combobox para Tipo de Equipo -->
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label class="form-label">Número de cajero:</label>
-                        <select id="selectCajero" class="form-select" disabled>
+                        <label class="form-label">Tipo de equipo:</label>
+                        <select id="selectTipoEquipo" class="form-select" disabled>
                             <option value="">Seleccione primero un centro</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <!-- Combobox para Número de Cajero (solo para CFEMÁTICO) -->
+                <div class="col-md-4" id="divCajero" style="display: none;">
                     <div class="form-group">
-                        <label class="form-label">Número de activo ijo:</label>
-                        <input type="text"
-                               id="numActivoFijo"
-                               class="form-control"f
-                               readonly
-                               placeholder="Seleccione un cajero">
+                        <label class="form-label">Número de cajero:</label>
+                        <select id="selectCajero" class="form-select" disabled>
+                            <option value="">Seleccione un cajero</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="col-md-2">
+                <!-- NUEVO: Combobox para Número de Activo Fijo (para otros tipos) -->
+                <div class="col-md-4" id="divActivoFijo" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Número de activo fijo:</label>
+                        <select id="selectActivoFijo" class="form-select" disabled>
+                            <option value="">Seleccione un activo fijo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Campo de número de activo fijo (OCULTO - para el envío del formulario) -->
+                <div class="col-md-4 d-none">
+                    <div class="form-group">
+                        <label class="form-label">Número de activo fijo:</label>
+                        <input type="text"
+                               id="numActivoFijo"
+                               class="form-control"
+                               readonly
+                               placeholder="Seleccione un cajero o activo fijo">
+                    </div>
+                </div>
+
+                <div class="col-md-4">
                     <div class="form-group">
                         <label class="form-label">Fecha programada:</label>
                         <input type="date"
@@ -93,6 +115,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function() {
+            // Tu código JavaScript existente permanece exactamente igual...
             // 1. Manejo del cambio en Agencia
             $('#selectAgencia').change(function() {
                 var selectedAgencia = $(this).find('option:selected');
@@ -104,8 +127,14 @@
                     // Mostrar loading
                     $('#selectCentro').prop('disabled', true)
                                      .html('<option value="">Cargando centros...</option>');
+                    $('#selectTipoEquipo').prop('disabled', true)
+                                         .html('<option value="">Seleccione un centro primero</option>');
+                    $('#divCajero').hide();
+                    $('#divActivoFijo').hide();
                     $('#selectCajero').prop('disabled', true)
                                      .html('<option value="">Seleccione un centro primero</option>');
+                    $('#selectActivoFijo').prop('disabled', true)
+                                         .html('<option value="">Seleccione un centro primero</option>');
                     $('#numActivoFijo').val('');
 
                     $.get('/Agenda/ObtenerCentrosPorAgencia', {
@@ -129,63 +158,156 @@
                 } else {
                     $('#selectCentro').prop('disabled', true)
                                      .html('<option value="">Seleccione primero una agencia</option>');
+                    $('#selectTipoEquipo').prop('disabled', true)
+                                         .html('<option value="">Seleccione una agencia primero</option>');
+                    $('#divCajero').hide();
+                    $('#divActivoFijo').hide();
                     $('#selectCajero').prop('disabled', true)
                                      .html('<option value="">Seleccione una agencia primero</option>');
+                    $('#selectActivoFijo').prop('disabled', true)
+                                         .html('<option value="">Seleccione una agencia primero</option>');
                     $('#numActivoFijo').val('');
                 }
             });
 
-            // 2. Manejo del cambio en Centro (para cargar cajeros)
+            // 2. Manejo del cambio en Centro (para cargar tipos de equipo)
             $('#selectCentro').change(function() {
                 var selectedCentro = $(this).val();
                 var selectedAgencia = $('#selectAgencia').find('option:selected');
 
                 if (selectedCentro && selectedAgencia.val()) {
                     // Mostrar loading
+                    $('#selectTipoEquipo').prop('disabled', true)
+                                         .html('<option value="">Cargando tipos de equipo...</option>');
+                    $('#divCajero').hide();
+                    $('#divActivoFijo').hide();
                     $('#selectCajero').prop('disabled', true)
-                                     .html('<option value="">Cargando cajeros...</option>');
+                                     .html('<option value="">Seleccione un tipo de equipo</option>');
+                    $('#selectActivoFijo').prop('disabled', true)
+                                         .html('<option value="">Seleccione un tipo de equipo</option>');
                     $('#numActivoFijo').val('');
 
-                    $.get('/Agenda/ObtenerCajerosPorCentro', {
+                    $.get('/Agenda/ObtenerTiposEquipoPorCentro', {
                         division: selectedAgencia.data('division'),
                         zona: selectedAgencia.data('zona'),
                         agencia: selectedAgencia.val(),
                         centro: selectedCentro
                     }, function(response) {
                         if (response.success) {
-                            var options = '<option value="">Seleccione un cajero</option>';
-                            $.each(response.data, function(index, cajero) {
-                                options += `<option value="${cajero.value}"
-                                                   data-activo-fijo="${cajero.numActFijo}">
-                                              ${cajero.text}
-                                            </option>`;
+                            var options = '<option value="">Seleccione un tipo de equipo</option>';
+                            $.each(response.data, function(index, tipo) {
+                                options += '<option value="' + tipo.value + '">' + tipo.text + '</option>';
                             });
-                            $('#selectCajero').html(options).prop('disabled', false);
+                            $('#selectTipoEquipo').html(options).prop('disabled', false);
                         } else {
-                            $('#selectCajero').html('<option value="">Error al cargar cajeros</option>');
+                            $('#selectTipoEquipo').html('<option value="">Error al cargar tipos de equipo</option>');
                             console.error(response.message);
                         }
                     }).fail(function() {
-                        $('#selectCajero').html('<option value="">Error en la solicitud</option>');
+                        $('#selectTipoEquipo').html('<option value="">Error en la solicitud</option>');
                     });
                 } else {
+                    $('#selectTipoEquipo').prop('disabled', true)
+                                         .html('<option value="">Seleccione un centro válido</option>');
+                    $('#divCajero').hide();
+                    $('#divActivoFijo').hide();
                     $('#selectCajero').prop('disabled', true)
                                      .html('<option value="">Seleccione un centro válido</option>');
+                    $('#selectActivoFijo').prop('disabled', true)
+                                         .html('<option value="">Seleccione un centro válido</option>');
                     $('#numActivoFijo').val('');
                 }
             });
 
-            // 3. Mostrar número de activo fijo cuando se selecciona un cajero
+            // 3. Manejo del cambio en Tipo de Equipo
+            $('#selectTipoEquipo').change(function() {
+                var selectedTipo = $(this).val();
+                var selectedCentro = $('#selectCentro').val();
+                var selectedAgencia = $('#selectAgencia').find('option:selected');
+
+                // Ocultar ambos comboboxes inicialmente
+                $('#divCajero').hide();
+                $('#divActivoFijo').hide();
+                $('#selectCajero').prop('disabled', true).html('<option value="">Seleccione un cajero</option>');
+                $('#selectActivoFijo').prop('disabled', true).html('<option value="">Seleccione un activo fijo</option>');
+                $('#numActivoFijo').val('');
+
+                if (selectedTipo && selectedCentro && selectedAgencia.val()) {
+                    if (selectedTipo === 'CFEMÁTICO') {
+                        // Mostrar combobox de cajeros
+                        $('#selectCajero').html('<option value="">Cargando cajeros...</option>');
+                        $('#divCajero').show();
+
+                        $.get('/Agenda/ObtenerCajerosPorCentro', {
+                            division: selectedAgencia.data('division'),
+                            zona: selectedAgencia.data('zona'),
+                            agencia: selectedAgencia.val(),
+                            centro: selectedCentro
+                        }, function(response) {
+                            if (response.success) {
+                                var options = '<option value="">Seleccione un cajero</option>';
+                                $.each(response.data, function(index, cajero) {
+                                    options += `<option value="${cajero.value}"
+                                                       data-activo-fijo="${cajero.numActFijo}">
+                                                  ${cajero.text}
+                                                </option>`;
+                                });
+                                $('#selectCajero').html(options).prop('disabled', false);
+                            } else {
+                                $('#selectCajero').html('<option value="">Error al cargar cajeros</option>');
+                                console.error(response.message);
+                            }
+                        }).fail(function() {
+                            $('#selectCajero').html('<option value="">Error en la solicitud</option>');
+                        });
+                    } else {
+                        // Mostrar combobox de activos fijos para otros tipos
+                        $('#selectActivoFijo').html('<option value="">Cargando activos fijos...</option>');
+                        $('#divActivoFijo').show();
+
+                        $.get('/Agenda/ObtenerActivosFijosPorCentroYTipo', {
+                            division: selectedAgencia.data('division'),
+                            zona: selectedAgencia.data('zona'),
+                            agencia: selectedAgencia.val(),
+                            centro: selectedCentro,
+                            tipoEquipo: selectedTipo
+                        }, function(response) {
+                            if (response.success) {
+                                var options = '<option value="">Seleccione un activo fijo</option>';
+                                $.each(response.data, function(index, activo) {
+                                    options += `<option value="${activo.value}">
+                                                  ${activo.text}
+                                                </option>`;
+                                });
+                                $('#selectActivoFijo').html(options).prop('disabled', false);
+                            } else {
+                                $('#selectActivoFijo').html('<option value="">Error al cargar activos fijos</option>');
+                                console.error(response.message);
+                            }
+                        }).fail(function() {
+                            $('#selectActivoFijo').html('<option value="">Error en la solicitud</option>');
+                        });
+                    }
+                }
+            });
+
+            // 4. Mostrar número de activo fijo cuando se selecciona un cajero (CFEMÁTICO)
             $('#selectCajero').change(function() {
                 var selectedOption = $(this).find('option:selected');
                 $('#numActivoFijo').val(selectedOption.data('activo-fijo') || '');
             });
 
-            // 4. Configuración mínima del datepicker (si es necesario)
+            // 5. Mostrar número de activo fijo cuando se selecciona un activo fijo (otros tipos)
+            $('#selectActivoFijo').change(function() {
+                var selectedOption = $(this).find('option:selected');
+                $('#numActivoFijo').val(selectedOption.val() || '');
+            });
+
+            // 6. Configuración mínima del datepicker
             $('#fechaProgramada').attr('min', new Date().toISOString().split('T')[0]);
 
-            // 5. Manejo del botón Agendar
-                $('#btnAgendar').click(function() {
+            // 7. Manejo del botón Agendar
+            $('#btnAgendar').click(function() {
                 // Validar campos obligatorios
                 if ($('#selectAgencia').val() === '') {
                     Swal.fire({
@@ -207,14 +329,38 @@
                     return;
                 }
 
-                if ($('#selectCajero').val() === '') {
+                if ($('#selectTipoEquipo').val() === '') {
                     Swal.fire({
                         icon: 'error',
                         title: 'Campo requerido',
-                        text: 'Por favor seleccione un cajero',
+                        text: 'Por favor seleccione un tipo de equipo',
                         confirmButtonColor: '#3085d6',
                     });
                     return;
+                }
+
+                // Validar según el tipo de equipo
+                var tipoEquipo = $('#selectTipoEquipo').val();
+                if (tipoEquipo === 'CFEMÁTICO') {
+                    if ($('#selectCajero').val() === '') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Campo requerido',
+                            text: 'Por favor seleccione un cajero',
+                            confirmButtonColor: '#3085d6',
+                        });
+                        return;
+                    }
+                } else {
+                    if ($('#selectActivoFijo').val() === '') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Campo requerido',
+                            text: 'Por favor seleccione un activo fijo',
+                            confirmButtonColor: '#3085d6',
+                        });
+                        return;
+                    }
                 }
 
                 if ($('#fechaProgramada').val() === '') {
@@ -255,9 +401,10 @@
                                 allowOutsideClick: false
                             }).then((result) => {
                                 if (result.isConfirmed) {
-                                    // Opcional: Limpiar el formulario o redirigir
-                                    $('#selectCajero').val('').trigger('change');
+                                    // Limpiar el formulario
+                                    $('#selectTipoEquipo').val('').trigger('change');
                                     $('#fechaProgramada').val('');
+                                    $('#numActivoFijo').val('');
                                 }
                             });
                         } else {

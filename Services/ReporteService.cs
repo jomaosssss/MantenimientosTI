@@ -41,7 +41,7 @@ namespace MantenimientosTI.Services
             }
         }
 
-        public async Task<bool> EnviarCorreoConExcel(DateTime fechaInicio, DateTime fechaFin)
+        public async Task<bool> EnviarCorreoConExcel(DateTime fechaInicio, DateTime fechaFin, List<string> usuariosSeleccionados = null)
         {
             try
             {
@@ -55,7 +55,27 @@ namespace MantenimientosTI.Services
 
                 _logger.LogInformation($"Configuración SMTP: Server={smtpServer}, Port={port}, From={fromAddress}");
 
-                var correosDestinatarios = await ObtenerCorreosDestinatarios();
+                // Obtener destinatarios
+                List<string> correosDestinatarios;
+
+                if (usuariosSeleccionados != null && usuariosSeleccionados.Any())
+                {
+                    // Usar los usuarios específicamente seleccionados desde el Dashboard
+                    correosDestinatarios = await _context.Usuarios
+                        .Where(u => usuariosSeleccionados.Contains(u.Rpe) &&
+                                   u.Estatus.ToLower() == "activo" &&
+                                   !string.IsNullOrEmpty(u.Correo))
+                        .Select(u => u.Correo)
+                        .ToListAsync();
+
+                    _logger.LogInformation($"Enviando a {correosDestinatarios.Count} usuarios seleccionados específicamente");
+                }
+                else
+                {
+                    // Usar la lógica original (todos los que tienen reportes habilitados)
+                    correosDestinatarios = await ObtenerCorreosDestinatarios();
+                    _logger.LogInformation($"Enviando a {correosDestinatarios.Count} usuarios con reportes habilitados");
+                }
 
                 if (!correosDestinatarios.Any())
                 {
@@ -63,6 +83,7 @@ namespace MantenimientosTI.Services
                     return false;
                 }
 
+                // El resto del método permanece igual...
                 // Generar el archivo Excel
                 var excelBytes = await GenerarExcelReporte(fechaInicio, fechaFin);
                 if (excelBytes == null || excelBytes.Length == 0)
@@ -71,7 +92,7 @@ namespace MantenimientosTI.Services
                     return false;
                 }
 
-                var rangoFechas = $"{fechaInicio:dd/MM/yyyy} al {fechaFin:dd/MM/yyyy}";
+                var rangoFechas = $"del {fechaInicio:dd/MM/yyyy} al {fechaFin:dd/MM/yyyy}";
 
                 // Obtener datos para el cuerpo del correo
                 var reporteCFE = await ObtenerReporteCFE(fechaInicio, fechaFin);
@@ -100,7 +121,7 @@ namespace MantenimientosTI.Services
                 using var message = new MailMessage
                 {
                     From = new MailAddress(fromAddress),
-                    Subject = $"Reporte de Mantenimientos - {rangoFechas}",
+                    Subject = $"REPORTE DE MANTENIMIENTOS - {rangoFechas}",
                     Body = cuerpoHTML,
                     IsBodyHtml = true
                 };

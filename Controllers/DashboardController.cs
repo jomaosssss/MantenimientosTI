@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace MantenimientosTI.Controllers
 {
@@ -31,6 +32,7 @@ namespace MantenimientosTI.Controllers
             _configuration = configuration;
         }
 
+        [Authorize(Roles = "ADMINISTRADOR")]
         public async Task<IActionResult> Dashboard()
         {
             string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
@@ -53,15 +55,8 @@ namespace MantenimientosTI.Controllers
 
             // Base query
             var baseQuery = _context.Agenda
-                .Include(a => a.NumActFijoNavigation) // Incluir navegación para filtrar por zona
+                .Include(a => a.NumActFijoNavigation)
                 .Where(a => !estatusExcluidos.Contains(a.Estatus));
-
-            // Aplicar filtro de zona si no es Administrador (Rol 1)
-            if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
-            {
-                baseQuery = baseQuery.Where(a => a.NumActFijoNavigation != null &&
-                                                a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
-            }
 
             // Cálculos asyncronos
             int pendientesMesAnteriorCount = await baseQuery
@@ -87,16 +82,246 @@ namespace MantenimientosTI.Controllers
                 .CountAsync(a => a.FechaProgramada >= primerDiaProximoMes &&
                                  a.FechaProgramada <= ultimoDiaProximoMes);
 
+            // Cálculo de datos para gráficas por zona
+            var graficasZonas = new List<ZonaChartData>();
+
+            // Obtener todas las zonas
+            var zonasQuery = _context.CatZonas.AsQueryable();
+            var zonas = await zonasQuery.ToListAsync();
+
+            foreach (var zona in zonas)
+            {
+                var queryZona = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                    a.NumActFijoNavigation.ClaveZona == zona.ClaveZona &&
+                                                    a.FechaProgramada >= primerDiaMes &&
+                                                    a.FechaProgramada <= ultimoDiaMes);
+
+                var totalProgramados = await queryZona.CountAsync();
+                var terminados = await queryZona.CountAsync(a => a.Estatus == "TERMINADO");
+                var pendientes = await queryZona.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                var otros = totalProgramados - terminados - pendientes;
+
+                graficasZonas.Add(new ZonaChartData
+                {
+                    Zona = zona.ClaveZona,
+                    NombreZona = zona.NombreZona ?? zona.ClaveZona,
+                    TotalProgramados = totalProgramados,
+                    Terminados = terminados,
+                    Pendientes = pendientes,
+                    Otros = otros > 0 ? otros : 0,
+                    TieneDatos = totalProgramados > 0
+                });
+            }
+
             var viewModel = new DashboardViewModel
             {
                 PendientesMesAnteriorCount = pendientesMesAnteriorCount,
                 ProgramadosCount = programadosCount,
                 TerminadosCount = terminadosCount,
                 PendientesCount = pendientesCount,
-                ProgramadosProximoMesCount = proximoMesCount
+                ProgramadosProximoMesCount = proximoMesCount,
+                GraficasZonas = graficasZonas,
+                Zonas = zonas // Agregar la lista de zonas al ViewModel
             };
 
             return View(viewModel);
+        }
+
+        [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
+        public async Task<IActionResult> DashboardTecnico()
+        {
+            string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+            int claveRol = HttpContext.Session.GetInt32("Rol") ?? 0;
+            var hoy = DateOnly.FromDateTime(DateTime.Now);
+
+            // Fechas Mes Actual
+            var primerDiaMes = new DateOnly(hoy.Year, hoy.Month, 1);
+            var ultimoDiaMes = primerDiaMes.AddMonths(1).AddDays(-1);
+
+            // Fechas Próximo Mes
+            var primerDiaProximoMes = primerDiaMes.AddMonths(1);
+            var ultimoDiaProximoMes = primerDiaProximoMes.AddMonths(1).AddDays(-1);
+
+            // Fechas Mes Anterior
+            var primerDiaMesAnterior = primerDiaMes.AddMonths(-1);
+            var ultimoDiaMesAnterior = primerDiaMesAnterior.AddMonths(1).AddDays(-1);
+
+            var estatusExcluidos = new List<string> { "CANCELADO" };
+
+            // Base query - FILTRADO POR ZONA DEL USUARIO
+            var baseQuery = _context.Agenda
+                .Include(a => a.NumActFijoNavigation)
+                .Where(a => !estatusExcluidos.Contains(a.Estatus));
+
+            // Aplicar filtro de zona del técnico
+            if (!string.IsNullOrEmpty(claveZonaUsuario))
+            {
+                baseQuery = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+            }
+
+            // Cálculos asyncronos FILTRADOS POR ZONA
+            int pendientesMesAnteriorCount = await baseQuery
+                .CountAsync(a => (a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO") &&
+                                 a.FechaProgramada >= primerDiaMesAnterior &&
+                                 a.FechaProgramada <= ultimoDiaMesAnterior);
+
+            int programadosCount = await baseQuery
+                .CountAsync(a => a.FechaProgramada >= primerDiaMes &&
+                                 a.FechaProgramada <= ultimoDiaMes);
+
+            int terminadosCount = await baseQuery
+                .CountAsync(a => a.Estatus == "TERMINADO" &&
+                                 a.FechaProgramada >= primerDiaMes &&
+                                 a.FechaProgramada <= ultimoDiaMes);
+
+            int pendientesCount = await baseQuery
+                .CountAsync(a => (a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO") &&
+                                 a.FechaProgramada >= primerDiaMes &&
+                                 a.FechaProgramada <= ultimoDiaMes);
+
+            int proximoMesCount = await baseQuery
+                .CountAsync(a => a.FechaProgramada >= primerDiaProximoMes &&
+                                 a.FechaProgramada <= ultimoDiaProximoMes);
+
+            // Obtener todas las agencias de la zona del usuario
+            var agenciasQuery = _context.CatAgencia
+                .Where(a => a.ClaveZona == claveZonaUsuario);
+
+            var agencias = await agenciasQuery.ToListAsync();
+
+            // Obtener todos los centros de la zona del usuario
+            var centrosQuery = _context.CatCentros
+                .Where(c => c.ClaveZona == claveZonaUsuario);
+
+            var centros = await centrosQuery.ToListAsync();
+
+            // Cálculo de datos para gráficas por AGENCIA (inicial - mostrar todas)
+            var graficasAgencias = new List<AgenciaChartData>();
+
+            foreach (var agencia in agencias)
+            {
+                var queryAgencia = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                       a.NumActFijoNavigation.ClaveZona == claveZonaUsuario &&
+                                                       a.NumActFijoNavigation.ClaveAgencia == agencia.ClaveAgencia &&
+                                                       a.FechaProgramada >= primerDiaMes &&
+                                                       a.FechaProgramada <= ultimoDiaMes);
+
+                var totalProgramados = await queryAgencia.CountAsync();
+                var terminados = await queryAgencia.CountAsync(a => a.Estatus == "TERMINADO");
+                var pendientes = await queryAgencia.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                var otros = totalProgramados - terminados - pendientes;
+
+                graficasAgencias.Add(new AgenciaChartData
+                {
+                    Agencia = agencia.ClaveAgencia,
+                    NombreAgencia = agencia.NombreAgencia ?? agencia.ClaveAgencia,
+                    TotalProgramados = totalProgramados,
+                    Terminados = terminados,
+                    Pendientes = pendientes,
+                    Otros = otros > 0 ? otros : 0,
+                    TieneDatos = totalProgramados > 0
+                });
+            }
+
+            var viewModel = new DashboardTecnicoViewModel
+            {
+                PendientesMesAnteriorCount = pendientesMesAnteriorCount,
+                ProgramadosCount = programadosCount,
+                TerminadosCount = terminadosCount,
+                PendientesCount = pendientesCount,
+                ProgramadosProximoMesCount = proximoMesCount,
+                GraficasAgencias = graficasAgencias,
+                Agencias = agencias,
+                Centros = centros
+            };
+
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ObtenerDatosGraficasCentrosPorAgencia([FromBody] FiltroCentroModel model)
+        {
+            try
+            {
+                string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+
+                if (model.FechaInicio == default || model.FechaFin == default)
+                {
+                    return Json(new { success = false, message = "Las fechas de inicio y fin son requeridas" });
+                }
+
+                if (model.FechaInicio > model.FechaFin)
+                {
+                    return Json(new { success = false, message = "La fecha de inicio no puede ser mayor a la fecha fin" });
+                }
+
+                var primerDia = DateOnly.FromDateTime(model.FechaInicio);
+                var ultimoDia = DateOnly.FromDateTime(model.FechaFin);
+
+                var estatusExcluidos = new List<string> { "CANCELADO" };
+
+                // Base query - FILTRADO POR ZONA DEL USUARIO
+                var baseQuery = _context.Agenda
+                    .Include(a => a.NumActFijoNavigation)
+                    .Where(a => !estatusExcluidos.Contains(a.Estatus));
+
+                // Aplicar filtro de zona del técnico
+                if (!string.IsNullOrEmpty(claveZonaUsuario))
+                {
+                    baseQuery = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                    a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+                }
+
+                // Cálculo de datos para gráficas por CENTRO de la agencia seleccionada
+                var graficasCentros = new List<object>();
+
+                // Obtener todos los centros de la agencia seleccionada
+                var centrosQuery = _context.CatCentros
+                    .Where(c => c.ClaveAgencia == model.AgenciaSeleccionada &&
+                               c.ClaveZona == claveZonaUsuario);
+
+                var centros = await centrosQuery.ToListAsync();
+
+                foreach (var centro in centros)
+                {
+                    var queryCentro = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                          a.NumActFijoNavigation.ClaveAgencia == model.AgenciaSeleccionada &&
+                                                          a.NumActFijoNavigation.ClaveCentro == centro.ClaveCentro &&
+                                                          a.FechaProgramada >= primerDia &&
+                                                          a.FechaProgramada <= ultimoDia);
+
+                    var totalProgramados = await queryCentro.CountAsync();
+                    var terminados = await queryCentro.CountAsync(a => a.Estatus == "TERMINADO");
+                    var pendientes = await queryCentro.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var otros = totalProgramados - terminados - pendientes;
+
+                    graficasCentros.Add(new
+                    {
+                        centro = centro.ClaveCentro,
+                        nombreCentro = centro.NombreCentro ?? centro.ClaveCentro,
+                        totalProgramados,
+                        terminados,
+                        pendientes,
+                        otros = otros > 0 ? otros : 0,
+                        tieneDatos = totalProgramados > 0
+                    });
+                }
+
+                return Json(new { success = true, datosGraficas = graficasCentros, tipo = "centros" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener datos de gráficas por centro y agencia");
+                return Json(new { success = false, message = $"Error interno: {ex.Message}" });
+            }
+        }
+
+        public class FiltroCentroModel
+        {
+            public DateTime FechaInicio { get; set; }
+            public DateTime FechaFin { get; set; }
+            public string AgenciaSeleccionada { get; set; }
         }
 
         // --- ACCIONES PARA ENVÍO MANUAL ---
@@ -117,7 +342,8 @@ namespace MantenimientosTI.Controllers
                     return Json(new { success = false, message = "La fecha de inicio no puede ser mayor a la fecha fin" });
                 }
 
-                var resultado = await _reporteService.EnviarCorreoConExcel(model.FechaInicio, model.FechaFin);
+                // Pasar la lista de usuarios seleccionados al servicio
+                var resultado = await _reporteService.EnviarCorreoConExcel(model.FechaInicio, model.FechaFin, model.Usuarios);
 
                 if (resultado)
                 {
@@ -137,19 +363,50 @@ namespace MantenimientosTI.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ObtenerUsuariosAdministradores()
+        {
+            try
+            {
+                var usuariosAdministradores = await _context.Usuarios
+                    .Where(u => u.ClaveRol == 1 && u.Estatus.ToLower() == "activo")
+                    .Select(u => new
+                    {
+                        rpe = u.Rpe,
+                        nombre = u.Nombre,
+                        apellidoP = u.ApellidoP,
+                        apellidoM = u.ApellidoM,
+                        correo = u.Correo,
+                        recibirReporte = u.RecibirReporte
+                    })
+                    .ToListAsync();
+
+                return Json(new { success = true, usuarios = usuariosAdministradores });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener usuarios administradores");
+                return Json(new { success = false, message = "Error al cargar usuarios" });
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> ProgramarEnvioCorreo([FromBody] ProgramarEnvioModel model)
         {
             try
             {
-                if (string.IsNullOrEmpty(model.DiaSemana) || string.IsNullOrEmpty(model.HoraProgramada))
+                if (string.IsNullOrEmpty(model.DiaSemana) || model.HorasProgramadas == null || !model.HorasProgramadas.Any())
                 {
-                    return Json(new { success = false, message = "El día y la hora programada son requeridos" });
+                    return Json(new { success = false, message = "El día y al menos un horario son requeridos" });
                 }
 
-                if (!TimeOnly.TryParse(model.HoraProgramada, out var hora))
+                // Validar formato de horas
+                foreach (var horaStr in model.HorasProgramadas)
                 {
-                    return Json(new { success = false, message = "El formato de hora no es válido (HH:mm)" });
+                    if (!TimeOnly.TryParse(horaStr, out var hora))
+                    {
+                        return Json(new { success = false, message = "El formato de hora no es válido (HH:mm)" });
+                    }
                 }
 
                 // Guardar/Actualizar DÍA
@@ -157,36 +414,66 @@ namespace MantenimientosTI.Controllers
                     .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_DIA");
                 if (configDia == null)
                 {
-                    _context.Configuraciones.Add(new Configuracion { ClaveConfiguracion = "PROGRAMACION_REPORTE_DIA", Valor = model.DiaSemana, Descripcion = "Día de la semana para envío de reporte (ej. Friday)" });
+                    _context.Configuraciones.Add(new Configuracion
+                    {
+                        ClaveConfiguracion = "PROGRAMACION_REPORTE_DIA",
+                        Valor = model.DiaSemana,
+                        Descripcion = "Día de la semana para envío de reporte (ej. Friday)"
+                    });
                 }
-                else { configDia.Valor = model.DiaSemana; }
-
-                // Guardar/Actualizar HORA
-                var configHora = await _context.Configuraciones
-                    .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_HORA");
-                if (configHora == null)
+                else
                 {
-                    _context.Configuraciones.Add(new Configuracion { ClaveConfiguracion = "PROGRAMACION_REPORTE_HORA", Valor = model.HoraProgramada, Descripcion = "Hora del día para envío de reporte (ej. 07:30)" });
+                    configDia.Valor = model.DiaSemana;
                 }
-                else { configHora.Valor = model.HoraProgramada; }
+
+                // Guardar/Actualizar HORAS (como JSON array)
+                var horasJson = System.Text.Json.JsonSerializer.Serialize(model.HorasProgramadas);
+                var configHoras = await _context.Configuraciones
+                    .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_HORAS");
+                if (configHoras == null)
+                {
+                    _context.Configuraciones.Add(new Configuracion
+                    {
+                        ClaveConfiguracion = "PROGRAMACION_REPORTE_HORAS",
+                        Valor = horasJson,
+                        Descripcion = "Horas programadas para envío de reporte (formato JSON array)"
+                    });
+                }
+                else
+                {
+                    configHoras.Valor = horasJson;
+                }
 
                 // Limpiar última ejecución para forzar la ejecución con la nueva config
-                var configUltima = await _context.Configuraciones
-                    .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_ULTIMA_EJECUCION");
-                if (configUltima != null) { _context.Configuraciones.Remove(configUltima); }
+                var configsUltima = await _context.Configuraciones
+                    .Where(c => c.ClaveConfiguracion.StartsWith("PROGRAMACION_REPORTE_ULTIMA_EJECUCION_"))
+                    .ToListAsync();
+                _context.Configuraciones.RemoveRange(configsUltima);
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Programación semanal guardada: {model.DiaSemana} a las {model.HoraProgramada}");
+                _logger.LogInformation($"Programación semanal guardada: {model.DiaSemana} a las {string.Join(" y ", model.HorasProgramadas)}");
 
                 var diasEs = new Dictionary<string, string> {
-                    {"Monday", "Lunes"}, {"Tuesday", "Martes"}, {"Wednesday", "Miércoles"},
-                    {"Thursday", "Jueves"}, {"Friday", "Viernes"}, {"Saturday", "Sábado"}, {"Sunday", "Domingo"}
-                };
+            {"Monday", "Lunes"}, {"Tuesday", "Martes"}, {"Wednesday", "Miércoles"},
+            {"Thursday", "Jueves"}, {"Friday", "Viernes"}, {"Saturday", "Sábado"}, {"Sunday", "Domingo"}
+        };
                 var diaMostrar = diasEs.GetValueOrDefault(model.DiaSemana, model.DiaSemana);
-                var horaMostrar = hora.ToString("hh:mm tt"); // Formato AM/PM
 
-                return Json(new { success = true, message = $"Envío programado para cada {diaMostrar} a las {horaMostrar}" });
+                var horasMostrar = model.HorasProgramadas.Select(h =>
+                    TimeOnly.Parse(h).ToString("hh:mm tt")).ToArray();
+
+                string mensajeHoras;
+                if (horasMostrar.Length == 1)
+                {
+                    mensajeHoras = $"a las {horasMostrar[0]}";
+                }
+                else
+                {
+                    mensajeHoras = $"a las {horasMostrar[0]} y {horasMostrar[1]}";
+                }
+
+                return Json(new { success = true, message = $"Envío programado para cada {diaMostrar} {mensajeHoras}" });
             }
             catch (Exception ex)
             {
@@ -202,27 +489,47 @@ namespace MantenimientosTI.Controllers
             {
                 var configDia = await _context.Configuraciones
                     .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_DIA");
-                var configHora = await _context.Configuraciones
-                    .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_HORA");
+                var configHoras = await _context.Configuraciones
+                    .FirstOrDefaultAsync(c => c.ClaveConfiguracion == "PROGRAMACION_REPORTE_HORAS");
 
                 string configuracionActual = "No hay programación activa";
                 bool programado = false;
 
-                if (configDia != null && configHora != null && TimeOnly.TryParse(configHora.Valor, out var hora))
+                if (configDia != null && configHoras != null)
                 {
-                    var diasEs = new Dictionary<string, string> {
+                    try
+                    {
+                        var horas = System.Text.Json.JsonSerializer.Deserialize<List<string>>(configHoras.Valor);
+                        if (horas != null && horas.Any())
+                        {
+                            var diasEs = new Dictionary<string, string> {
                         {"Monday", "Lunes"}, {"Tuesday", "Martes"}, {"Wednesday", "Miércoles"},
                         {"Thursday", "Jueves"}, {"Friday", "Viernes"}, {"Saturday", "Sábado"}, {"Sunday", "Domingo"}
                     };
-                    var diaMostrar = diasEs.GetValueOrDefault(configDia.Valor, configDia.Valor);
-                    var horaMostrar = hora.ToString("hh:mm tt"); // Formato AM/PM
+                            var diaMostrar = diasEs.GetValueOrDefault(configDia.Valor, configDia.Valor);
 
-                    configuracionActual = $"Cada {diaMostrar} a las {horaMostrar}";
-                    programado = true; // Hay programación en BD
+                            var horasMostrar = horas.Select(h =>
+                                TimeOnly.Parse(h).ToString("hh:mm tt")).ToArray();
+
+                            if (horasMostrar.Length == 1)
+                            {
+                                configuracionActual = $"Cada {diaMostrar} a las {horasMostrar[0]}";
+                            }
+                            else
+                            {
+                                configuracionActual = $"Cada {diaMostrar} a las {horasMostrar[0]} y {horasMostrar[1]}";
+                            }
+
+                            programado = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error al deserializar horas programadas");
+                    }
                 }
                 else
                 {
-                    // Respaldo de appsettings (opcional, si aún se llega a usar)
                     var scheduleConfig = _configuration.GetSection("ReportSchedule");
                     if (scheduleConfig.GetValue<bool>("Enabled"))
                     {
@@ -248,10 +555,16 @@ namespace MantenimientosTI.Controllers
             try
             {
                 var clavesABorrar = new List<string> {
-                    "PROGRAMACION_REPORTE_DIA",
-                    "PROGRAMACION_REPORTE_HORA",
-                    "PROGRAMACION_REPORTE_ULTIMA_EJECUCION"
-                };
+            "PROGRAMACION_REPORTE_DIA",
+            "PROGRAMACION_REPORTE_HORAS"
+        };
+
+                // También eliminar todas las configuraciones de última ejecución
+                var configsUltima = await _context.Configuraciones
+                    .Where(c => c.ClaveConfiguracion.StartsWith("PROGRAMACION_REPORTE_ULTIMA_EJECUCION_"))
+                    .Select(c => c.ClaveConfiguracion)
+                    .ToListAsync();
+                clavesABorrar.AddRange(configsUltima);
 
                 var configs = await _context.Configuraciones
                     .Where(c => clavesABorrar.Contains(c.ClaveConfiguracion))
@@ -272,10 +585,244 @@ namespace MantenimientosTI.Controllers
                 return Json(new { success = false, message = $"Error interno al eliminar: {ex.Message}" });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ObtenerDatosGraficasAgenciasPorZona([FromBody] FiltroZonaModel model)
+        {
+            try
+            {
+                if (model.FechaInicio == default || model.FechaFin == default)
+                {
+                    return Json(new { success = false, message = "Las fechas de inicio y fin son requeridas" });
+                }
+
+                if (model.FechaInicio > model.FechaFin)
+                {
+                    return Json(new { success = false, message = "La fecha de inicio no puede ser mayor a la fecha fin" });
+                }
+
+                var primerDia = DateOnly.FromDateTime(model.FechaInicio);
+                var ultimoDia = DateOnly.FromDateTime(model.FechaFin);
+
+                var estatusExcluidos = new List<string> { "CANCELADO" };
+
+                // Base query
+                var baseQuery = _context.Agenda
+                    .Include(a => a.NumActFijoNavigation)
+                    .Where(a => !estatusExcluidos.Contains(a.Estatus));
+
+                // Cálculo de datos para gráficas por AGENCIA de la zona seleccionada
+                var graficasAgencias = new List<object>();
+
+                // Obtener todas las agencias de la zona seleccionada
+                var agenciasQuery = _context.CatAgencia
+                    .Where(a => a.ClaveZona == model.ZonaSeleccionada);
+
+                var agencias = await agenciasQuery.ToListAsync();
+
+                foreach (var agencia in agencias)
+                {
+                    var queryAgencia = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                           a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada &&
+                                                           a.NumActFijoNavigation.ClaveAgencia == agencia.ClaveAgencia &&
+                                                           a.FechaProgramada >= primerDia &&
+                                                           a.FechaProgramada <= ultimoDia);
+
+                    var totalProgramados = await queryAgencia.CountAsync();
+                    var terminados = await queryAgencia.CountAsync(a => a.Estatus == "TERMINADO");
+                    var pendientes = await queryAgencia.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var otros = totalProgramados - terminados - pendientes;
+
+                    graficasAgencias.Add(new
+                    {
+                        agencia = agencia.ClaveAgencia,
+                        nombreAgencia = agencia.NombreAgencia ?? agencia.ClaveAgencia,
+                        totalProgramados,
+                        terminados,
+                        pendientes,
+                        otros = otros > 0 ? otros : 0,
+                        tieneDatos = totalProgramados > 0
+                    });
+                }
+
+                return Json(new { success = true, datosGraficas = graficasAgencias, tipo = "agencias" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener datos de gráficas por agencia y zona");
+                return Json(new { success = false, message = $"Error interno: {ex.Message}" });
+            }
+        }
+
+        public class FiltroZonaModel
+        {
+            public DateTime FechaInicio { get; set; }
+            public DateTime FechaFin { get; set; }
+            public string ZonaSeleccionada { get; set; }
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> ObtenerDatosGraficasPorFecha([FromBody] EnviarCorreoModel model)
+        {
+            try
+            {
+                string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+                int claveRol = HttpContext.Session.GetInt32("Rol") ?? 0;
+
+                if (model.FechaInicio == default || model.FechaFin == default)
+                {
+                    return Json(new { success = false, message = "Las fechas de inicio y fin son requeridas" });
+                }
+
+                if (model.FechaInicio > model.FechaFin)
+                {
+                    return Json(new { success = false, message = "La fecha de inicio no puede ser mayor a la fecha fin" });
+                }
+
+                var primerDia = DateOnly.FromDateTime(model.FechaInicio);
+                var ultimoDia = DateOnly.FromDateTime(model.FechaFin);
+
+                var estatusExcluidos = new List<string> { "CANCELADO" };
+
+                // Base query
+                var baseQuery = _context.Agenda
+                    .Include(a => a.NumActFijoNavigation)
+                    .Where(a => !estatusExcluidos.Contains(a.Estatus));
+
+                // Aplicar filtro de zona si no es Administrador (Rol 1)
+                if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
+                {
+                    baseQuery = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                    a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+                }
+
+                // Cálculo de datos para gráficas por zona
+                var graficasZonas = new List<object>();
+
+                // Obtener todas las zonas
+                var zonasQuery = _context.CatZonas.AsQueryable();
+
+                // Si no es administrador, filtrar por su zona
+                if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
+                {
+                    zonasQuery = zonasQuery.Where(z => z.ClaveZona == claveZonaUsuario);
+                }
+
+                var zonas = await zonasQuery.ToListAsync();
+
+                foreach (var zona in zonas)
+                {
+                    var queryZona = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                        a.NumActFijoNavigation.ClaveZona == zona.ClaveZona &&
+                                                        a.FechaProgramada >= primerDia &&
+                                                        a.FechaProgramada <= ultimoDia);
+
+                    var totalProgramados = await queryZona.CountAsync();
+                    var terminados = await queryZona.CountAsync(a => a.Estatus == "TERMINADO");
+                    var pendientes = await queryZona.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var otros = totalProgramados - terminados - pendientes;
+
+                    graficasZonas.Add(new
+                    {
+                        zona = zona.ClaveZona,
+                        nombreZona = zona.NombreZona ?? zona.ClaveZona,
+                        totalProgramados,
+                        terminados,
+                        pendientes,
+                        otros = otros > 0 ? otros : 0,
+                        tieneDatos = totalProgramados > 0
+                    });
+                }
+
+                return Json(new { success = true, datosGraficas = graficasZonas });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener datos de gráficas por fecha");
+                return Json(new { success = false, message = $"Error interno: {ex.Message}" });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ObtenerDatosGraficasAgenciaPorFecha([FromBody] EnviarCorreoModel model)
+        {
+            try
+            {
+                string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+
+                if (model.FechaInicio == default || model.FechaFin == default)
+                {
+                    return Json(new { success = false, message = "Las fechas de inicio y fin son requeridas" });
+                }
+
+                if (model.FechaInicio > model.FechaFin)
+                {
+                    return Json(new { success = false, message = "La fecha de inicio no puede ser mayor a la fecha fin" });
+                }
+
+                var primerDia = DateOnly.FromDateTime(model.FechaInicio);
+                var ultimoDia = DateOnly.FromDateTime(model.FechaFin);
+
+                var estatusExcluidos = new List<string> { "CANCELADO" };
+
+                // Base query - FILTRADO POR ZONA DEL USUARIO
+                var baseQuery = _context.Agenda
+                    .Include(a => a.NumActFijoNavigation)
+                    .Where(a => !estatusExcluidos.Contains(a.Estatus));
+
+                // Aplicar filtro de zona del técnico
+                if (!string.IsNullOrEmpty(claveZonaUsuario))
+                {
+                    baseQuery = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                    a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+                }
+
+                // Cálculo de datos para gráficas por AGENCIA
+                var graficasAgencias = new List<object>();
+
+                // Obtener todas las agencias de la zona del usuario
+                var agenciasQuery = _context.CatAgencia
+                    .Where(a => a.ClaveZona == claveZonaUsuario);
+
+                var agencias = await agenciasQuery.ToListAsync();
+
+                foreach (var agencia in agencias)
+                {
+                    var queryAgencia = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                           a.NumActFijoNavigation.ClaveZona == claveZonaUsuario &&
+                                                           a.NumActFijoNavigation.ClaveAgencia == agencia.ClaveAgencia &&
+                                                           a.FechaProgramada >= primerDia &&
+                                                           a.FechaProgramada <= ultimoDia);
+
+                    var totalProgramados = await queryAgencia.CountAsync();
+                    var terminados = await queryAgencia.CountAsync(a => a.Estatus == "TERMINADO");
+                    var pendientes = await queryAgencia.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var otros = totalProgramados - terminados - pendientes;
+
+                    graficasAgencias.Add(new
+                    {
+                        agencia = agencia.ClaveAgencia,
+                        nombreAgencia = agencia.NombreAgencia ?? agencia.ClaveAgencia,
+                        totalProgramados,
+                        terminados,
+                        pendientes,
+                        otros = otros > 0 ? otros : 0,
+                        tieneDatos = totalProgramados > 0
+                    });
+                }
+
+                return Json(new { success = true, datosGraficas = graficasAgencias });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener datos de gráficas por agencia y fecha");
+                return Json(new { success = false, message = $"Error interno: {ex.Message}" });
+            }
+        }
     }
 
     // --- VIEW MODELS ---
-
     public class DashboardViewModel
     {
         public int PendientesMesAnteriorCount { get; set; }
@@ -283,17 +830,66 @@ namespace MantenimientosTI.Controllers
         public int TerminadosCount { get; set; }
         public int PendientesCount { get; set; }
         public int ProgramadosProximoMesCount { get; set; }
+        public List<ZonaChartData> GraficasZonas { get; set; } = new List<ZonaChartData>();
+        public List<AgenciaChartData> GraficasAgencias { get; set; } = new List<AgenciaChartData>();
+        public List<CatZona> Zonas { get; set; } = new List<CatZona>();
+    }
+
+    public class ZonaChartData
+    {
+        public string Zona { get; set; }
+        public string NombreZona { get; set; }
+        public int TotalProgramados { get; set; }
+        public int Terminados { get; set; }
+        public int Pendientes { get; set; }
+        public int Otros { get; set; }
+        public bool TieneDatos { get; set; }
     }
 
     public class EnviarCorreoModel
     {
         public DateTime FechaInicio { get; set; }
         public DateTime FechaFin { get; set; }
+        public List<string> Usuarios { get; set; } = new List<string>();
     }
 
     public class ProgramarEnvioModel
     {
-        public string DiaSemana { get; set; } // Monday, Tuesday, etc.
-        public string HoraProgramada { get; set; } // Formato "HH:mm"
+        public string DiaSemana { get; set; }
+        public List<string> HorasProgramadas { get; set; } = new List<string>();
+    }
+
+    public class DashboardTecnicoViewModel
+    {
+        public int PendientesMesAnteriorCount { get; set; }
+        public int ProgramadosCount { get; set; }
+        public int TerminadosCount { get; set; }
+        public int PendientesCount { get; set; }
+        public int ProgramadosProximoMesCount { get; set; }
+        public List<AgenciaChartData> GraficasAgencias { get; set; } = new List<AgenciaChartData>();
+        public List<CatAgencium> Agencias { get; set; } = new List<CatAgencium>(); // Para el combobox de agencias
+        public List<CatCentro> Centros { get; set; } = new List<CatCentro>(); // Para el combobox de centros
+    }
+
+    public class AgenciaChartData
+    {
+        public string Agencia { get; set; }
+        public string NombreAgencia { get; set; }
+        public int TotalProgramados { get; set; }
+        public int Terminados { get; set; }
+        public int Pendientes { get; set; }
+        public int Otros { get; set; }
+        public bool TieneDatos { get; set; }
+    }
+
+    public class CentroChartData
+    {
+        public string Centro { get; set; }
+        public string NombreCentro { get; set; }
+        public int TotalProgramados { get; set; }
+        public int Terminados { get; set; }
+        public int Pendientes { get; set; }
+        public int Otros { get; set; }
+        public bool TieneDatos { get; set; }
     }
 }

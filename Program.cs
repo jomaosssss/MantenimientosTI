@@ -17,7 +17,7 @@ builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>
 
 // Servicios personalizados
 builder.Services.AddScoped<MantenimientosTI.Services.BitacoraService>();
-builder.Services.AddScoped<ReporteService>(); // Nuevo servicio de reportes
+builder.Services.AddScoped<ReporteService>();
 builder.Services.AddHostedService<ScheduledEmailService>();
 
 // Configuración de Data Protection
@@ -68,7 +68,6 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseHttpsRedirection();
 app.UseRouting();
 
-// IMPORTANTE: El orden de estos middlewares es crucial
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
