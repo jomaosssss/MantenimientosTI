@@ -303,9 +303,9 @@ namespace MantenimientosTI.Services
                                            select new { ag })
                                          .ToListAsync();
 
-                    var programados = datosZona.Count(x => x.ag != null);
+                    var programados = datosZona.Count(x => x.ag != null && x.ag.Estatus!="CANCELADO");
                     var terminados = datosZona.Count(x => x.ag != null && x.ag.Estatus == "TERMINADO");
-                    var pendientes = datosZona.Count(x => x.ag != null && x.ag.Estatus == "PENDIENTE");
+                    var pendientes = datosZona.Count(x => x.ag != null && (x.ag.Estatus == "PENDIENTE" || x.ag.Estatus == "PRE-CANCELADO"));
                     var avance = programados == 0 ? 0 : (terminados * 100.0m) / programados;
 
                     resultados.Add(new ReporteResumen
@@ -373,9 +373,9 @@ namespace MantenimientosTI.Services
                                            select new { ag })
                                          .ToListAsync();
 
-                    var programados = datosZona.Count(x => x.ag != null);
+                    var programados = datosZona.Count(x => x.ag != null && x.ag.Estatus != "CANCELADO");
                     var terminados = datosZona.Count(x => x.ag != null && x.ag.Estatus == "TERMINADO");
-                    var pendientes = datosZona.Count(x => x.ag != null && x.ag.Estatus == "PENDIENTE");
+                    var pendientes = datosZona.Count(x => x.ag != null && (x.ag.Estatus == "PENDIENTE" || x.ag.Estatus == "PRE-CANCELADO"));
                     var avance = programados == 0 ? 0 : (terminados * 100.0m) / programados;
 
                     resultados.Add(new ReporteResumen
@@ -443,9 +443,9 @@ namespace MantenimientosTI.Services
                                            select new { ag })
                                          .ToListAsync();
 
-                    var programados = datosZona.Count(x => x.ag != null);
+                    var programados = datosZona.Count(x => x.ag != null && x.ag.Estatus != "CANCELADO");
                     var terminados = datosZona.Count(x => x.ag != null && x.ag.Estatus == "TERMINADO");
-                    var pendientes = datosZona.Count(x => x.ag != null && x.ag.Estatus == "PENDIENTE");
+                    var pendientes = datosZona.Count(x => x.ag != null && (x.ag.Estatus == "PENDIENTE" || x.ag.Estatus == "PRE-CANCELADO"));
                     var avance = programados == 0 ? 0 : (terminados * 100.0m) / programados;
 
                     resultados.Add(new ReporteResumen

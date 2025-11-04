@@ -190,6 +190,176 @@
     </div>
 </div>
 
+<!-- Modal para crear un nuevo usuario -->
+<div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="tituloModalNuevoUsuario" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalNuevoUsuario">NUEVO USUARIO</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNuevoUsuario">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RolNuevo" class="form-label">ROL</label>
+                            <select class="form-select" id="RolNuevo" name="ClaveRol" required>
+                                <option value="">SELECCIONE UN ROL</option>
+                                @foreach (var rol in ViewBag.Roles as List<CatRol>)
+                                {
+                                    <option value="@rol.ClaveRol">@rol.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ZonaNuevo" class="form-label">ZONA</label>
+                            <select class="form-select" id="ZonaNuevo" name="ClaveZona" required>
+                                <option value="">SELECCIONE UNA ZONA</option>
+                                @foreach (var zona in ViewBag.Zonas as List<CatZona>)
+                                {
+                                    <option value="@zona.ClaveZona">@zona.NombreZona</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RpeNuevo" class="form-label">RPE</label>
+                            <input type="text" class="form-control" id="RpeNuevo" name="Rpe" required minlength="5" maxlength="10"
+                                   oninvalid="this.setCustomValidity('El RPE debe tener al menos 5 caracteres')"
+                                   oninput="this.setCustomValidity('')">
+                            <div class="invalid-feedback">El RPE debe tener al menos 5 caracteres</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NombreNuevo" class="form-label">NOMBRE</label>
+                            <input type="text" class="form-control text-uppercase" id="NombreNuevo" name="Nombre" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoPNuevo" class="form-label">APELLIDO PATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoPNuevo" name="ApellidoP" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoMNuevo" class="form-label">APELLIDO MATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoMNuevo" name="ApellidoM" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="CorreoNuevo" class="form-label">CORREO</label>
+                            <input type="email" class="form-control" id="CorreoNuevo" name="Correo" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ContraseniaNuevo" class="form-label">CONTRASEÑA</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="ContraseniaNuevo" name="Contrasenia" required minlength="8" maxlength="20">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePasswordNuevo">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="crearUsuario()">Crear</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar un usuario -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-labelledby="tituloModalEditarUsuario" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalEditarUsuario">EDITAR USUARIO</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarUsuario">
+                    <input type="hidden" id="RpeEditar" name="Rpe">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RolEditar" class="form-label">ROL</label>
+                            <select class="form-select" id="RolEditar" name="ClaveRol" required>
+                                <option value="">SELECCIONE UN ROL</option>
+                                @foreach (var rol in ViewBag.Roles as List<CatRol>)
+                                {
+                                    <option value="@rol.ClaveRol">@rol.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ZonaEditar" class="form-label">ZONA</label>
+                            <select class="form-select" id="ZonaEditar" name="ClaveZona" required>
+                                <option value="">SELECCIONE UNA ZONA</option>
+                                @foreach (var zona in ViewBag.Zonas as List<CatZona>)
+                                {
+                                    <option value="@zona.ClaveZona">@zona.NombreZona</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="RpeDisplay" class="form-label">RPE</label>
+                            <input type="text" class="form-control" id="RpeDisplay" readonly>
+                            <div class="form-text">El RPE no se puede modificar</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NombreEditar" class="form-label">NOMBRE</label>
+                            <input type="text" class="form-control text-uppercase" id="NombreEditar" name="Nombre" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoPEditar" class="form-label">APELLIDO PATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoPEditar" name="ApellidoP" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ApellidoMEditar" class="form-label">APELLIDO MATERNO</label>
+                            <input type="text" class="form-control text-uppercase" id="ApellidoMEditar" name="ApellidoM" required
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="CorreoEditar" class="form-label">CORREO</label>
+                            <input type="email" class="form-control" id="CorreoEditar" name="Correo" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="EstatusEditar" class="form-label">ESTATUS</label>
+                            <select class="form-select" id="EstatusEditar" name="Estatus" required>
+                                <option value="Activo">ACTIVO</option>
+                                <option value="Inactivo">INACTIVO</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="guardarCambios()">Guardar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Los modales permanecen exactamente igual -->
 @functions {
     public string GetBadgeClass(string accion)

@@ -503,7 +503,7 @@
                         </div>
                         <div class="card-body p-3 d-flex flex-column">
                             <div class="mb-3 pb-3 border-bottom">
-                                <h6><i class="fas fa-paper-plane me-1 text-success"></i> Envío Manual</h6>
+                                <h6><i class="fas fa-paper-plane me-1 text-success"></i> Envío manual</h6>
 
                                 <!-- Botón para desplegar/contraer la lista de usuarios -->
                                 <div class="mb-2">
@@ -561,13 +561,13 @@
                                 </div>
                                 <div class="d-grid">
                                     <button id="btnEnviarCorreo" class="btn btn-success btn-sm">
-                                        <i class="fas fa-paper-plane me-1"></i>Enviar Ahora
+                                        <i class="fas fa-paper-plane me-1"></i>Enviar ahora
                                     </button>
                                 </div>
                             </div>
 
                             <div class="mt-auto">
-                                <h6><i class="fas fa-clock me-1 text-success"></i> Programación Semanal</h6>
+                                <h6><i class="fas fa-clock me-1 text-success"></i> Programación semanal</h6>
                                 <div id="mensajeProgramacion" class="mt-2 small"></div>
 
                                 <div class="mb-2 mt-2">
@@ -663,17 +663,17 @@
 
                                 <div class="d-grid gap-2 mb-3">
                                     <button id="btnProgramarEnvio" class="btn btn-success btn-sm">
-                                        <i class="fas fa-save me-1"></i>Guardar Programación
+                                        <i class="fas fa-save me-1"></i>Guardar programación
                                     </button>
                                     <button id="btnEliminarProgramacion" class="btn btn-danger btn-sm">
-                                        <i class="fas fa-trash me-1"></i>Eliminar Programación
+                                        <i class="fas fa-trash me-1"></i>Eliminar programación
                                     </button>
                                 </div>
 
                                 <div class="p-2 bg-light rounded border">
                                     <small class="text-muted" style="font-size: 0.8em;">
                                         <i class="fas fa-info-circle me-1"></i>
-                                        Actual: <span id="infoConfiguracion" class="fw-bold text-dark">Cargando...</span>
+                                        Actualmente el reporte se envia <span id="infoConfiguracion" class="fw-bold text-dark">Cargando...</span>
                                     </small>
                                 </div>
                             </div>
@@ -843,7 +843,7 @@
                         return `${horasNum}:${minutosStr.toString().padStart(2, '0')} ${periodo}`;
                     });
 
-                    let mensaje = `El reporte se enviará cada ${diaTexto} `;
+                    let mensaje = `El reporte se enviará a todos los administradores cada ${diaTexto} `;
 
                     if (horasFormateadas.length === 1) {
                         mensaje += `a las ${horasFormateadas[0]}`;
@@ -896,7 +896,7 @@
                         }
                         const diffTime = Math.abs(fin - inicio);
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                        $('#infoReporte').text(`Reporte del ${inicio.toLocaleDateString('es-ES')} hasta el ${fin.toLocaleDateString('es-ES')} (${diffDays} días)`);
+                        $('#infoReporte').text(`El reporte se enviará del ${inicio.toLocaleDateString('es-ES')} hasta el ${fin.toLocaleDateString('es-ES')} (${diffDays} días) a los usuarios seleccionados.`);
                     } catch (e) {
                          $('#infoReporte').text('Fechas inválidas.');
                     }

@@ -513,11 +513,11 @@ namespace MantenimientosTI.Controllers
 
                             if (horasMostrar.Length == 1)
                             {
-                                configuracionActual = $"Cada {diaMostrar} a las {horasMostrar[0]}";
+                                configuracionActual = $"cada {diaMostrar} a las {horasMostrar[0]}";
                             }
                             else
                             {
-                                configuracionActual = $"Cada {diaMostrar} a las {horasMostrar[0]} y {horasMostrar[1]}";
+                                configuracionActual = $"cada {diaMostrar} a las {horasMostrar[0]} y {horasMostrar[1]}";
                             }
 
                             programado = true;
@@ -536,7 +536,7 @@ namespace MantenimientosTI.Controllers
                         var dayOfWeek = scheduleConfig.GetValue<string>("DayOfWeek") ?? "Friday";
                         var hour = scheduleConfig.GetValue<int>("Hour");
                         var minute = scheduleConfig.GetValue<int>("Minute");
-                        configuracionActual = $"Cada {dayOfWeek} a las {hour:00}:{minute:00} (configuración base)";
+                        configuracionActual = $"cada {dayOfWeek} a las {hour:00}:{minute:00} (configuración base)";
                     }
                 }
 
