@@ -4,6 +4,39 @@
     ViewData["Title"] = "Configuración";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<style>
+    /* Estilos para tablas responsivas */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dataTables_wrapper {
+        width: 100%;
+        min-width: 800px; /* Ancho mínimo para mantener el diseño */
+    }
+
+    /* Para pantallas pequeñas - scroll horizontal suave */
+    @@media (max-width: 1200px) {
+        .table-container {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+    }
+
+    /* Para pantallas muy pequeñas */
+    @@media (max-width: 768px) {
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 10px;
+        }
+
+        .btn-sm {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.75rem;
+        }
+    }
+</style>
 
 <div class="container mt-5">
     <div class="card mt-4 shadow-sm rounded">
@@ -15,7 +48,6 @@
                 </button>
             </div>
             <div class="card-body">
-
 
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
@@ -37,63 +69,67 @@
                     <div class="card-header bg-success text-white">
                         <i class="fas fa-table me-1"></i> Usuarios Registrados
                     </div>
-                    <div class="card-body">
-                        <table id="tablaUsuarios" class="table table-striped table-bordered" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>RPE</th>
-                                    <th>Rol</th>
-                                    <th>Nombre</th>
-                                    <th>Zona</th>
-                                    <th>Correo</th>
-                                    <th class="text-center">Estatus</th>
-                                    <th class="text-center">Reportes</th>
-                                    <th class="text-center">Editar</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var usuario in Model)
-                                {
+                    <div class="card-body p-0">
+                        <!-- Cambiado a p-0 -->
+                        <div class="table-container p-3">
+                            <!-- Contenedor con scroll -->
+                            <table id="tablaUsuarios" class="table table-striped table-bordered" style="width:100%">
+                                <thead>
                                     <tr>
-                                        <td>@usuario.Rpe</td>
-                                        <td>@usuario.ClaveRolNavigation?.Nombre</td>
-                                        <td>@usuario.Nombre @usuario.ApellidoP @usuario.ApellidoM</td>
-                                        <td>@usuario.CatZona?.NombreZona</td>
-                                        <td>@usuario.Correo</td>
-                                        <td class="text-center">
-                                            @if (usuario.Estatus.ToLower() == "activo")
-                                            {
-                                                <span class="badge bg-success">Activo</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-secondary">Inactivo</span>
-                                            }
-                                        </td>
-                                        <td class="text-center">
-                                            @if (usuario.ClaveRol == 1)
-                                            {
-                                                <div class="form-check form-switch d-inline-block">
-                                                    <input class="form-check-input toggle-reporte" type="checkbox" role="switch"
-                                                           data-rpe="@usuario.Rpe"
-                                                           @(usuario.RecibirReporte == "SI" ? "checked" : "")>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-secondary">N/A</span>
-                                            }
-                                        </td>
-                                        <td class="text-center">
-                                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario"
-                                                    onclick="cargarDatosEdicion('@usuario.Rpe')">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                        </td>
+                                        <th>RPE</th>
+                                        <th>Rol</th>
+                                        <th>Nombre</th>
+                                        <th>Zona</th>
+                                        <th>Correo</th>
+                                        <th class="text-center">Estatus</th>
+                                        <th class="text-center">Reportes</th>
+                                        <th class="text-center">Editar</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach (var usuario in Model)
+                                    {
+                                        <tr>
+                                            <td>@usuario.Rpe</td>
+                                            <td>@usuario.ClaveRolNavigation?.Nombre</td>
+                                            <td>@usuario.Nombre @usuario.ApellidoP @usuario.ApellidoM</td>
+                                            <td>@usuario.CatZona?.NombreZona</td>
+                                            <td>@usuario.Correo</td>
+                                            <td class="text-center">
+                                                @if (usuario.Estatus.ToLower() == "activo")
+                                                {
+                                                    <span class="badge bg-success">Activo</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Inactivo</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (usuario.ClaveRol == 1)
+                                                {
+                                                    <div class="form-check form-switch d-inline-block">
+                                                        <input class="form-check-input toggle-reporte" type="checkbox" role="switch"
+                                                               data-rpe="@usuario.Rpe"
+                                                               @(usuario.RecibirReporte == "SI" ? "checked" : "")>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">N/A</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario"
+                                                        onclick="cargarDatosEdicion('@usuario.Rpe')">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -106,53 +142,57 @@
                             Ver Bitácora Completa <i class="fas fa-arrow-right ms-1"></i>
                         </a>
                     </div>
-                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                        @{
-                            var bitacora = ViewBag.Bitacora as List<RegistroActividad>;
-                            var totalRegistros = bitacora?.Count ?? 0;
-                        }
-                        
-                        @if (totalRegistros == 0)
-                        {
-                            <div class="text-center text-muted py-3">
-                                <i class="fas fa-info-circle fa-2x mb-2"></i>
-                                <p>No hay actividad registrada en las últimas 24 horas</p>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="mb-2">
-                                <small class="text-muted">Mostrando @totalRegistros registro(s) de las últimas 24 horas</small>
-                            </div>
-                            <table class="table table-sm table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha y Hora</th>
-                                        <th>Usuario</th>
-                                        <th>Acción</th>
-                                        <th>Descripción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var registro in bitacora)
-                                    {
+                    <div class="card-body p-0">
+                        <!-- Cambiado a p-0 -->
+                        <div class="table-container p-3">
+                            <!-- Contenedor con scroll -->
+                            @{
+                                var bitacora = ViewBag.Bitacora as List<RegistroActividad>;
+                                var totalRegistros = bitacora?.Count ?? 0;
+                            }
+
+                            @if (totalRegistros == 0)
+                            {
+                                <div class="text-center text-muted py-3">
+                                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                    <p>No hay actividad registrada en las últimas 24 horas</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="mb-2">
+                                    <small class="text-muted">Mostrando @totalRegistros registro(s) de las últimas 24 horas</small>
+                                </div>
+                                <table class="table table-sm table-hover" style="width:100%">
+                                    <thead>
                                         <tr>
-                                            <td class="text-nowrap">
-                                                <small>@registro.FechaHora.ToString("dd/MM/yy")</small><br>
-                                                <strong>@registro.FechaHora.ToString("HH:mm:ss")</strong>
-                                            </td>
-                                            <td>@registro.Usuario</td>
-                                            <td>
-                                                <span class="badge @GetBadgeClass(registro.Accion)">
-                                                    @GetAccionLimpia(registro.Accion)
-                                                </span>
-                                            </td>
-                                            <td class="small">@registro.Descripcion</td>
+                                            <th>Fecha y Hora</th>
+                                            <th>Usuario</th>
+                                            <th>Acción</th>
+                                            <th>Descripción</th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        }
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var registro in bitacora)
+                                        {
+                                            <tr>
+                                                <td class="text-nowrap">
+                                                    <small>@registro.FechaHora.ToString("dd/MM/yy")</small><br>
+                                                    <strong>@registro.FechaHora.ToString("HH:mm:ss")</strong>
+                                                </td>
+                                                <td>@registro.Usuario</td>
+                                                <td>
+                                                    <span class="badge @GetBadgeClass(registro.Accion)">
+                                                        @GetAccionLimpia(registro.Accion)
+                                                    </span>
+                                                </td>
+                                                <td class="small">@registro.Descripcion</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -367,17 +407,20 @@
 
     <script>
         $(document).ready(function () {
-            // Configuración de DataTable
+            // Configuración de DataTable CON SCROLL HORIZONTAL
             $('#tablaUsuarios').DataTable({
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                 },
-                responsive: true,
+                scrollX: true, // ✅ ACTIVAR SCROLL HORIZONTAL
+                scrollCollapse: true,
+                responsive: false, // ✅ DESACTIVAR RESPONSIVE NATIVO (usamos nuestro propio contenedor)
                 columnDefs: [
-                    { targets: [5, 6], className: 'dt-center' }
+                    { targets: [5, 6, 7], className: 'dt-center' }
                 ]
             });
 
+            // El resto de tu código JavaScript se mantiene igual...
             // 1. Obtener el estado inicial de la configuración al cargar la página
             $.get('/Configuracion/ObtenerEstadoAgendarPreventivos')
                 .done(function (data) {

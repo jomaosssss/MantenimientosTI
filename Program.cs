@@ -15,8 +15,10 @@ builder.Services.AddDbContext<MantenimientosTIContext>(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
+
 // Servicios personalizados
 builder.Services.AddScoped<MantenimientosTI.Services.BitacoraService>();
+builder.Services.AddScoped<InformacionSistema>(); 
 builder.Services.AddHostedService<ScheduledEmailService>();
 
 // Configuración de Data Protection

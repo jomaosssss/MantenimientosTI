@@ -86,7 +86,7 @@
         float: right;
     }
 
-    /* GRID PRINCIPAL: ZONAS + INFO */
+    /* GRID PRINCIPAL: ZONAS + INFO - RESPONSIVO */
     .main-grid {
         display: grid;
         grid-template-columns: 3fr 2fr;
@@ -100,7 +100,7 @@
         gap: 6px;
     }
 
-    /* GRID DE ZONAS */
+    /* GRID DE ZONAS RESPONSIVO */
     .zones-container {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -163,22 +163,6 @@
             box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.1);
         }
 
-    @@media (max-width: 1400px) {
-        .zones-container {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    @@media (max-width: 992px) {
-        .zones-container {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .main-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
     /* ESTILOS PARA LA LISTA DE EVENTOS */
     .event-item {
         border-bottom: 1px solid #eee;
@@ -196,20 +180,26 @@
         height: 200px;
     }
 
-    /* ESTILOS PARA LA TABLA DE EVENTOS */
-    .events-card {
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-        padding: 8px;
-        background-color: white;
+    /* ESTILOS PARA LAS TABLAS CON SCROLL RESPONSIVO */
+    .table-responsive-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 4px;
     }
 
-    #tablaEventos {
+    .events-card .table-responsive-container,
+    .info-card .table-responsive-container {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    #tablaEventos, #tablaMantenimientos {
         font-size: 0.75rem;
         margin-bottom: 0;
+        min-width: 600px; /* Ancho mínimo para tablas */
     }
 
-        #tablaEventos th {
+        #tablaEventos th, #tablaMantenimientos th {
             white-space: nowrap;
             position: sticky;
             top: 0;
@@ -217,13 +207,15 @@
             z-index: 10;
         }
 
-        #tablaEventos td, #tablaEventos th {
+        #tablaEventos td, #tablaEventos th,
+        #tablaMantenimientos td, #tablaMantenimientos th {
             padding: 0.3rem 0.5rem;
             vertical-align: middle;
             text-align: center;
         }
 
-        #tablaEventos tbody tr:hover {
+        #tablaEventos tbody tr:hover,
+        #tablaMantenimientos tbody tr:hover {
             background-color: rgba(0, 0, 0, 0.03);
         }
 
@@ -248,6 +240,7 @@
         gap: 10px;
         align-items: center;
         margin-bottom: 10px;
+        flex-wrap: wrap;
     }
 
     .filter-select {
@@ -256,30 +249,6 @@
         border-radius: 4px;
         border: 1px solid #ced4da;
     }
-
-    /* ESTILOS PARA LA TABLA DE MANTENIMIENTOS */
-    #tablaMantenimientos {
-        font-size: 0.75rem;
-        margin-bottom: 0;
-    }
-
-        #tablaMantenimientos th {
-            white-space: nowrap;
-            position: sticky;
-            top: 0;
-            background-color: #f8f9fa;
-            z-index: 10;
-        }
-
-        #tablaMantenimientos td, #tablaMantenimientos th {
-            padding: 0.3rem 0.5rem;
-            vertical-align: middle;
-            text-align: center;
-        }
-
-        #tablaMantenimientos tbody tr:hover {
-            background-color: rgba(0, 0, 0, 0.03);
-        }
 
     /* ESTILOS PARA EL MODAL DE DETALLES */
     #problemasDetalle, #diagnosticoDetalle, #observacionesDetalle {
@@ -310,6 +279,208 @@
     img[src*="placeholder.com"] {
         opacity: 0.6;
     }
+
+    /* ========== MEDIA QUERIES RESPONSIVOS ========== */
+
+    /* Pantallas grandes (1400px+) */
+    @@media (min-width: 1400px) {
+        .zones-container {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .main-grid {
+            grid-template-columns: 3fr 2fr;
+        }
+    }
+
+    /* Laptops (1200px - 1399px) */
+    @@media (max-width: 1399px) and (min-width: 1200px) {
+        .zones-container {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .main-grid {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+
+    /* Tablets grandes (992px - 1199px) */
+    @@media (max-width: 1199px) and (min-width: 992px) {
+        .zones-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .main-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .info-container {
+            order: -1; /* La información va primero en tablets */
+        }
+    }
+
+    /* Tablets pequeñas (768px - 991px) */
+    @@media (max-width: 991px) and (min-width: 768px) {
+        .zones-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .main-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .info-container {
+            order: -1;
+        }
+
+        .card-header {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start !important;
+        }
+
+        .filters-container {
+            justify-content: flex-start;
+        }
+    }
+
+    /* Móviles grandes (576px - 767px) */
+    @@media (max-width: 767px) and (min-width: 576px) {
+        .zones-container {
+            grid-template-columns: 1fr;
+        }
+
+        .main-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .info-container {
+            order: -1;
+        }
+
+        .zona-card {
+            height: 120px !important;
+        }
+
+        .cfematico-btn {
+            width: 16px;
+            height: 16px;
+        }
+
+        .card-header h5 {
+            font-size: 1rem;
+        }
+
+        .filters-container {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .filter-select {
+            width: 100%;
+            max-width: none;
+        }
+    }
+
+    /* Móviles pequeños (hasta 575px) */
+    @@media (max-width: 575px) {
+        .zones-container {
+            grid-template-columns: 1fr;
+        }
+
+        .main-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .info-container {
+            order: -1;
+        }
+
+        .zona-card {
+            height: 100px !important;
+        }
+
+        .cfematico-btn {
+            width: 14px;
+            height: 14px;
+        }
+
+        .card-header {
+            padding: 6px 8px !important;
+        }
+
+            .card-header h5 {
+                font-size: 0.9rem;
+            }
+
+        .compact-container {
+            padding: 5px;
+        }
+
+        .info-card, .events-card {
+            padding: 6px;
+        }
+
+        .filters-container {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .filter-select {
+            width: 100%;
+            max-width: none;
+            font-size: 0.7rem;
+        }
+
+        #tablaEventos, #tablaMantenimientos {
+            font-size: 0.65rem;
+            min-width: 500px;
+        }
+
+        .chart-container {
+            height: 150px;
+        }
+
+        .btn-descarga, .btn-detalles {
+            font-size: 0.6rem;
+            padding: 0.15rem 0.3rem;
+        }
+    }
+
+    /* Móviles muy pequeños (hasta 375px) */
+    @@media (max-width: 375px) {
+        .zona-card {
+            height: 90px !important;
+        }
+
+        .cfematico-btn {
+            width: 12px;
+            height: 12px;
+        }
+
+        .zona-title {
+            font-size: 0.7rem;
+        }
+
+        .zona-count {
+            font-size: 0.6rem;
+        }
+
+        .card-header h5 {
+            font-size: 0.8rem;
+        }
+
+        #tablaEventos, #tablaMantenimientos {
+            min-width: 400px;
+            font-size: 0.6rem;
+        }
+    }
 </style>
 
 <div class="container mt-2 compact-container">
@@ -319,7 +490,6 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="text-muted small me-3">
                     Última actualización @ViewBag.UltimaActualizacion
-
                 </div>
             </div>
         </div>
@@ -328,6 +498,7 @@
             <div class="main-grid">
                 <div class="zones-events-container">
                     <div class="zones-container">
+                        <!-- Columna 1 -->
                         <div>
                             @for (int i = 0; i < Model.Count; i += 4)
                             {
@@ -354,6 +525,7 @@
                             }
                         </div>
 
+                        <!-- Columna 2 -->
                         <div>
                             @for (int i = 1; i < Model.Count; i += 4)
                             {
@@ -380,6 +552,7 @@
                             }
                         </div>
 
+                        <!-- Columna 3 -->
                         <div>
                             @for (int i = 2; i < Model.Count; i += 4)
                             {
@@ -406,6 +579,7 @@
                             }
                         </div>
 
+                        <!-- Columna 4 -->
                         <div>
                             @for (int i = 3; i < Model.Count; i += 4)
                             {
@@ -433,9 +607,10 @@
                         </div>
                     </div>
 
+                    <!-- Mantenimientos programados -->
                     <div class="events-card mb-3">
                         <h6 class="mb-2">Mantenimientos programados</h6>
-                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                        <div class="table-responsive-container">
                             <table class="table table-sm table-striped" id="tablaMantenimientos">
                                 <thead class="sticky-top bg-light">
                                     <tr>
@@ -455,6 +630,7 @@
                         </div>
                     </div>
 
+                    <!-- Estadísticas de eventos -->
                     <div class="events-card">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="mb-0">Estadísticas de eventos</h6>
@@ -469,7 +645,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <div class="table-responsive-container">
                             <table class="table table-sm table-striped table-hover" id="tablaEventos">
                                 <thead class="sticky-top bg-light">
                                     <tr>
@@ -498,6 +674,7 @@
                     </div>
                 </div>
 
+                <!-- Panel de información -->
                 <div class="info-container">
                     <div class="info-card">
                         <div class="small">
@@ -560,7 +737,7 @@
                     <div class="info-card mt-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0">Estadísticas de eventos</h6>
-                            <select id="rangoTiempo" class="form-select form-select-sm" style="width: 145px;">
+                            <select id="rangoTiempo" class="form-select form-select-sm">
                                 <option value="1" selected>Últimas 24 Horas</option>
                                 <option value="7">Últimos 7 Días</option>
                                 <option value="30">Últimos 30 Días</option>
@@ -585,6 +762,7 @@
     </div>
 </div>
 
+<!-- Los modales se mantienen igual -->
 <div class="modal fade" id="eventosModal" tabindex="-1" aria-labelledby="eventosModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -672,6 +850,7 @@
         </div>
     </div>
 </div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>

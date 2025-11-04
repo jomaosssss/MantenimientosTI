@@ -51,15 +51,29 @@
             margin-bottom: 1rem;
         }
 
-        .version-info {
-            background: linear-gradient(135deg, #198754 0%, #146c43 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-top: 1rem;
-            display: inline-block;
+        .environment-maniobras {
+            color: red;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+
+        .environment-productivo {
+            color: #6c757d;
+            font-weight: normal;
+        }
+
+        @@keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -94,12 +108,12 @@
                 <button type="submit" class="btn btn-success w-100">Iniciar Sesión</button>
             </form>
 
-            <!-- IDENTIFICADOR DE VERSIÓN -->
-            <div class="version-info">
-                <i class="fas fa-code-branch me-1"></i>VERSIÓN DE MANIOBRAS v2.1.0
+            <!-- INFORMACIÓN DEL SISTEMA DINÁMICA -->
+            <div class="mt-3" style="font-size: 0.85rem; text-align: center; @(ViewBag.TipoAmbiente == "MANIOBRAS" ? "color: red; font-weight: bold;" : "color: #6c757d;")">
+                @ViewBag.VersionSistema - @ViewBag.FechaLiberacion | @ViewBag.TipoAmbiente
             </div>
 
-            <footer class="mt-4">
+            <footer class="mt-3">
                 © 2025 - Comisión Federal de Electricidad
             </footer>
         </div>

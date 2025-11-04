@@ -2,6 +2,39 @@
     ViewData["Title"] = "Repositorio";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<style>
+    /* Estilos para tablas responsivas sin cambiar el diseño */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dataTables_wrapper {
+        width: 100%;
+        min-width: 1200px; /* Ancho mínimo para mantener el diseño */
+    }
+
+    /* Para pantallas pequeñas - scroll horizontal suave */
+    @@media (max-width: 1400px) {
+        .table-container {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+    }
+
+    /* Para pantallas muy pequeñas */
+    @@media (max-width: 768px) {
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 10px;
+        }
+
+        .btn-sm {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.75rem;
+        }
+    }
+</style>
 
 <div class="container mt-5">
     <div class="card mt-4 shadow-sm rounded">
@@ -15,27 +48,31 @@
                         <i class="fas fa-table me-1"></i>
                         CFEmáticos
                     </div>
-                    <div class="card-body">
-                        <table id="tablaCFEmaticos" class="display" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>N° Orden</th>
-                                    <th>Zona</th>
-                                    <th>Agencia</th>
-                                    <th>Centro</th>
-                                    <th>Núm. de cajero</th>
-                                    <th>Fecha programada</th>
-                                    <th>Fecha de atención</th>
-                                    <th>Fecha terminada</th>
-                                    <th>Foto antes</th>
-                                    <th>Foto durante</th>
-                                    <th>Foto despues</th>
-                                    <th>Hoja de servicio</th>
-                                    <th>Ver equipo</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <div class="card-body p-0">
+                        <!-- Cambiado a p-0 -->
+                        <div class="table-container p-3">
+                            <!-- Contenedor con scroll -->
+                            <table id="tablaCFEmaticos" class="display" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>N° Orden</th>
+                                        <th>Zona</th>
+                                        <th>Agencia</th>
+                                        <th>Centro</th>
+                                        <th>Núm. de cajero</th>
+                                        <th>Fecha programada</th>
+                                        <th>Fecha de atención</th>
+                                        <th>Fecha terminada</th>
+                                        <th>Foto antes</th>
+                                        <th>Foto durante</th>
+                                        <th>Foto despues</th>
+                                        <th>Hoja de servicio</th>
+                                        <th>Ver equipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -44,27 +81,29 @@
                         <i class="fas fa-table me-1"></i>
                         Atención a clientes
                     </div>
-                    <div class="card-body">
-                        <table id="tablaAtencionClientes" class="display" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>N° Orden</th>
-                                    <th>Zona</th>
-                                    <th>Agencia</th>
-                                    <th>Centro</th>
-                                    <th>Tipo de equipo</th>
-                                    <th>Fecha programada</th>
-                                    <th>Fecha de atención</th>
-                                    <th>Fecha terminada</th>
-                                    <th>Foto antes</th>
-                                    <th>Foto durante</th>
-                                    <th>Foto despues</th>
-                                    <th>Hoja de servicio</th>
-                                    <th>Ver equipo</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <div class="card-body p-0">
+                        <div class="table-container p-3">
+                            <table id="tablaAtencionClientes" class="display" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>N° Orden</th>
+                                        <th>Zona</th>
+                                        <th>Agencia</th>
+                                        <th>Centro</th>
+                                        <th>Tipo de equipo</th>
+                                        <th>Fecha programada</th>
+                                        <th>Fecha de atención</th>
+                                        <th>Fecha terminada</th>
+                                        <th>Foto antes</th>
+                                        <th>Foto durante</th>
+                                        <th>Foto despues</th>
+                                        <th>Hoja de servicio</th>
+                                        <th>Ver equipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -73,27 +112,29 @@
                         <i class="fas fa-table me-1"></i>
                         Equipos de cómputo
                     </div>
-                    <div class="card-body">
-                        <table id="tablaEquiposComputo" class="display" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>N° Orden</th>
-                                    <th>Zona</th>
-                                    <th>Agencia</th>
-                                    <th>Centro</th>
-                                    <th>Tipo de equipo</th>
-                                    <th>Fecha programada</th>
-                                    <th>Fecha de atención</th>
-                                    <th>Fecha terminada</th>
-                                    <th>Foto antes</th>
-                                    <th>Foto durante</th>
-                                    <th>Foto despues</th>
-                                    <th>Hoja de servicio</th>
-                                    <th>Ver equipo</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <div class="card-body p-0">
+                        <div class="table-container p-3">
+                            <table id="tablaEquiposComputo" class="display" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>N° Orden</th>
+                                        <th>Zona</th>
+                                        <th>Agencia</th>
+                                        <th>Centro</th>
+                                        <th>Tipo de equipo</th>
+                                        <th>Fecha programada</th>
+                                        <th>Fecha de atención</th>
+                                        <th>Fecha terminada</th>
+                                        <th>Foto antes</th>
+                                        <th>Foto durante</th>
+                                        <th>Foto despues</th>
+                                        <th>Hoja de servicio</th>
+                                        <th>Ver equipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -132,22 +173,23 @@
 </div>
 
 @section Scripts {
-
+    <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
     <script>
         $(document).ready(function () {
-            // Configuración común para DataTables
+            // Configuración común para DataTables - SOLO SCROLL HORIZONTAL
             const dataTablesOptions = {
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                 },
-                ajax: {
-                    url: '/Repositorio/ObtenerMantenimientos',
-                    dataSrc: ''
-                },
-                order: [[5, 'desc']]
+                scrollX: true,    // ✅ SOLO SCROLL HORIZONTAL
+                scrollCollapse: true,
+                paging: true,
+                pageLength: 10,
+                order: [[5, 'desc']],
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
             };
 
             // Tabla CFEmáticos
@@ -207,7 +249,7 @@
                     }
                 ],
                 ajax: {
-                    ...dataTablesOptions.ajax,
+                    url: '/Repositorio/ObtenerMantenimientos',
                     dataSrc: 'cfematicos'
                 }
             });
@@ -269,7 +311,7 @@
                     }
                 ],
                 ajax: {
-                    ...dataTablesOptions.ajax,
+                    url: '/Repositorio/ObtenerMantenimientos',
                     dataSrc: 'atencionClientes'
                 }
             });
@@ -331,7 +373,7 @@
                     }
                 ],
                 ajax: {
-                    ...dataTablesOptions.ajax,
+                    url: '/Repositorio/ObtenerMantenimientos',
                     dataSrc: 'equiposComputo'
                 }
             });

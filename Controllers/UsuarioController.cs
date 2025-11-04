@@ -21,18 +21,29 @@ namespace ProyectoMantenimientos.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly BitacoraService _bitacora;
         private readonly IPasswordHasher<Usuario> _passwordHasher;
+        private readonly InformacionSistema _informacionSistema;
 
-        public UsuarioController(MantenimientosTIContext context, IPasswordHasher<Usuario> passwordHasher, BitacoraService bitacora, IHttpClientFactory httpClientFactory)
+
+        public UsuarioController(MantenimientosTIContext context, IPasswordHasher<Usuario> passwordHasher, BitacoraService bitacora, IHttpClientFactory httpClientFactory, InformacionSistema informacionSistema)
         {
             _dbocontext = context;
             _httpClientFactory = httpClientFactory;
             _passwordHasher = passwordHasher;
             _bitacora = bitacora;
+            _informacionSistema = informacionSistema;
+
         }
 
         [HttpGet]
-        public IActionResult Login()
+        public async Task<IActionResult> Login() 
         {
+            
+            var infoSistema = await _informacionSistema.ObtenerInfoSistema();
+
+            ViewBag.VersionSistema = infoSistema["Version"];
+            ViewBag.FechaLiberacion = infoSistema["Fecha"];
+            ViewBag.TipoAmbiente = infoSistema["Ambiente"];
+
             return View();
         }
 
