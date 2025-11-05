@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// ViewModels/VMAgendaVista.cs
+using System.ComponentModel.DataAnnotations;
 
 namespace MantenimientosTI.Models.ViewModels
 {
@@ -16,17 +17,18 @@ namespace MantenimientosTI.Models.ViewModels
         public string UsuarioAsignado { get; set; }
         public int ClaveAgenda { get; set; }
 
-        // NUEVAS PROPIEDADES PARA MOTIVOS
-        [StringLength(250, ErrorMessage = "La justificación no puede exceder los 250 caracteres.")]
+        // PROPIEDADES PARA MOTIVOS (mismos tamaños que la tabla original)
+        [StringLength(100, ErrorMessage = "El motivo no puede exceder los 100 caracteres.")]
         public string? MotivoCancelacion { get; set; }
 
-        [StringLength(250, ErrorMessage = "La justificación no puede exceder los 250 caracteres.")]
+        [StringLength(500, ErrorMessage = "La justificación no puede exceder los 500 caracteres.")]
         public string? JustificacionCancelacion { get; set; }
 
         public string? UsuarioSolicitudCancelacion { get; set; }
         public DateTime? FechaSolicitudCancelacion { get; set; }
+        public string? UsuarioAprobacionCancelacion { get; set; }
+        public DateTime? FechaAprobacionCancelacion { get; set; }
 
-        // Propiedad para mostrar fecha formateada
         public string FechaSolicitudFormateada =>
             FechaSolicitudCancelacion?.ToString("dd/MM/yyyy HH:mm") ?? "N/A";
     }

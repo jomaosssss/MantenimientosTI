@@ -49,6 +49,8 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<Mantenimiento> Mantenimientos { get; set; }
 
+    public virtual DbSet<MotivoCancelacion> MotivosCancelacion { get; set; }
+
     public virtual DbSet<RegistroEvento> RegistroEventos { get; set; }
 
     public virtual DbSet<RegistroActividad> RegistroActividad { get; set; }
@@ -92,6 +94,16 @@ public partial class MantenimientosTIContext : DbContext
             entity.HasOne(d => d.NumActFijoNavigation).WithMany(p => p.Agenda)
                 .HasForeignKey(d => d.NumActFijo)
                 .HasConstraintName("FK_Agenda_numActF1_02FC7413");
+        });
+
+        modelBuilder.Entity<MotivoCancelacion>(entity =>
+        {
+            entity.HasKey(e => e.ClaveMotivoCancelacion);
+
+            entity.HasOne(d => d.ClaveAgendaNavigation)
+                .WithMany(p => p.MotivosCancelacion)
+                .HasForeignKey(d => d.ClaveAgenda)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<CatAccion>(entity =>
