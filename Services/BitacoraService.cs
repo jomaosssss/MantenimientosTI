@@ -1,114 +1,204 @@
-﻿// En /Services/BitacoraService.cs
+﻿// Services/BitacoraService.cs
 using MantenimientosTI.Models;
+using MantenimientosTI.Helpers; // ✅ USING AGREGADO
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace MantenimientosTI.Services
 {
     public class BitacoraService
     {
         private readonly MantenimientosTIContext _context;
+        private readonly PlantillaBitacoraService _plantillaService;
 
-        public BitacoraService(MantenimientosTIContext context)
+        public BitacoraService(MantenimientosTIContext context, PlantillaBitacoraService plantillaService)
         {
             _context = context;
+            _plantillaService = plantillaService;
         }
 
-        public void RegistrarActividad(string usuario, string accion, string descripcion, int? idEntidad = null)
+        public async Task RegistrarActividadAsync(string usuario, string rpe, string rol, string zona, string centro,
+                                                string claveAccion, Dictionary<string, string> parametrosAdicionales = null)
         {
+            var parametros = new Dictionary<string, string>
+            {
+                { "Usuario", usuario },
+                { "RPE", rpe },
+                { "Rol", rol },
+                { "Zona", zona },
+                { "Centro", centro }
+            };
+
+            if (parametrosAdicionales != null)
+            {
+                foreach (var param in parametrosAdicionales)
+                {
+                    parametros[param.Key] = param.Value;
+                }
+            }
+
+            var descripcion = _plantillaService.ObtenerDescripcionFormateada(claveAccion, parametros);
+
             var registro = new RegistroActividad
             {
                 FechaHora = DateTime.Now,
                 Usuario = usuario,
-                Accion = accion,
-                Descripcion = descripcion,
-                IdEntidadAfectada = idEntidad
+                Accion = claveAccion,
+                Descripcion = descripcion
             };
-            _context.RegistroActividad.Add(registro);
-        }
 
-        public async Task RegistrarYGuardarAsync(string usuario, string accion, string descripcion, int? idEntidad = null)
-        {
-            var registro = new RegistroActividad
-            {
-                FechaHora = DateTime.Now,
-                Usuario = usuario,
-                Accion = accion,
-                Descripcion = descripcion,
-                IdEntidadAfectada = idEntidad
-            };
             _context.RegistroActividad.Add(registro);
             await _context.SaveChangesAsync();
         }
 
-        public async Task RegistrarLogoutAsync(string usuario, string rpe, string rol, string zona)
+        // ✅ MÉTODOS CORREGIDOS - TODOS USAN CONSTANTES
+
+        public async Task RegistrarSolicitudCancelacionAsync(string usuario, string rpe, string rol, string zona, string centro,
+                                                   string idAgenda, string equipo, string motivo, string justificacion)
         {
-            var descripcion = $"Cierre de sesión | RPE: {rpe} | Rol: {rol} | Zona: {zona}";
-            await RegistrarYGuardarAsync(usuario, "LOGOUT_SISTEMA", descripcion);
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, "SOLICITUD_CANCELACION_MTTO",
+                new Dictionary<string, string>
+                {
+                    { "ClaveAgenda", idAgenda },
+                    { "Equipo", equipo },
+                    { "Motivo", motivo },
+                    { "Justificacion", justificacion }
+                });
         }
 
-        public void RegistrarCargaCSV(string usuario, string rpe, string rol, string zona, string centro, string tipoCarga, int registrosProcesados)
+        public async Task RegistrarCancelacionDirectaAsync(string usuario, string rpe, string rol, string zona, string centro,
+                                                 string idAgenda, string equipo, string motivo, string justificacion)
         {
-            var descripcion = $"Carga de archivo CSV ({tipoCarga}) | Registros: {registrosProcesados} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
-            RegistrarActividad(usuario, "CARGA_CSV", descripcion);
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, "CANCELACION_DIRECTA_MTTO",
+                new Dictionary<string, string>
+                {
+                    { "ClaveAgenda", idAgenda },
+                    { "Equipo", equipo },
+                    { "Motivo", motivo },
+                    { "Justificacion", justificacion }
+                });
         }
 
-        public void RegistrarCargaMantenimientoCorrectivo(string usuario, string rpe, string rol, string zona, string centro, int registrosCargados)
+        public async Task RegistrarPreCancelacionAsync(string usuario, string rpe, string rol, string zona, string centro,
+                                             string claveAgenda, string equipo)
         {
-            var descripcion = $"Carga de mantenimientos correctivos | Registros: {registrosCargados} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
-            RegistrarActividad(usuario, "CARGA_MTTO_CORRECTIVO", descripcion);
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.PreCancelacionMtto,
+                new Dictionary<string, string>
+                {
+                    { "ClaveAgenda", claveAgenda },
+                    { "Equipo", equipo }
+                });
         }
 
-        public void RegistrarTerminacionMantenimiento(string usuario, string rpe, string rol, string zona, string centro, string claveAgenda, string equipo)
+        public async Task RegistrarConfirmacionCancelacionAsync(string usuario, string rpe, string rol, string zona, string centro,
+                                                      string claveAgenda, string equipo)
         {
-            var descripcion = $"Terminación de mantenimiento | Orden: {claveAgenda} | Equipo: {equipo} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
-            RegistrarActividad(usuario, "TERMINACION_MTTO", descripcion);
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.ConfirmacionCancelacion,
+                new Dictionary<string, string>
+                {
+                    { "ClaveAgenda", claveAgenda },
+                    { "Equipo", equipo }
+                });
         }
 
-        public void RegistrarPreCancelacion(string usuario, string rpe, string rol, string zona, string centro, string claveAgenda, string equipo)
+        public async Task RegistrarCreacionUsuarioAsync(string usuarioAdmin, string rpeAdmin, string rolAdmin, string zonaAdmin,
+                                                      string usuarioCreado, string rpeCreado, string rolCreado, string zonaCreada)
         {
-            var descripcion = $"Solicitud de cancelación | Orden: {claveAgenda} | Equipo: {equipo} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
-            RegistrarActividad(usuario, "PRECANCELACION_MTTO", descripcion);
+            await RegistrarActividadAsync(usuarioAdmin, rpeAdmin, rolAdmin, zonaAdmin, "N/A", BitacoraAcciones.CrearUsuario,
+                new Dictionary<string, string>
+                {
+                    { "UsuarioAfectado", usuarioCreado },
+                    { "RPEAfectado", rpeCreado },
+                    { "RolAfectado", rolCreado },
+                    { "ZonaAfectada", zonaCreada }
+                });
         }
 
-        public void RegistrarConfirmacionCancelacion(string usuario, string rpe, string rol, string zona, string centro, string claveAgenda, string equipo)
+        public async Task RegistrarActualizacionUsuarioAsync(string usuarioAdmin, string rpeAdmin, string rolAdmin, string zonaAdmin,
+                                                           string usuarioActualizado, string rpeActualizado, string cambios)
         {
-            var descripcion = $"Confirmación de cancelación | Orden: {claveAgenda} | Equipo: {equipo} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
-            RegistrarActividad(usuario, "CONFIRMACION_CANCELACION", descripcion);
+            await RegistrarActividadAsync(usuarioAdmin, rpeAdmin, rolAdmin, zonaAdmin, "N/A", BitacoraAcciones.ActualizarUsuario,
+                new Dictionary<string, string>
+                {
+                    { "UsuarioAfectado", usuarioActualizado },
+                    { "RPEAfectado", rpeActualizado },
+                    { "CambiosRealizados", cambios }
+                });
         }
 
-        // ✅ NUEVOS MÉTODOS CORREGIDOS - USANDO RegistroActividad
-        public void RegistrarPreCancelacionConMotivo(string usuario, string rpe, string rol, string zona, string centro, string idAgenda, string tipoEquipo, string motivo, string justificacion)
+        public async Task RegistrarCargaCSVAsync(string usuario, string rpe, string rol, string zona, string centro,
+                                               string tipoCarga, int registrosProcesados)
         {
-            var descripcion = $"Solicitud de cancelación | Orden: {idAgenda} | Tipo: {tipoEquipo} | Motivo: {motivo} | Justificación: {justificacion} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
-
-            var registro = new RegistroActividad
-            {
-                FechaHora = DateTime.Now,
-                Usuario = usuario,
-                Accion = "SOLICITUD_CANCELACION_MTTO",
-                Descripcion = descripcion,
-                IdEntidadAfectada = int.TryParse(idAgenda, out int id) ? id : null
-            };
-
-            _context.RegistroActividad.Add(registro);
-            _context.SaveChanges();
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.CargaCsv,
+                new Dictionary<string, string>
+                {
+                    { "RegistrosProcesados", registrosProcesados.ToString() },
+                    { "TipoCarga", tipoCarga }
+                });
         }
 
-        public void RegistrarConfirmacionCancelacionConMotivo(string usuario, string rpe, string rol, string zona, string centro, string idAgenda, string tipoEquipo, string motivo, string justificacion)
+        public async Task RegistrarMantenimientoCorrectivoAsync(string usuario, string rpe, string rol, string zona, string centro)
         {
-            var descripcion = $"Cancelación directa | Orden: {idAgenda} | Tipo: {tipoEquipo} | Motivo: {motivo} | Justificación: {justificacion} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}";
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.CargaMttoCorrectivo);
+        }
 
-            var registro = new RegistroActividad
-            {
-                FechaHora = DateTime.Now,
-                Usuario = usuario,
-                Accion = "CANCELACION_DIRECTA_MTTO",
-                Descripcion = descripcion,
-                IdEntidadAfectada = int.TryParse(idAgenda, out int id) ? id : null
-            };
+        public async Task RegistrarTerminacionMantenimientoAsync(string usuario, string rpe, string rol, string zona, string centro,
+                                                               string claveAgenda, string equipo)
+        {
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.TerminacionMtto,
+                new Dictionary<string, string>
+                {
+                    { "ClaveAgenda", claveAgenda },
+                    { "Equipo", equipo }
+                });
+        }
 
-            _context.RegistroActividad.Add(registro);
-            _context.SaveChanges();
+        public async Task RegistrarCancelacionMantenimientoAsync(string usuario, string rpe, string rol, string zona, string centro,
+                                                               string claveAgenda, string equipo, string motivo, string justificacion)
+        {
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, "CANCELACION_MTTO",
+                new Dictionary<string, string>
+                {
+                    { "ClaveAgenda", claveAgenda },
+                    { "Equipo", equipo },
+                    { "Motivo", motivo },
+                    { "Justificacion", justificacion }
+                });
+        }
+
+        // ✅ MÉTODO CRÍTICO CORREGIDO - INICIO DE SESIÓN
+        public async Task RegistrarInicioSesionAsync(string usuario, string rpe, string rol, string zona, string ubicacion = "sistema")
+        {
+            // ✅ COMO EL LOGOUT - USA UNA SOLA CONSTANTE FIJA
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, "N/A", BitacoraAcciones.InicioSesion,
+                new Dictionary<string, string>
+                {
+            { "Ubicacion", ubicacion }
+                });
+        }
+
+        // ✅ FUNCIÓN AUXILIAR PARA DETECTAR ADMINISTRADORES
+        private bool EsUsuarioAdministrador(string rpe)
+        {
+            var administradores = new[] { "ADMIN", "OISM0", "FER01", "MEM03", };
+            return administradores.Contains(rpe?.ToUpper() ?? "");
+        }
+
+        // ✅ MÉTODO CORREGIDO - CIERRE DE SESIÓN
+        public async Task RegistrarCierreSesionAsync(string usuario, string rpe, string rol, string zona)
+        {
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, "N/A", BitacoraAcciones.LogoutSistema);
+        }
+
+        // ✅ MÉTODOS ADICIONALES CORREGIDOS
+        public async Task RegistrarHabilitarCargaCSVAsync(string usuario, string rpe, string rol, string zona)
+        {
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, "N/A", BitacoraAcciones.HabilitarCargaCsv);
+        }
+
+        public async Task RegistrarDeshabilitarCargaCSVAsync(string usuario, string rpe, string rol, string zona)
+        {
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, "N/A", BitacoraAcciones.DeshabilitarCargaCsv);
         }
     }
 }

@@ -1,0 +1,728 @@
+﻿@model MantenimientosTI.Models.ViewModels.UnifiedDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard de Actividad";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-number {
+        font-size: 2.2rem;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .card-custom {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .card-header-custom {
+        background: linear-gradient(135deg, #008e60 0%, #006747 100%);
+        color: white;
+        border-radius: 10px 10px 0 0 !important;
+        padding: 15px 20px;
+    }
+
+    .quick-filter {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .nav-tabs .nav-link {
+        border: none;
+        color: #666;
+        font-weight: 500;
+        padding: 12px 20px;
+    }
+
+    .nav-tabs .nav-link.active {
+        border-bottom: 3px solid #008e60;
+        color: #008e60;
+        background: transparent;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #008e60;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+
+    .progress-thin {
+        height: 6px;
+        margin-top: 5px;
+    }
+
+    .security-high { border-left: 4px solid #dc3545; }
+    .security-medium { border-left: 4px solid #ffc107; }
+    .security-low { border-left: 4px solid #28a745; }
+
+    .user-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+
+    .user-card:hover {
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .action-badge {
+        font-size: 0.75rem;
+    }
+</style>
+
+<div class="container-fluid mt-4">
+    <!-- HEADER -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">Dashboard de Actividad</h2>
+                    <p class="text-muted mb-0">Resumen completo del sistema - Fase 2 Mejorada</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="quick-filter">
+                <form method="get" class="row g-3 align-items-center">
+                    <div class="col-md-3">
+                        <label class="form-label">Desde:</label>
+                        <input type="date" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Hasta:</label>
+                        <input type="date" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Usuario:</label>
+                        <input type="text" name="userId" class="form-control" value="@Model.UserId" placeholder="Filtrar usuario...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div>
+                            <button type="submit" class="btn btn-success me-2">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                            <a href="@Url.Action("UnifiedDashboard")" class="btn btn-outline-secondary">
+                                <i class="fas fa-refresh"></i> Limpiar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- TARJETAS DE ESTADÍSTICAS -->
+    <div class="row mb-4">
+        <div class="col-xl-2 col-md-4">
+            <div class="stat-card">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <div class="stat-number">@Model.TotalSessions</div>
+                <div class="stat-label">Sesiones</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-eye fa-2x mb-2"></i>
+                <div class="stat-number">@Model.TotalPageViews</div>
+                <div class="stat-label">Vistas</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                <div class="stat-number">@Model.TotalActions</div>
+                <div class="stat-label">Actividades</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <i class="fas fa-user-check fa-2x mb-2"></i>
+                <div class="stat-number">@Model.ActiveUsers</div>
+                <div class="stat-label">Usuarios Activos</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="stat-card" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                <i class="fas fa-upload fa-2x mb-2"></i>
+                <div class="stat-number">@Model.CsvUploads</div>
+                <div class="stat-label">Cargas CSV</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="stat-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                <i class="fas fa-tools fa-2x mb-2"></i>
+                <div class="stat-number">@Model.MaintenanceActions</div>
+                <div class="stat-label">Acciones Mtto</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑAS -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="overview-tab" data-bs-toggle="tab"
+                            data-bs-target="#overview" type="button" role="tab">
+                        <i class="fas fa-chart-pie me-2"></i>Resumen General
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="users-tab" data-bs-toggle="tab"
+                            data-bs-target="#users" type="button" role="tab">
+                        <i class="fas fa-users me-2"></i>Usuarios y Actividades
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="security-tab" data-bs-toggle="tab"
+                            data-bs-target="#security" type="button" role="tab">
+                        <i class="fas fa-shield-alt me-2"></i>Seguridad
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="activity-tab" data-bs-toggle="tab"
+                            data-bs-target="#activity" type="button" role="tab">
+                        <i class="fas fa-list-alt me-2"></i>Actividad Reciente
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- CONTENIDO DE PESTAÑAS -->
+    <div class="tab-content" id="dashboardTabsContent">
+
+        <!-- PESTAÑA 1: RESUMEN GENERAL -->
+        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card card-custom">
+                        <div class="card-header card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>Actividad por Hora del Día
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="activityByHourChart" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card card-custom">
+                        <div class="card-header card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-pie me-2"></i>Tipos de Actividad
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="activityByTypeChart" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <!-- MÉTRICAS DE PRODUCTIVIDAD -->
+                <div class="col-md-6">
+                    <div class="card card-custom">
+                        <div class="card-header card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-tachometer-alt me-2"></i>Métricas de Productividad
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6 mb-3">
+                                    <div class="text-primary">
+                                        <i class="fas fa-tools fa-2x mb-2"></i>
+                                        <h4>@Model.MaintenanceActions</h4>
+                                        <small>Mantenimientos Realizados</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <div class="text-success">
+                                        <i class="fas fa-file-csv fa-2x mb-2"></i>
+                                        <h4>@Model.CsvUploads</h4>
+                                        <small>Archivos Cargados</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-6 mb-3">
+                                    <div class="text-info">
+                                        <i class="fas fa-users-cog fa-2x mb-2"></i>
+                                        <h4>@Model.ActiveUsers</h4>
+                                        <small>Usuarios Activos Hoy</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <div class="text-warning">
+                                        <i class="fas fa-clock fa-2x mb-2"></i>
+                                        <h4>@Model.TotalActions</h4>
+                                        <small>Total Actividades</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ESTADO DEL SISTEMA -->
+                <div class="col-md-6">
+                    <div class="card card-custom">
+                        <div class="card-header card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-heartbeat me-2"></i>Estado del Sistema
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Seguridad -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold">Seguridad</span>
+                                    @if (Model.FailedLogins == 0)
+                                    {
+                                        <span class="badge bg-success">Estable</span>
+                                    }
+                                    else if (Model.FailedLogins < 5)
+                                    {
+                                        <span class="badge bg-warning">Atención</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Crítico</span>
+                                    }
+                                </div>
+                                <div class="progress progress-thin">
+                                    @{
+                                        var securityScore = Model.FailedLogins == 0 ? 100 :
+                                        Math.Max(0, 100 - (Model.FailedLogins * 10));
+                                    }
+                                    <div class="progress-bar bg-success" style="width: @securityScore%"></div>
+                                </div>
+                                <small class="text-muted">
+                                    @Model.FailedLogins intentos fallidos de acceso
+                                </small>
+                            </div>
+
+                            <!-- Actividad -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold">Nivel de Actividad</span>
+                                    @if (Model.TotalActions > 50)
+                                    {
+                                        <span class="badge bg-success">Alto</span>
+                                    }
+                                    else if (Model.TotalActions > 20)
+                                    {
+                                        <span class="badge bg-warning">Medio</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Bajo</span>
+                                    }
+                                </div>
+                                <div class="progress progress-thin">
+                                    @{
+                                        var activityLevel = Math.Min(100, Model.TotalActions * 2);
+                                    }
+                                    <div class="progress-bar bg-info" style="width: @activityLevel%"></div>
+                                </div>
+                                <small class="text-muted">@Model.TotalActions actividades en el período</small>
+                            </div>
+
+                            <!-- Usuarios -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold">Participación</span>
+                                    @if (Model.ActiveUsers > 5)
+                                    {
+                                        <span class="badge bg-success">Alta</span>
+                                    }
+                                    else if (Model.ActiveUsers > 2)
+                                    {
+                                        <span class="badge bg-warning">Media</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Baja</span>
+                                    }
+                                </div>
+                                <div class="progress progress-thin">
+                                    @{
+                                        var participation = Math.Min(100, Model.ActiveUsers * 20);
+                                    }
+                                    <div class="progress-bar bg-primary" style="width: @participation%"></div>
+                                </div>
+                                <small class="text-muted">@Model.ActiveUsers usuarios activos</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA 2: USUARIOS Y ACTIVIDADES (MEJORADA) -->
+        <div class="tab-pane fade" id="users" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-custom">
+                        <div class="card-header card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-users me-2"></i>Usuarios Más Activos - Detalle de Actividades
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.TopUsers.Any())
+                            {
+                                <div class="row">
+                                    @foreach (var user in Model.TopUsers)
+                                    {
+                                        var maxActivity = Model.TopUsers.Max(u => u.ActivityCount);
+                                        var percentage = maxActivity > 0 ? (user.ActivityCount * 100 / maxActivity) : 0;
+
+                                        <div class="col-lg-6 mb-4">
+                                            <div class="card user-card h-100">
+                                                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="user-avatar me-3">
+                                                            @user.UserName.Substring(0, 1)
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-0">@user.UserName</h6>
+                                                            <small class="text-muted">@user.Role</small>
+                                                        </div>
+                                                    </div>
+                                                    <span class="badge bg-primary">@user.ActivityCount actividades</span>
+                                                </div>
+                                                <div class="card-body">
+                                                    <!-- Barra de progreso -->
+                                                    <div class="mb-3">
+                                                        <div class="d-flex justify-content-between mb-1">
+                                                            <small>Nivel de actividad</small>
+                                                            <small>@percentage%</small>
+                                                        </div>
+                                                        <div class="progress progress-thin">
+                                                            <div class="progress-bar bg-success" style="width: @percentage%"></div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Detalle de acciones -->
+                                                    <h6 class="text-muted mb-2">Principales actividades:</h6>
+                                                    @if (user.ActionDetails.Any())
+                                                    {
+                                                        foreach (var action in user.ActionDetails.Take(4))
+                                                        {
+                                                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
+                                                                <div>
+                                                                    <small class="fw-bold">@action.ActionDescription</small>
+                                                                    <br>
+                                                                    <small class="text-muted">
+                                                                        Última vez: @action.LastPerformed.ToString("dd/MM HH:mm")
+                                                                    </small>
+                                                                </div>
+                                                                <span class="badge bg-secondary action-badge">@action.Count veces</span>
+                                                            </div>
+                                                        }
+
+                                                        @if (user.ActionDetails.Count > 4)
+                                                        {
+                                                            <div class="text-center mt-2">
+                                                                <small class="text-muted">
+                                                                    + @(user.ActionDetails.Count - 4) actividades más...
+                                                                </small>
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="text-center text-muted py-2">
+                                                            <small>No hay detalle de actividades</small>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-users fa-3x mb-3"></i>
+                                    <p>No hay datos de usuarios para el período seleccionado</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA 3: SEGURIDAD -->
+        <div class="tab-pane fade" id="security" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-custom">
+                        <div class="card-header card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-shield-alt me-2"></i>Eventos de Seguridad
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.SecurityEvents.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha/Hora</th>
+                                                <th>Usuario</th>
+                                                <th>Tipo</th>
+                                                <th>Descripción</th>
+                                                <th>Severidad</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var securityEvent in Model.SecurityEvents)
+                                            {
+                                                <tr class="@GetSecurityRowClass(securityEvent.Severity)">
+                                                    <td class="text-nowrap">
+                                                        <small>@securityEvent.Timestamp.ToString("dd/MM")</small>
+                                                        <br>
+                                                        <strong>@securityEvent.Timestamp.ToString("HH:mm")</strong>
+                                                    </td>
+                                                    <td>
+                                                        <strong>@securityEvent.UserName</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-warning">@securityEvent.EventType</span>
+                                                    </td>
+                                                    <td>
+                                                        <small>@securityEvent.Description</small>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge @GetSecurityBadgeClass(securityEvent.Severity)">
+                                                            @securityEvent.Severity.ToUpper()
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-success py-4">
+                                    <i class="fas fa-shield-alt fa-3x mb-3"></i>
+                                    <p>No hay eventos de seguridad relevantes</p>
+                                    <small class="text-muted">¡Todo parece estar en orden!</small>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA 4: ACTIVIDAD RECIENTE -->
+        <div class="tab-pane fade" id="activity" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-custom">
+                        <div class="card-header card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-list-alt me-2"></i>Actividad Reciente (@Model.RecentActivities.Count registros)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.RecentActivities.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha/Hora</th>
+                                                <th>Usuario</th>
+                                                <th>Acción</th>
+                                                <th>Descripción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var activity in Model.RecentActivities)
+                                            {
+                                                <tr>
+                                                    <td class="text-nowrap">
+                                                        <small>@activity.Timestamp.ToString("dd/MM/yyyy")</small>
+                                                        <br>
+                                                        <strong>@activity.Timestamp.ToString("HH:mm:ss")</strong>
+                                                    </td>
+                                                    <td>
+                                                        <strong>@activity.UserName</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-primary">@activity.Action</span>
+                                                    </td>
+                                                    <td>
+                                                        <small>@activity.Description</small>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                                    <p>No hay actividad reciente para el período seleccionado</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Gráfico de Actividad por Hora
+        document.addEventListener('DOMContentLoaded', function() {
+            var activityCtx = document.getElementById('activityByHourChart').getContext('2d');
+            var activityChart = new Chart(activityCtx, {
+                type: 'bar',
+                data: {
+                    labels: [
+                        @foreach (var hour in Model.ActivityByHour)
+                        {
+                                @Html.Raw($"'{hour.Hour}:00',")
+                        }
+                    ],
+                    datasets: [{
+                        label: 'Actividad por Hora',
+                        data: [
+                            @foreach (var hour in Model.ActivityByHour)
+                            {
+                                    @Html.Raw($"{hour.Count},")
+                            }
+                        ],
+                        backgroundColor: 'rgba(0, 142, 96, 0.6)',
+                        borderColor: 'rgba(0, 142, 96, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // Gráfico de Tipos de Actividad
+            var typeCtx = document.getElementById('activityByTypeChart').getContext('2d');
+            var typeChart = new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        @foreach (var type in Model.ActivityByType)
+                        {
+                                @Html.Raw($"'{type.ActionType}',")
+                        }
+                    ],
+                    datasets: [{
+                        data: [
+                            @foreach (var type in Model.ActivityByType)
+                            {
+                                    @Html.Raw($"{type.Count},")
+                            }
+                        ],
+                        backgroundColor: [
+                            @foreach (var type in Model.ActivityByType)
+                            {
+                                    @Html.Raw($"'{type.Color}',")
+                            }
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
+
+@functions {
+    public string GetSecurityRowClass(string severity)
+    {
+        return severity switch
+        {
+            "high" => "security-high",
+            "medium" => "security-medium",
+            "low" => "security-low",
+            _ => ""
+        };
+    }
+
+    public string GetSecurityBadgeClass(string severity)
+    {
+        return severity switch
+        {
+            "high" => "bg-danger",
+            "medium" => "bg-warning",
+            "low" => "bg-success",
+            _ => "bg-secondary"
+        };
+    }
+}   

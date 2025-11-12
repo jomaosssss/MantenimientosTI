@@ -153,13 +153,13 @@ namespace ProyectoMantenimientos.Controllers
 
                     // Registro en bitacora (usuario local (no del directorio activo))
                     // Para técnicos (línea ~180)
-                    var descripcionAdmin = $"Inicio de sesión | RPE: {usuarioAdmin.Rpe} | Rol: {usuarioAdmin.ClaveRolNavigation?.Nombre} | Zona: {usuarioAdmin.CatZona?.NombreZona}";
-                    await _bitacora.RegistrarYGuardarAsync(
-                        HttpContext.Session.GetString("NombreUsuario"),
-                        BitacoraAcciones.InicioSesionAdmin,
-                        descripcionAdmin  // ✅ CON FORMATO DE PIPES
+                    await _bitacora.RegistrarInicioSesionAsync(
+                        usuario: HttpContext.Session.GetString("NombreUsuario"),
+                        rpe: usuarioAdmin.Rpe,
+                        rol: usuarioAdmin.ClaveRolNavigation?.Nombre ?? "ADMINISTRADOR",
+                        zona: usuarioAdmin.CatZona?.NombreZona ?? "N/A",
+                        ubicacion: "sistema web"
                     );
-
                     return RedirectToAction("Inicio", "Home");
                 }
                 catch (Exception ex)
@@ -240,11 +240,12 @@ namespace ProyectoMantenimientos.Controllers
                             HttpContext.Session.SetString("Correo", usuario.Correo);
 
                             // Registro en bitacora del usuario del directorio activo
-                            var descripcionTecnico = $"Inicio de sesión | RPE: {usuario.Rpe} | Rol: {usuario.ClaveRolNavigation?.Nombre} | Zona: {usuario.CatZona?.NombreZona}";
-                            await _bitacora.RegistrarYGuardarAsync(
-                                HttpContext.Session.GetString("NombreUsuario"),
-                                BitacoraAcciones.InicioSesionTecnico,
-                                descripcionTecnico  
+                            await _bitacora.RegistrarInicioSesionAsync(
+                                usuario: HttpContext.Session.GetString("NombreUsuario"),
+                                rpe: usuario.Rpe,
+                                rol: usuario.ClaveRolNavigation?.Nombre ?? "TÉCNICO",
+                                zona: usuario.CatZona?.NombreZona ?? "N/A",
+                                ubicacion: "sistema web"
                             );
 
                             return RedirectToAction("Inicio", "Home");
@@ -280,7 +281,7 @@ namespace ProyectoMantenimientos.Controllers
 
             if (!string.IsNullOrEmpty(usuario))
             {
-                await _bitacora.RegistrarLogoutAsync(usuario, rpe, rol, zona);
+                await _bitacora.RegistrarCierreSesionAsync(usuario, rpe, rol, zona);
             }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -371,9 +372,15 @@ namespace ProyectoMantenimientos.Controllers
                     .FirstOrDefaultAsync() ?? "Sin zona";
 
                 // ✅ FORMATO CON PIPES para información adicional
-                var descripcion = $"Actualizó los datos del usuario '{model.Nombre} {model.ApellidoP}' | RPE: {model.Rpe} | Rol: {rolUsuario} | Zona: {zonaUsuario}";
-
-                await _bitacora.RegistrarYGuardarAsync(adminQueActualiza, BitacoraAcciones.ActualizarUsuario, descripcion);
+                await _bitacora.RegistrarActualizacionUsuarioAsync(
+                    usuarioAdmin: adminQueActualiza,
+                    rpeAdmin: HttpContext.Session.GetString("Rpe") ?? "N/A",
+                    rolAdmin: HttpContext.Session.GetString("NombreRol") ?? "N/A",
+                    zonaAdmin: HttpContext.Session.GetString("NombreZona") ?? "N/A",
+                    usuarioActualizado: $"{model.Nombre} {model.ApellidoP}",
+                    rpeActualizado: model.Rpe,
+                    cambios: $"Rol: {rolUsuario}, Zona: {zonaUsuario}"
+                );
 
                 await _dbocontext.SaveChangesAsync();
 
@@ -439,9 +446,16 @@ namespace ProyectoMantenimientos.Controllers
                     .FirstOrDefaultAsync() ?? "Sin zona";
 
                 // ✅ FORMATO CON PIPES para información adicional
-                var descripcion = $"Creó al nuevo usuario '{model.Nombre} {model.ApellidoP}' | RPE: {model.Rpe} | Rol: {rolNuevoUsuario} | Zona: {zonaNuevoUsuario}";
-
-                await _bitacora.RegistrarYGuardarAsync(adminQueCrea, BitacoraAcciones.CrearUsuario, descripcion);
+                await _bitacora.RegistrarCreacionUsuarioAsync(
+                    usuarioAdmin: adminQueCrea,
+                    rpeAdmin: HttpContext.Session.GetString("Rpe") ?? "N/A",
+                    rolAdmin: HttpContext.Session.GetString("NombreRol") ?? "N/A",
+                    zonaAdmin: HttpContext.Session.GetString("NombreZona") ?? "N/A",
+                    usuarioCreado: $"{model.Nombre} {model.ApellidoP}",
+                    rpeCreado: model.Rpe,
+                    rolCreado: rolNuevoUsuario,
+                    zonaCreada: zonaNuevoUsuario
+                );
 
                 // 3. Guarda ambos cambios en una sola transacción
                 await _dbocontext.SaveChangesAsync();

@@ -37,7 +37,7 @@ namespace MantenimientosTI.Controllers
         }
 
         [HttpPost]
-        public IActionResult EnviarDatosCsv([FromForm] IFormFile ArchivoCsv)
+        public async Task<IActionResult> EnviarDatosCsv([FromForm] IFormFile ArchivoCsv)
         {
             const int MAX_LINEAS = 1000;
 
@@ -375,18 +375,17 @@ namespace MantenimientosTI.Controllers
 
                 // Guardar solo si hay registros válidos
                 // Guardar solo si hay registros válidos
-_dbocontext.Agenda.AddRange(lista);
+            _dbocontext.Agenda.AddRange(lista);
 
-// REGISTRO EN BITÁCORA - CARGA CSV EXITOSA
-var usuario = User.Identity?.Name;
-var rpe = HttpContext.Session.GetString("Rpe");
-var rol = HttpContext.Session.GetString("NombreRol");
-var zona = HttpContext.Session.GetString("NombreZona");
-var centro = HttpContext.Session.GetString("ClaveDivision");
+            // REGISTRO EN BITÁCORA - CARGA CSV EXITOSA
+            var usuario = User.Identity?.Name;
+            var rpe = HttpContext.Session.GetString("Rpe");
+            var rol = HttpContext.Session.GetString("NombreRol");
+            var zona = HttpContext.Session.GetString("NombreZona");
+            var centro = HttpContext.Session.GetString("ClaveDivision");
 
-_bitacora.RegistrarCargaCSV(usuario, rpe, rol, zona, centro, "PREVENTIVOS", lineasProcesadas);
-
-_dbocontext.SaveChanges();
+               await _bitacora.RegistrarCargaCSVAsync(usuario, rpe, rol, zona, centro, "PREVENTIVOS", lineasProcesadas);
+                            _dbocontext.SaveChanges();
 
 return Json(new
 {
@@ -640,8 +639,7 @@ return Json(new
                 var zona = HttpContext.Session.GetString("NombreZona");
                 var centro = HttpContext.Session.GetString("ClaveDivision");
 
-                _bitacora.RegistrarConfirmacionCancelacionConMotivo(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático", motivo, justificacion);
-
+                await _bitacora.RegistrarCancelacionDirectaAsync(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático", motivo, justificacion);
                 await _dbocontext.SaveChangesAsync();
 
                 return Json(new { success = true, message = "El mantenimiento ha sido cancelado directamente." });
@@ -702,8 +700,7 @@ return Json(new
                 var zona = HttpContext.Session.GetString("NombreZona");
                 var centro = HttpContext.Session.GetString("ClaveDivision");
 
-                _bitacora.RegistrarPreCancelacionConMotivo(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático", motivo, justificacion);
-
+                await _bitacora.RegistrarSolicitudCancelacionAsync(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático", motivo, justificacion);
                 await _dbocontext.SaveChangesAsync();
 
                 return Json(new
@@ -761,8 +758,7 @@ return Json(new
                 var zona = HttpContext.Session.GetString("NombreZona");
                 var centro = HttpContext.Session.GetString("ClaveDivision");
 
-                _bitacora.RegistrarConfirmacionCancelacion(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático");
-
+                await _bitacora.RegistrarConfirmacionCancelacionAsync(usuario, rpe, rol, zona, centro, idAgenda.ToString(), "CFEMático");
                 await _dbocontext.SaveChangesAsync();
 
                 return Json(new { success = true, message = "La cancelación del mantenimiento ha sido confirmada." });
@@ -801,8 +797,11 @@ return Json(new
                 var zona = HttpContext.Session.GetString("NombreZona");
                 var centro = HttpContext.Session.GetString("ClaveDivision");
 
-                _bitacora.RegistrarActividad(usuario, "REACTIVACION_MTTO",
-                    $"Reactivación de agenda | Orden: {idAgenda} | RPE: {rpe} | Rol: {rol} | Zona: {zona} | Centro: {centro}");
+                await _bitacora.RegistrarActividadAsync(usuario, rpe, rol, zona, centro, "REACTIVACION_MTTO",
+                    new Dictionary<string, string>
+                    {
+                        { "ClaveAgenda", idAgenda.ToString() }
+                    });
 
                 await _dbocontext.SaveChangesAsync();
 
@@ -911,7 +910,7 @@ return Json(new
         }
 
         [HttpPost]
-        public IActionResult AgendarCorrectivo(string numActFijo, string fechaProgramada, string tipoEquipo = "CFEMatico")
+        public async Task<IActionResult> AgendarCorrectivo(string numActFijo, string fechaProgramada, string tipoEquipo = "CFEMatico")
         {
             try
             {
@@ -977,7 +976,7 @@ return Json(new
                 var zona = HttpContext.Session.GetString("NombreZona");
                 var centro = HttpContext.Session.GetString("ClaveDivision");
 
-                _bitacora.RegistrarCargaMantenimientoCorrectivo(usuario, rpe, rol, zona, centro, 1);
+                await _bitacora.RegistrarMantenimientoCorrectivoAsync(usuario, rpe, rol, zona, centro);
 
                 _dbocontext.SaveChanges();
 

@@ -17,8 +17,10 @@ builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>
 
 
 // Servicios personalizados
-builder.Services.AddScoped<MantenimientosTI.Services.BitacoraService>();
+//builder.Services.AddScoped<MantenimientosTI.Services.BitacoraService>();
+builder.Services.AddScoped<MantenimientosTI.Services.PlantillaBitacoraService>();
 builder.Services.AddScoped<InformacionSistema>(); 
+builder.Services.AddScoped<BitacoraService>();
 builder.Services.AddHostedService<ScheduledEmailService>();
 
 // Configuración de Data Protection
