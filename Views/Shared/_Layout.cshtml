@@ -133,7 +133,7 @@
                             Bandeja de entrada
                         </a>
 
-                        @if (User.IsInRole("ADMINISTRADOR"))
+                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("CONSULTOR"))
                         {
                             <a href="/Dashboard/Dashboard" class="nav-link ajax-link text-white">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
@@ -162,44 +162,52 @@
                                 Monitoreo de CFEmáticos
                             </a>
                         }
+                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA"))
+                        {
+                            <a class="nav-link collapsed text-white" href="#" data-bs-toggle="collapse" data-bs-target="#collapseMantenimientos" aria-expanded="false" aria-controls="collapseMantenimientos">
+                                <div class="sb-nav-link-icon"><i class="fas fa-calendar"></i></div>
+                                Agendar
+                                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                            </a>
 
-                        <a class="nav-link collapsed text-white" href="#" data-bs-toggle="collapse" data-bs-target="#collapseMantenimientos" aria-expanded="false" aria-controls="collapseMantenimientos">
-                            <div class="sb-nav-link-icon"><i class="fas fa-calendar"></i></div>
-                            Agendar
-                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-                        </a>
+                            <div class="collapse" id="collapseMantenimientos" data-bs-parent="#sidenavAccordion">
+                                <nav class="sb-sidenav-menu-nested nav flex-column">
 
-                        <div class="collapse" id="collapseMantenimientos" data-bs-parent="#sidenavAccordion">
-                            <nav class="sb-sidenav-menu-nested nav flex-column">
+                                    <a class="nav-link text-white ajax-link" href="/Agenda/AgendarPreventivos">
+                                        <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
+                                        Mantenimientos preventivos
+                                    </a>
 
-                                <a class="nav-link text-white ajax-link" href="/Agenda/AgendarPreventivos">
-                                    <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
-                                    Mantenimientos preventivos
-                                </a>
+                                    <a class="nav-link text-white ajax-link" href="/Agenda/AgendarCorrectivos">
+                                        <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
+                                        Mantenimiento correctivo
+                                    </a>
 
-                                <a class="nav-link text-white ajax-link" href="/Agenda/AgendarCorrectivos">
-                                    <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
-                                    Mantenimiento correctivo
-                                </a>
+                                </nav>
+                            </div>
+                        }
 
-                            </nav>
-                        </div>
-
-                        <a href="/Repositorio/TerminarMantenimiento" class="nav-link ajax-link text-white">
-                            <div class="sb-nav-link-icon"><i class="fas fa-upload"></i></div>
-                            Terminar mantenimiento
-                        </a>
-
-                        <a href="/Repositorio/Repositorio" class="nav-link ajax-link text-white">
-                            <div class="sb-nav-link-icon"><i class="fas fa-history"></i></div>
-                            Historial de mantenimientos
-                        </a>
-
-                        <a href="/Repositorio/InventarioEquipos" class="nav-link ajax-link text-white">
-                            <div class="sb-nav-link-icon"><i class="fas fa-clipboard-list"></i></div>
-                            Inventario de equipos
-                        </a>
-
+                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA"))
+                        {
+                            <a href="/Repositorio/TerminarMantenimiento" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-upload"></i></div>
+                                Terminar mantenimiento
+                            </a>
+                        }
+                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA") || User.IsInRole("CONSULTOR"))
+                        {
+                            <a href="/Repositorio/Repositorio" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-history"></i></div>
+                                Historial de mantenimientos
+                            </a>
+                        }
+                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA"))
+                        {
+                            <a href="/Repositorio/InventarioEquipos" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-clipboard-list"></i></div>
+                                Inventario de equipos
+                            </a>
+                        }
                         @if (User.IsInRole("ADMINISTRADOR"))
                         {
                             <a href="@Url.Action("AprobarCancelaciones", "Agenda")" class="nav-link ajax-link text-white">

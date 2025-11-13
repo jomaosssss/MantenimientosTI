@@ -32,7 +32,7 @@ namespace MantenimientosTI.Controllers
             _configuration = configuration;
         }
 
-        [Authorize(Roles = "ADMINISTRADOR")]
+        [Authorize(Roles = "ADMINISTRADOR, CONSULTOR")]
         public async Task<IActionResult> Dashboard()
         {
             string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
@@ -53,9 +53,8 @@ namespace MantenimientosTI.Controllers
 
             var estatusExcluidos = new List<string> { "CANCELADO" };
 
-            // Base query
+            // Base query - SIMPLIFICADA
             var baseQuery = _context.Agenda
-                .Include(a => a.NumActFijoNavigation)
                 .Where(a => !estatusExcluidos.Contains(a.Estatus));
 
             // Cálculos asyncronos
@@ -86,15 +85,16 @@ namespace MantenimientosTI.Controllers
             var graficasZonas = new List<ZonaChartData>();
 
             // Obtener todas las zonas
-            var zonasQuery = _context.CatZonas.AsQueryable();
-            var zonas = await zonasQuery.ToListAsync();
+            var zonas = await _context.CatZonas.ToListAsync();
 
             foreach (var zona in zonas)
             {
-                var queryZona = baseQuery.Where(a => a.NumActFijoNavigation != null &&
-                                                    a.NumActFijoNavigation.ClaveZona == zona.ClaveZona &&
-                                                    a.FechaProgramada >= primerDiaMes &&
-                                                    a.FechaProgramada <= ultimoDiaMes);
+                var queryZona = _context.Agenda
+                    .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
+                               a.FechaProgramada >= primerDiaMes &&
+                               a.FechaProgramada <= ultimoDiaMes &&
+                               a.NumActFijoNavigation != null &&
+                               a.NumActFijoNavigation.ClaveZona == zona.ClaveZona);
 
                 var totalProgramados = await queryZona.CountAsync();
                 var terminados = await queryZona.CountAsync(a => a.Estatus == "TERMINADO");
@@ -121,37 +121,176 @@ namespace MantenimientosTI.Controllers
                 PendientesCount = pendientesCount,
                 ProgramadosProximoMesCount = proximoMesCount,
                 GraficasZonas = graficasZonas,
-                Zonas = zonas // Agregar la lista de zonas al ViewModel
+                Zonas = zonas,
+                TiposEquipo = new List<string> { "TODOS", "PC", "LAPTOP", "CFECAM", "CFETURNO", "CFEMÁTICOS" }
             };
 
             return View(viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ObtenerDatosGraficasFiltroCompleto([FromBody] FiltroCompletoModel model)
+        {
+            try
+            {
+                _logger.LogInformation($"ObtenerDatosGraficasFiltroCompleto: {model.FechaInicio:dd/MM/yyyy} - {model.FechaFin:dd/MM/yyyy}, Zona: {model.ZonaSeleccionada}");
+
+                if (model.FechaInicio == default || model.FechaFin == default)
+                {
+                    return Json(new { success = false, message = "Las fechas de inicio y fin son requeridas" });
+                }
+
+                if (model.FechaInicio > model.FechaFin)
+                {
+                    return Json(new { success = false, message = "La fecha de inicio no puede ser mayor a la fecha fin" });
+                }
+
+                var primerDia = DateOnly.FromDateTime(model.FechaInicio);
+                var ultimoDia = DateOnly.FromDateTime(model.FechaFin);
+
+                var estatusExcluidos = new List<string> { "CANCELADO" };
+
+                // Base query SIMPLIFICADA
+                var baseQuery = _context.Agenda
+                    .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
+                               a.FechaProgramada >= primerDia &&
+                               a.FechaProgramada <= ultimoDia);
+
+                // Determinar si mostramos por zona o por tipo de equipo
+                if (model.ZonaSeleccionada == "TODAS")
+                {
+                    // Mostrar gráficas por ZONA
+                    var graficasZonas = new List<object>();
+                    var zonas = await _context.CatZonas.ToListAsync();
+
+                    foreach (var zona in zonas)
+                    {
+                        var queryZona = baseQuery
+                            .Where(a => a.NumActFijoNavigation != null &&
+                                       a.NumActFijoNavigation.ClaveZona == zona.ClaveZona);
+
+                        var totalProgramados = await queryZona.CountAsync();
+                        var terminados = await queryZona.CountAsync(a => a.Estatus == "TERMINADO");
+                        var pendientes = await queryZona.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                        var otros = totalProgramados - terminados - pendientes;
+
+                        graficasZonas.Add(new
+                        {
+                            zona = zona.ClaveZona,
+                            nombreZona = zona.NombreZona ?? zona.ClaveZona,
+                            totalProgramados,
+                            terminados,
+                            pendientes,
+                            otros = otros > 0 ? otros : 0,
+                            tieneDatos = totalProgramados > 0
+                        });
+                    }
+
+                    return Json(new { success = true, datosGraficas = graficasZonas, tipo = "zonas" });
+                }
+                else
+                {
+                    // Mostrar gráficas por TIPO DE EQUIPO para la zona seleccionada
+                    var graficasTipos = new List<object>();
+
+                    // 1. CFEMÁTICOS
+                    var cfematicosQuery = baseQuery
+                        .Where(a => a.NumActFijoNavigation != null &&
+                                   a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada &&
+                                   _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo));
+
+                    var cfematicosProgramados = await cfematicosQuery.CountAsync();
+                    var cfematicosTerminados = await cfematicosQuery.CountAsync(a => a.Estatus == "TERMINADO");
+                    var cfematicosPendientes = await cfematicosQuery.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var cfematicosOtros = cfematicosProgramados - cfematicosTerminados - cfematicosPendientes;
+
+                    graficasTipos.Add(new
+                    {
+                        tipoEquipo = "CFEMÁTICOS",
+                        programados = cfematicosProgramados,
+                        terminados = cfematicosTerminados,
+                        pendientes = cfematicosPendientes,
+                        otros = cfematicosOtros > 0 ? cfematicosOtros : 0
+                    });
+
+                    // 2. EQUIPOS DE ATENCIÓN A CLIENTES (EquipoAcs) - CORREGIDO
+                    var equiposACQuery = baseQuery
+                        .Where(a => a.NumActFijoNavigation != null &&
+                                   a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada &&
+                                   _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo));
+
+                    var equiposACProgramados = await equiposACQuery.CountAsync();
+                    var equiposACTerminados = await equiposACQuery.CountAsync(a => a.Estatus == "TERMINADO");
+                    var equiposACPendientes = await equiposACQuery.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var equiposACOtros = equiposACProgramados - equiposACTerminados - equiposACPendientes;
+
+                    graficasTipos.Add(new
+                    {
+                        tipoEquipo = "EQUIPOS_AC",
+                        programados = equiposACProgramados,
+                        terminados = equiposACTerminados,
+                        pendientes = equiposACPendientes,
+                        otros = equiposACOtros > 0 ? equiposACOtros : 0
+                    });
+
+                    // 3. EQUIPOS DE CÓMPUTO (EquipoComputos) - CORREGIDO
+                    var equiposComputoQuery = baseQuery
+                        .Where(a => a.NumActFijoNavigation != null &&
+                                   a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada &&
+                                   _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo));
+
+                    var equiposComputoProgramados = await equiposComputoQuery.CountAsync();
+                    var equiposComputoTerminados = await equiposComputoQuery.CountAsync(a => a.Estatus == "TERMINADO");
+                    var equiposComputoPendientes = await equiposComputoQuery.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var equiposComputoOtros = equiposComputoProgramados - equiposComputoTerminados - equiposComputoPendientes;
+
+                    graficasTipos.Add(new
+                    {
+                        tipoEquipo = "EQUIPOS_COMPUTO",
+                        programados = equiposComputoProgramados,
+                        terminados = equiposComputoTerminados,
+                        pendientes = equiposComputoPendientes,
+                        otros = equiposComputoOtros > 0 ? equiposComputoOtros : 0
+                    });
+
+                    // NUEVO: Agregar logging detallado para debug
+                    _logger.LogInformation($"Datos tipos equipo - Zona: {model.ZonaSeleccionada}");
+                    _logger.LogInformation($"CFEMÁTICOS: Programados={cfematicosProgramados}, Terminados={cfematicosTerminados}, Pendientes={cfematicosPendientes}");
+                    _logger.LogInformation($"EQUIPOS_AC: Programados={equiposACProgramados}, Terminados={equiposACTerminados}, Pendientes={equiposACPendientes}");
+                    _logger.LogInformation($"EQUIPOS_COMPUTO: Programados={equiposComputoProgramados}, Terminados={equiposComputoTerminados}, Pendientes={equiposComputoPendientes}");
+
+                    // NUEVO: Verificar si hay registros en las tablas para debug
+                    var totalEquiposAC = await _context.EquipoAcs.CountAsync();
+                    var totalEquiposComputo = await _context.EquipoComputos.CountAsync();
+                    _logger.LogInformation($"Total registros en BD - EquipoAcs: {totalEquiposAC}, EquipoComputos: {totalEquiposComputo}");
+
+                    return Json(new { success = true, datosGraficas = graficasTipos, tipo = "tiposEquipo" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener datos de gráficas con filtro completo");
+                return Json(new { success = false, message = $"Error interno: {ex.Message}" });
+            }
         }
 
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         public async Task<IActionResult> DashboardTecnico()
         {
             string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
-            int claveRol = HttpContext.Session.GetInt32("Rol") ?? 0;
             var hoy = DateOnly.FromDateTime(DateTime.Now);
 
             // Fechas Mes Actual
             var primerDiaMes = new DateOnly(hoy.Year, hoy.Month, 1);
             var ultimoDiaMes = primerDiaMes.AddMonths(1).AddDays(-1);
 
-            // Fechas Próximo Mes
-            var primerDiaProximoMes = primerDiaMes.AddMonths(1);
-            var ultimoDiaProximoMes = primerDiaProximoMes.AddMonths(1).AddDays(-1);
-
-            // Fechas Mes Anterior
-            var primerDiaMesAnterior = primerDiaMes.AddMonths(-1);
-            var ultimoDiaMesAnterior = primerDiaMesAnterior.AddMonths(1).AddDays(-1);
-
             var estatusExcluidos = new List<string> { "CANCELADO" };
 
-            // Base query - FILTRADO POR ZONA DEL USUARIO
+            // Base query - SIMPLIFICADA
             var baseQuery = _context.Agenda
-                .Include(a => a.NumActFijoNavigation)
-                .Where(a => !estatusExcluidos.Contains(a.Estatus));
+                .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
+                           a.FechaProgramada >= primerDiaMes &&
+                           a.FechaProgramada <= ultimoDiaMes);
 
             // Aplicar filtro de zona del técnico
             if (!string.IsNullOrEmpty(claveZonaUsuario))
@@ -160,52 +299,24 @@ namespace MantenimientosTI.Controllers
                                                 a.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
             }
 
-            // Cálculos asyncronos FILTRADOS POR ZONA
-            int pendientesMesAnteriorCount = await baseQuery
-                .CountAsync(a => (a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO") &&
-                                 a.FechaProgramada >= primerDiaMesAnterior &&
-                                 a.FechaProgramada <= ultimoDiaMesAnterior);
-
-            int programadosCount = await baseQuery
-                .CountAsync(a => a.FechaProgramada >= primerDiaMes &&
-                                 a.FechaProgramada <= ultimoDiaMes);
-
-            int terminadosCount = await baseQuery
-                .CountAsync(a => a.Estatus == "TERMINADO" &&
-                                 a.FechaProgramada >= primerDiaMes &&
-                                 a.FechaProgramada <= ultimoDiaMes);
-
-            int pendientesCount = await baseQuery
-                .CountAsync(a => (a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO") &&
-                                 a.FechaProgramada >= primerDiaMes &&
-                                 a.FechaProgramada <= ultimoDiaMes);
-
-            int proximoMesCount = await baseQuery
-                .CountAsync(a => a.FechaProgramada >= primerDiaProximoMes &&
-                                 a.FechaProgramada <= ultimoDiaProximoMes);
+            // Cálculos asyncronos
+            int programadosCount = await baseQuery.CountAsync();
+            int terminadosCount = await baseQuery.CountAsync(a => a.Estatus == "TERMINADO");
+            int pendientesCount = await baseQuery.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
 
             // Obtener todas las agencias de la zona del usuario
-            var agenciasQuery = _context.CatAgencia
-                .Where(a => a.ClaveZona == claveZonaUsuario);
+            var agencias = await _context.CatAgencia
+                .Where(a => a.ClaveZona == claveZonaUsuario)
+                .ToListAsync();
 
-            var agencias = await agenciasQuery.ToListAsync();
-
-            // Obtener todos los centros de la zona del usuario
-            var centrosQuery = _context.CatCentros
-                .Where(c => c.ClaveZona == claveZonaUsuario);
-
-            var centros = await centrosQuery.ToListAsync();
-
-            // Cálculo de datos para gráficas por AGENCIA (inicial - mostrar todas)
+            // Cálculo de datos para gráficas por AGENCIA
             var graficasAgencias = new List<AgenciaChartData>();
 
             foreach (var agencia in agencias)
             {
-                var queryAgencia = baseQuery.Where(a => a.NumActFijoNavigation != null &&
-                                                       a.NumActFijoNavigation.ClaveZona == claveZonaUsuario &&
-                                                       a.NumActFijoNavigation.ClaveAgencia == agencia.ClaveAgencia &&
-                                                       a.FechaProgramada >= primerDiaMes &&
-                                                       a.FechaProgramada <= ultimoDiaMes);
+                var queryAgencia = baseQuery
+                    .Where(a => a.NumActFijoNavigation != null &&
+                               a.NumActFijoNavigation.ClaveAgencia == agencia.ClaveAgencia);
 
                 var totalProgramados = await queryAgencia.CountAsync();
                 var terminados = await queryAgencia.CountAsync(a => a.Estatus == "TERMINADO");
@@ -226,14 +337,11 @@ namespace MantenimientosTI.Controllers
 
             var viewModel = new DashboardTecnicoViewModel
             {
-                PendientesMesAnteriorCount = pendientesMesAnteriorCount,
                 ProgramadosCount = programadosCount,
                 TerminadosCount = terminadosCount,
                 PendientesCount = pendientesCount,
-                ProgramadosProximoMesCount = proximoMesCount,
                 GraficasAgencias = graficasAgencias,
-                Agencias = agencias,
-                Centros = centros
+                Agencias = agencias
             };
 
             return View(viewModel);
@@ -820,9 +928,186 @@ namespace MantenimientosTI.Controllers
                 return Json(new { success = false, message = $"Error interno: {ex.Message}" });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ObtenerRegistrosPorEstado([FromBody] FiltroRegistrosModel model)
+        {
+            try
+            {
+                _logger.LogInformation($"ObtenerRegistrosPorEstado - Tipo: {model.Tipo}, Clave: {model.Clave}, Estado: {model.Estado}, Zona: {model.ZonaSeleccionada}");
+
+                if (model.FechaInicio == default || model.FechaFin == default)
+                {
+                    return Json(new { success = false, message = "Las fechas de inicio y fin son requeridas" });
+                }
+
+                if (model.FechaInicio > model.FechaFin)
+                {
+                    return Json(new { success = false, message = "La fecha de inicio no puede ser mayor a la fecha fin" });
+                }
+
+                var primerDia = DateOnly.FromDateTime(model.FechaInicio);
+                var ultimoDia = DateOnly.FromDateTime(model.FechaFin);
+
+                var estatusExcluidos = new List<string> { "CANCELADO" };
+
+                // Base query SIMPLIFICADA
+                var baseQuery = _context.Agenda
+                    .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
+                               a.FechaProgramada >= primerDia &&
+                               a.FechaProgramada <= ultimoDia);
+
+                // Aplicar filtro por tipo de equipo específico para EQUIPOS_AC y EQUIPOS_COMPUTO
+                if (model.Tipo == "tiposEquipo")
+                {
+                    if (model.Clave == "CFEMÁTICOS")
+                    {
+                        baseQuery = baseQuery.Where(a => _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo));
+                    }
+                    else if (model.Clave == "EQUIPOS_AC")
+                    {
+                        // Filtrar por CFECAM (ClaveTipoEquipo == 1) y CFETURNO (ClaveTipoEquipo == 2)
+                        baseQuery = baseQuery.Where(a => _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo));
+                    }
+                    else if (model.Clave == "EQUIPOS_COMPUTO")
+                    {
+                        // Filtrar por PC (ClaveTipoEquipo == 3) y LAPTOP (ClaveTipoEquipo == 4)
+                        baseQuery = baseQuery.Where(a => _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo));
+                    }
+                }
+
+                // Aplicar filtro por zona o agencia según el tipo
+                if (model.Tipo == "zonas")
+                {
+                    if (model.ZonaSeleccionada != "TODAS")
+                    {
+                        baseQuery = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                        a.NumActFijoNavigation.ClaveZona == model.Clave);
+                    }
+                }
+                else if (model.Tipo == "agencias")
+                {
+                    baseQuery = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                    a.NumActFijoNavigation.ClaveAgencia == model.Clave);
+                }
+                else if (model.Tipo == "tiposEquipo")
+                {
+                    // Solo aplicar filtro de zona si no es "TODAS"
+                    if (model.ZonaSeleccionada != "TODAS")
+                    {
+                        baseQuery = baseQuery.Where(a => a.NumActFijoNavigation != null &&
+                                                        a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada);
+                    }
+                }
+
+                // Aplicar filtro por estado
+                switch (model.Estado.ToUpper())
+                {
+                    case "TERMINADOS":
+                        baseQuery = baseQuery.Where(a => a.Estatus == "TERMINADO");
+                        break;
+                    case "PENDIENTES":
+                        baseQuery = baseQuery.Where(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                        break;
+                    case "OTROS":
+                        baseQuery = baseQuery.Where(a => a.Estatus != "TERMINADO" &&
+                                                       a.Estatus != "PENDIENTE" &&
+                                                       a.Estatus != "PRE-CANCELADO" &&
+                                                       a.Estatus != "CANCELADO");
+                        break;
+                }
+
+                // Obtener registros con información adicional - CONSULTA CORREGIDA
+                var registros = await baseQuery
+                    .Select(a => new
+                    {
+                        NumActFijo = a.NumActFijo,
+                        Agencia = a.NumActFijoNavigation != null ? a.NumActFijoNavigation.ClaveAgencia : "N/A",
+                        Centro = a.NumActFijoNavigation != null ? a.NumActFijoNavigation.ClaveCentro : "N/A",
+                        NombreAgencia = a.NumActFijoNavigation != null &&
+                                       a.NumActFijoNavigation.CatCentro != null &&
+                                       a.NumActFijoNavigation.CatCentro.CatAgencium != null
+                                        ? a.NumActFijoNavigation.CatCentro.CatAgencium.NombreAgencia
+                                        : "N/A",
+                        NombreCentro = a.NumActFijoNavigation != null &&
+                                      a.NumActFijoNavigation.CatCentro != null
+                                        ? a.NumActFijoNavigation.CatCentro.NombreCentro
+                                        : "N/A",
+                        FechaProgramada = a.FechaProgramada.ToString("dd/MM/yyyy"),
+                        Estatus = a.Estatus,
+                        // Determinar tipo de equipo con más detalle
+                        TipoEquipo = _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo && ec.ClaveTipoEquipo == 3) ? "PC" :
+                                    _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo && ec.ClaveTipoEquipo == 4) ? "LAPTOP" :
+                                    _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo && ea.ClaveTipoEquipo == 1) ? "CFECAM" :
+                                    _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo && ea.ClaveTipoEquipo == 2) ? "CFETURNO" :
+                                    _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo) ? "CFEMÁTICOS" : "DESCONOCIDO",
+                        // Obtener número de cajero para CFEMÁTICOS
+                        NumCajero = _context.EquipoCfematicos
+                            .Where(ec => ec.NumActFijo == a.NumActFijo)
+                            .Select(ec => ec.NumCajero)
+                            .FirstOrDefault(),
+                        // Obtener fecha de atención del mantenimiento
+                        FechaAtencion = _context.Mantenimientos
+                            .Where(m => m.ClaveAgenda == a.ClaveAgenda)
+                            .OrderByDescending(m => m.FechaAtencion)
+                            .Select(m => m.FechaAtencion != default ? m.FechaAtencion.ToString("dd/MM/yyyy") : null)
+                            .FirstOrDefault(),
+                        // Información adicional para debug
+                        TieneEquipoAC = _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo),
+                        TieneEquipoComputo = _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo),
+                        TieneEquipoCfematico = _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo)
+                    })
+                    .OrderBy(a => a.NombreAgencia)
+                    .ThenBy(a => a.NombreCentro)
+                    .ThenBy(a => a.NumActFijo)
+                    .ToListAsync();
+
+                // Log para debug
+                _logger.LogInformation($"Registros encontrados: {registros.Count}");
+                _logger.LogInformation($"Desglose por tipo: " +
+                                      $"CFEMÁTICOS: {registros.Count(r => r.TipoEquipo == "CFEMÁTICOS")}, " +
+                                      $"EQUIPOS_AC: {registros.Count(r => r.TipoEquipo == "CFECAM" || r.TipoEquipo == "CFETURNO")}, " +
+                                      $"EQUIPOS_COMPUTO: {registros.Count(r => r.TipoEquipo == "PC" || r.TipoEquipo == "LAPTOP")}");
+
+                // Formatear los datos finales
+                var registrosFormateados = registros.Select(r => new
+                {
+                    numActFijo = r.TipoEquipo == "CFEMÁTICOS" && !string.IsNullOrEmpty(r.NumCajero)
+                        ? $"{r.NumActFijo} (Cajero: {r.NumCajero})"
+                        : r.NumActFijo.ToString(),
+                    agencia = r.Agencia,
+                    centro = r.Centro,
+                    nombreAgencia = r.NombreAgencia,
+                    nombreCentro = r.NombreCentro,
+                    fechaProgramada = r.FechaProgramada,
+                    fechaTerminada = !string.IsNullOrEmpty(r.FechaAtencion) ? r.FechaAtencion : "N/A",
+                    estatus = r.Estatus,
+                    tipoEquipo = r.TipoEquipo
+                }).ToList();
+
+                _logger.LogInformation($"Se encontraron {registrosFormateados.Count} registros formateados");
+
+                return Json(new { success = true, registros = registrosFormateados });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener registros por estado");
+                return Json(new { success = false, message = $"Error interno: {ex.Message}" });
+            }
+        }
     }
 
-    // --- VIEW MODELS ---
+    public class FiltroRegistrosModel
+    {
+        public string Tipo { get; set; }
+        public string Clave { get; set; }
+        public string Estado { get; set; }
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaFin { get; set; }
+        public string ZonaSeleccionada { get; set; }
+        public string TipoEquipo { get; set; }
+    }
+
     public class DashboardViewModel
     {
         public int PendientesMesAnteriorCount { get; set; }
@@ -831,8 +1116,20 @@ namespace MantenimientosTI.Controllers
         public int PendientesCount { get; set; }
         public int ProgramadosProximoMesCount { get; set; }
         public List<ZonaChartData> GraficasZonas { get; set; } = new List<ZonaChartData>();
-        public List<AgenciaChartData> GraficasAgencias { get; set; } = new List<AgenciaChartData>();
         public List<CatZona> Zonas { get; set; } = new List<CatZona>();
+
+        public List<string> TiposEquipo { get; set; } = new List<string>
+    {
+        "TODOS", "PC", "LAPTOP", "CFECAM", "CFETURNO", "CFEMÁTICO"
+    };
+    }
+
+    public class FiltroCompletoModel
+    {
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaFin { get; set; }
+        public string ZonaSeleccionada { get; set; }
+        public string TipoEquipo { get; set; }
     }
 
     public class ZonaChartData
@@ -867,8 +1164,8 @@ namespace MantenimientosTI.Controllers
         public int PendientesCount { get; set; }
         public int ProgramadosProximoMesCount { get; set; }
         public List<AgenciaChartData> GraficasAgencias { get; set; } = new List<AgenciaChartData>();
-        public List<CatAgencium> Agencias { get; set; } = new List<CatAgencium>(); // Para el combobox de agencias
-        public List<CatCentro> Centros { get; set; } = new List<CatCentro>(); // Para el combobox de centros
+        public List<CatAgencium> Agencias { get; set; } = new List<CatAgencium>();
+        public List<CatCentro> Centros { get; set; } = new List<CatCentro>();
     }
 
     public class AgenciaChartData

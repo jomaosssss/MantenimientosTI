@@ -711,120 +711,118 @@
                                     </button>
                                 </div>
                             </div>
-                            @if (User.IsInRole("ADMINISTRADOR"))
-                            {
-                                <div class="mt-auto">
-                                    <h6><i class="fas fa-clock me-1 text-success"></i> Programación semanal</h6>
-                                    <div id="mensajeProgramacion" class="mt-2 small"></div>
+@* 
+                            <div class="mt-auto">
+                                <h6><i class="fas fa-clock me-1 text-success"></i> Programación semanal</h6>
+                                <div id="mensajeProgramacion" class="mt-2 small"></div>
 
-                                    <div class="mb-2 mt-2">
-                                        <!-- Día de la semana -->
-                                        <div class="row g-2 mb-2">
-                                            <div class="col-12">
-                                                <label class="form-label small mb-1">Día de envío:</label>
-                                                <select class="form-select form-select-sm" id="diaSemanaProgramado">
-                                                    <option value="Monday">Lunes</option>
-                                                    <option value="Tuesday">Martes</option>
-                                                    <option value="Wednesday">Miércoles</option>
-                                                    <option value="Thursday">Jueves</option>
-                                                    <option value="Friday">Viernes</option>
-                                                    <option value="Saturday">Sábado</option>
-                                                    <option value="Sunday">Domingo</option>
+                                <div class="mb-2 mt-2">
+                                    <!-- Día de la semana -->
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Día de envío:</label>
+                                            <select class="form-select form-select-sm" id="diaSemanaProgramado">
+                                                <option value="Monday">Lunes</option>
+                                                <option value="Tuesday">Martes</option>
+                                                <option value="Wednesday">Miércoles</option>
+                                                <option value="Thursday">Jueves</option>
+                                                <option value="Friday">Viernes</option>
+                                                <option value="Saturday">Sábado</option>
+                                                <option value="Sunday">Domingo</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Primer horario -->
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Primer envío:</label>
+                                            <div class="input-group input-group-sm">
+                                                <select class="form-select" id="horaProgramadaHoras1" style="min-width: 55px;">
+                                                    <option value="01">01</option>
+                                                    <option value="02">02</option>
+                                                    <option value="03">03</option>
+                                                    <option value="04">04</option>
+                                                    <option value="05">05</option>
+                                                    <option value="06">06</option>
+                                                    <option value="07">07</option>
+                                                    <option value="08">08</option>
+                                                    <option value="09">09</option>
+                                                    <option value="10">10</option>
+                                                    <option value="11">11</option>
+                                                    <option value="12">12</option>
+                                                </select>
+                                                <span class="input-group-text px-1">:</span>
+                                                <select class="form-select" id="horaProgramadaMinutos1" style="min-width: 55px;">
+                                                    <option value="00">00</option>
+                                                    <option value="15">15</option>
+                                                    <option value="30">30</option>
+                                                    <option value="45">45</option>
+                                                </select>
+                                                <select class="form-select" id="horaProgramadaPeriodo1" style="min-width: 55px;">
+                                                    <option value="AM">AM</option>
+                                                    <option value="PM">PM</option>
                                                 </select>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <!-- Primer horario -->
-                                        <div class="row g-2 mb-3">
-                                            <div class="col-12">
-                                                <label class="form-label small mb-1">Primer envío:</label>
-                                                <div class="input-group input-group-sm">
-                                                    <select class="form-select" id="horaProgramadaHoras1" style="min-width: 55px;">
-                                                        <option value="01">01</option>
-                                                        <option value="02">02</option>
-                                                        <option value="03">03</option>
-                                                        <option value="04">04</option>
-                                                        <option value="05">05</option>
-                                                        <option value="06">06</option>
-                                                        <option value="07">07</option>
-                                                        <option value="08">08</option>
-                                                        <option value="09">09</option>
-                                                        <option value="10">10</option>
-                                                        <option value="11">11</option>
-                                                        <option value="12">12</option>
-                                                    </select>
-                                                    <span class="input-group-text px-1">:</span>
-                                                    <select class="form-select" id="horaProgramadaMinutos1" style="min-width: 55px;">
-                                                        <option value="00">00</option>
-                                                        <option value="15">15</option>
-                                                        <option value="30">30</option>
-                                                        <option value="45">45</option>
-                                                    </select>
-                                                    <select class="form-select" id="horaProgramadaPeriodo1" style="min-width: 55px;">
-                                                        <option value="AM">AM</option>
-                                                        <option value="PM">PM</option>
-                                                    </select>
-                                                </div>
+                                    <!-- Segundo horario -->
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Segundo envío (opcional):</label>
+                                            <div class="input-group input-group-sm">
+                                                <select class="form-select" id="horaProgramadaHoras2" style="min-width: 55px;">
+                                                    <option value="">--</option>
+                                                    <option value="01">01</option>
+                                                    <option value="02">02</option>
+                                                    <option value="03">03</option>
+                                                    <option value="04">04</option>
+                                                    <option value="05">05</option>
+                                                    <option value="06">06</option>
+                                                    <option value="07">07</option>
+                                                    <option value="08">08</option>
+                                                    <option value="09">09</option>
+                                                    <option value="10">10</option>
+                                                    <option value="11">11</option>
+                                                    <option value="12">12</option>
+                                                </select>
+                                                <span class="input-group-text px-1">:</span>
+                                                <select class="form-select" id="horaProgramadaMinutos2" style="min-width: 55px;">
+                                                    <option value="00">00</option>
+                                                    <option value="15">15</option>
+                                                    <option value="30">30</option>
+                                                    <option value="45">45</option>
+                                                </select>
+                                                <select class="form-select" id="horaProgramadaPeriodo2" style="min-width: 55px;">
+                                                    <option value="AM">AM</option>
+                                                    <option value="PM">PM</option>
+                                                </select>
                                             </div>
-                                        </div>
-
-                                        <!-- Segundo horario -->
-                                        <div class="row g-2">
-                                            <div class="col-12">
-                                                <label class="form-label small mb-1">Segundo envío (opcional):</label>
-                                                <div class="input-group input-group-sm">
-                                                    <select class="form-select" id="horaProgramadaHoras2" style="min-width: 55px;">
-                                                        <option value="">--</option>
-                                                        <option value="01">01</option>
-                                                        <option value="02">02</option>
-                                                        <option value="03">03</option>
-                                                        <option value="04">04</option>
-                                                        <option value="05">05</option>
-                                                        <option value="06">06</option>
-                                                        <option value="07">07</option>
-                                                        <option value="08">08</option>
-                                                        <option value="09">09</option>
-                                                        <option value="10">10</option>
-                                                        <option value="11">11</option>
-                                                        <option value="12">12</option>
-                                                    </select>
-                                                    <span class="input-group-text px-1">:</span>
-                                                    <select class="form-select" id="horaProgramadaMinutos2" style="min-width: 55px;">
-                                                        <option value="00">00</option>
-                                                        <option value="15">15</option>
-                                                        <option value="30">30</option>
-                                                        <option value="45">45</option>
-                                                    </select>
-                                                    <select class="form-select" id="horaProgramadaPeriodo2" style="min-width: 55px;">
-                                                        <option value="AM">AM</option>
-                                                        <option value="PM">PM</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="mt-1">
-                                            <small class="text-muted fst-italic" id="infoProgramacion" style="font-size: 0.8em;"></small>
                                         </div>
                                     </div>
 
-                                    <div class="d-grid gap-2 mb-3">
-                                        <button id="btnProgramarEnvio" class="btn btn-success btn-sm">
-                                            <i class="fas fa-save me-1"></i>Guardar programación
-                                        </button>
-                                        <button id="btnEliminarProgramacion" class="btn btn-danger btn-sm">
-                                            <i class="fas fa-trash me-1"></i>Eliminar programación
-                                        </button>
-                                    </div>
-
-                                    <div class="p-2 bg-light rounded border">
-                                        <small class="text-muted" style="font-size: 0.8em;">
-                                            <i class="fas fa-info-circle me-1"></i>
-                                            Actualmente el reporte se envia <span id="infoConfiguracion" class="fw-bold text-dark">Cargando...</span>
-                                        </small>
+                                    <div class="mt-1">
+                                        <small class="text-muted fst-italic" id="infoProgramacion" style="font-size: 0.8em;"></small>
                                     </div>
                                 </div>
-                            }
+
+                                <div class="d-grid gap-2 mb-3">
+                                    <button id="btnProgramarEnvio" class="btn btn-success btn-sm">
+                                        <i class="fas fa-save me-1"></i>Guardar programación
+                                    </button>
+                                    <button id="btnEliminarProgramacion" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash me-1"></i>Eliminar programación
+                                    </button>
+                                </div>
+
+                                <div class="p-2 bg-light rounded border">
+                                    <small class="text-muted" style="font-size: 0.8em;">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Actualmente el reporte se envia <span id="infoConfiguracion" class="fw-bold text-dark">Cargando...</span>
+                                    </small>
+                                </div>
+                            </div> *@
                         </div>
                     </div>
                 </div>

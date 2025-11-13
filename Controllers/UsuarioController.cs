@@ -98,7 +98,7 @@ namespace ProyectoMantenimientos.Controllers
                 return View(model);
             }
 
-            if (model.Rpe.ToUpper() == "ADMIN" || model.Rpe.ToUpper() == "OISM0" || model.Rpe.ToUpper() == "FER01" || model.Rpe.ToUpper() == "MEM03")
+            if (model.Rpe.ToUpper() == "ADMIN" || model.Rpe.ToUpper() == "OISM0" || model.Rpe.ToUpper() == "FER01" || model.Rpe.ToUpper() == "CONSU")
             {
                 try
                 {
@@ -159,7 +159,7 @@ namespace ProyectoMantenimientos.Controllers
                         $"El administrador {usuarioAdmin.Rpe} inició sesión localmente."
                     );
 
-                    if (HttpContext.Session.GetString("NombreRol").Equals("ADMINISTRADOR"))
+                    if (HttpContext.Session.GetString("NombreRol").Equals("ADMINISTRADOR") || User.IsInRole("CONSULTOR"))
                     {
                         return RedirectToAction("Dashboard", "Dashboard");
                     }
@@ -252,7 +252,7 @@ namespace ProyectoMantenimientos.Controllers
                                 $"El usuario {usuario.Rpe} inició sesión."
                             );
 
-                            if (HttpContext.Session.GetString("NombreRol").Equals("ADMINISTRADOR"))
+                            if (HttpContext.Session.GetString("NombreRol").Equals("ADMINISTRADOR") || User.IsInRole("CONSULTOR"))
                             {
                                 return RedirectToAction("Dashboard", "Dashboard");
                             }

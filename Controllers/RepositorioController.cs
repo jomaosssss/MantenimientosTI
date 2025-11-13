@@ -23,7 +23,7 @@ namespace MantenimientosTI.Controllers
             return View();
         }
 
-        [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
+        [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA, CONSULTOR")]
         public IActionResult Repositorio()
         {
             return View();

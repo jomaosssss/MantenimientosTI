@@ -64,7 +64,7 @@ namespace ProyectoMantenimientos.Controllers
             return View();
         }
 
-        [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
+        [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA, CONSULTOR")]
         public IActionResult Inicio()
         {
             string? claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
@@ -664,10 +664,23 @@ namespace ProyectoMantenimientos.Controllers
             using var stamper = new PdfStamper(reader, ms);
             var cb = stamper.GetOverContent(1);
 
-            // Construye la ruta a la fuente de forma robusta
-            string fontPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
-            var bf = BaseFont.CreateFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            // Fuente que soporta caracteres españoles
+            var bf = BaseFont.CreateFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
 
+            // Función para decodificar HTML entities
+            string DecodificarHtml(string texto)
+            {
+                if (string.IsNullOrEmpty(texto)) return texto;
+                return System.Net.WebUtility.HtmlDecode(texto);
+            }
+
+            // Decodificar todos los textos que puedan tener HTML entities
+            nombreRpe = DecodificarHtml(nombreRpe);
+            responsable = DecodificarHtml(responsable);
+            agencia = DecodificarHtml(agencia);
+            tipoEquipo = DecodificarHtml(tipoEquipo);
+
+            // Escribir textos decodificados
             EscribirTexto(cb, bf, 10, 505f, 735f, claveAgenda);
             EscribirTexto(cb, bf, 10, 120f, 691f, agencia);
             EscribirTexto(cb, bf, 10, 500f, 721f, fechaProgramada.ToString("dd/MM/yyyy"));
@@ -678,6 +691,9 @@ namespace ProyectoMantenimientos.Controllers
             EscribirTexto(cb, bf, 10, 100f, 647f, tipoEquipo);
             EscribirTexto(cb, bf, 10, 96f, 662f, numActFijo);
             EscribirTexto(cb, bf, 7, 440f, 106f, $"Fecha de Impresión: {fechaImpresion}");
+
+            EscribirTexto(cb, bf, 10, 60, 140f, rpe ?? "N/A");
+            EscribirTexto(cb, bf, 10, 100f, 140f, nombreRpe ?? "N/A");
 
             stamper.Close();
             return ms.ToArray();
