@@ -56,7 +56,7 @@ namespace MantenimientosTI.Services
         public async Task RegistrarSolicitudCancelacionAsync(string usuario, string rpe, string rol, string zona, string centro,
                                                    string idAgenda, string equipo, string motivo, string justificacion)
         {
-            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, "SOLICITUD_CANCELACION_MTTO",
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.CancelacionSolicitada,
                 new Dictionary<string, string>
                 {
                     { "ClaveAgenda", idAgenda },
@@ -69,7 +69,7 @@ namespace MantenimientosTI.Services
         public async Task RegistrarCancelacionDirectaAsync(string usuario, string rpe, string rol, string zona, string centro,
                                                  string idAgenda, string equipo, string motivo, string justificacion)
         {
-            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, "CANCELACION_DIRECTA_MTTO",
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.CancelacionDirecta,
                 new Dictionary<string, string>
                 {
                     { "ClaveAgenda", idAgenda },
@@ -93,7 +93,7 @@ namespace MantenimientosTI.Services
         public async Task RegistrarConfirmacionCancelacionAsync(string usuario, string rpe, string rol, string zona, string centro,
                                                       string claveAgenda, string equipo)
         {
-            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.ConfirmacionCancelacion,
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.CancelacionConfirmada,
                 new Dictionary<string, string>
                 {
                     { "ClaveAgenda", claveAgenda },
@@ -127,19 +127,24 @@ namespace MantenimientosTI.Services
         }
 
         public async Task RegistrarCargaCSVAsync(string usuario, string rpe, string rol, string zona, string centro,
-                                               string tipoCarga, int registrosProcesados)
+                                       string tipoCarga, int registrosProcesados)
         {
+            // ✅ CAMBIAR A LA CLAVE CORRECTA QUE EXISTE EN TU BD
             await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.CargaCsv,
                 new Dictionary<string, string>
                 {
-                    { "RegistrosProcesados", registrosProcesados.ToString() },
-                    { "TipoCarga", tipoCarga }
+            { "RegistrosProcesados", registrosProcesados.ToString() },
+            { "TipoCarga", tipoCarga }
                 });
         }
 
-        public async Task RegistrarMantenimientoCorrectivoAsync(string usuario, string rpe, string rol, string zona, string centro)
+        public async Task RegistrarMantenimientoCorrectivoAsync(string usuario, string rpe, string rol, string zona, string centro, string equipo)
         {
-            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.CargaMttoCorrectivo);
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.CargaMttoCorrectivo,
+                new Dictionary<string, string>
+                {
+            { "Equipo", equipo }
+                });
         }
 
         public async Task RegistrarTerminacionMantenimientoAsync(string usuario, string rpe, string rol, string zona, string centro,
@@ -156,13 +161,35 @@ namespace MantenimientosTI.Services
         public async Task RegistrarCancelacionMantenimientoAsync(string usuario, string rpe, string rol, string zona, string centro,
                                                                string claveAgenda, string equipo, string motivo, string justificacion)
         {
-            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, "CANCELACION_MTTO",
+            await RegistrarActividadAsync(usuario, rpe, rol, zona, centro, BitacoraAcciones.CancelacionMantenimiento,
                 new Dictionary<string, string>
                 {
                     { "ClaveAgenda", claveAgenda },
                     { "Equipo", equipo },
                     { "Motivo", motivo },
                     { "Justificacion", justificacion }
+                });
+        }
+
+        public async Task RegistrarActivacionUsuarioAsync(string usuarioAdmin, string rpeAdmin, string rolAdmin, string zonaAdmin,
+                                                        string usuarioAfectado, string rpeAfectado)
+        {
+            await RegistrarActividadAsync(usuarioAdmin, rpeAdmin, rolAdmin, zonaAdmin, "N/A", BitacoraAcciones.ActivacionUsuario,
+                new Dictionary<string, string>
+                {
+            { "UsuarioAfectado", usuarioAfectado },
+            { "RPEAfectado", rpeAfectado }
+                });
+        }
+
+        public async Task RegistrarDesactivacionUsuarioAsync(string usuarioAdmin, string rpeAdmin, string rolAdmin, string zonaAdmin,
+                                                           string usuarioAfectado, string rpeAfectado)
+        {
+            await RegistrarActividadAsync(usuarioAdmin, rpeAdmin, rolAdmin, zonaAdmin, "N/A", BitacoraAcciones.DesactivacionUsuario,
+                new Dictionary<string, string>
+                {
+            { "UsuarioAfectado", usuarioAfectado },
+            { "RPEAfectado", rpeAfectado }
                 });
         }
 

@@ -387,27 +387,27 @@ namespace MantenimientosTI.Controllers
                await _bitacora.RegistrarCargaCSVAsync(usuario, rpe, rol, zona, centro, "PREVENTIVOS", lineasProcesadas);
                             _dbocontext.SaveChanges();
 
-return Json(new
-{
-    success = true,
-    message = $"¡Se han agendado {lineasProcesadas} mantenimientos preventivos correctamente!",
-    resumen = new
-    {
-        totalLineas = lineasProcesadas + lineasConError + lineasDuplicadasBD +
-                     lineasConActivoInexistente + lineasConFechaPasada +
-                     lineasDeOtraZona + lineasDuplicadasEnArchivo,
-        exitosos = lineasProcesadas,
-        errores = lineasConError,
-        duplicados = lineasDuplicadasBD + lineasDuplicadasEnArchivo,
-        duplicadosBD = lineasDuplicadasBD,
-        duplicadosArchivo = lineasDuplicadasEnArchivo,
-        activosNoExistentes = lineasConActivoInexistente,
-        fechasPasadas = lineasConFechaPasada,
-        activosOtraZona = lineasDeOtraZona
-    },
-    lineasProcesadasDetalle = lineasProcesadasDetalle,
-    primerosErrores = errores
-});
+                return Json(new
+                {
+                    success = true,
+                    message = $"¡Se han agendado {lineasProcesadas} mantenimientos preventivos correctamente!",
+                    resumen = new
+                    {
+                        totalLineas = lineasProcesadas + lineasConError + lineasDuplicadasBD +
+                                     lineasConActivoInexistente + lineasConFechaPasada +
+                                     lineasDeOtraZona + lineasDuplicadasEnArchivo,
+                        exitosos = lineasProcesadas,
+                        errores = lineasConError,
+                        duplicados = lineasDuplicadasBD + lineasDuplicadasEnArchivo,
+                        duplicadosBD = lineasDuplicadasBD,
+                        duplicadosArchivo = lineasDuplicadasEnArchivo,
+                        activosNoExistentes = lineasConActivoInexistente,
+                        fechasPasadas = lineasConFechaPasada,
+                        activosOtraZona = lineasDeOtraZona
+                    },
+                    lineasProcesadasDetalle = lineasProcesadasDetalle,
+                    primerosErrores = errores
+                });
             }
             catch (Exception ex)
             {
@@ -969,19 +969,35 @@ return Json(new
 
                 _dbocontext.Agenda.Add(nuevoCorrectivo);
 
-                // REGISTRO EN BITÁCORA
-                var usuario = User.Identity?.Name;
-                var rpe = HttpContext.Session.GetString("Rpe");
-                var rol = HttpContext.Session.GetString("NombreRol");
-                var zona = HttpContext.Session.GetString("NombreZona");
-                var centro = HttpContext.Session.GetString("ClaveDivision");
+                // ✅ REGISTRO EN BITÁCORA MEJORADO
+                var usuario = HttpContext.Session.GetString("NombreUsuario") ?? "Usuario no identificado";
+                var rpe = HttpContext.Session.GetString("Rpe") ?? "N/A";
+                var rol = HttpContext.Session.GetString("NombreRol") ?? "N/A";
+                var zona = HttpContext.Session.GetString("NombreZona") ?? "N/A";
+                var centro = HttpContext.Session.GetString("ClaveDivision") ?? "N/A";
 
-                await _bitacora.RegistrarMantenimientoCorrectivoAsync(usuario, rpe, rol, zona, centro);
-
-                _dbocontext.SaveChanges();
-
-                // Determinar el tipo de equipo para el mensaje
+                // Determinar el tipo de equipo para la bitácora
                 string tipoEquipoBitacora = tipoEquipo switch
+                {
+                    "Computo" => "Equipo de Cómputo",
+                    "AtencionCliente" => "Equipo de Atención a Clientes",
+                    _ => "CFEMático"
+                };
+
+                // ✅ REGISTRO EN BITÁCORA CON EL EQUIPO ESPECÍFICO
+                await _bitacora.RegistrarMantenimientoCorrectivoAsync(
+                    usuario: usuario,
+                    rpe: rpe,
+                    rol: rol,
+                    zona: zona,
+                    centro: centro,
+                    equipo: $"{numActFijo} ({tipoEquipoBitacora})"
+                );
+
+                await _dbocontext.SaveChangesAsync();
+
+                // Determinar el tipo de equipo para el mensaje de respuesta
+                string tipoEquipoMensaje = tipoEquipo switch
                 {
                     "Computo" => "Equipo de Cómputo",
                     "AtencionCliente" => "Equipo de Atención a Clientes",
@@ -991,13 +1007,13 @@ return Json(new
                 return Json(new
                 {
                     success = true,
-                    message = $"Mantenimiento correctivo agendado exitosamente para {tipoEquipoBitacora}",
+                    message = $"Mantenimiento correctivo agendado exitosamente para {tipoEquipoMensaje}",
                     data = new
                     {
                         numActFijo = nuevoCorrectivo.NumActFijo,
                         fechaProgramada = nuevoCorrectivo.FechaProgramada.ToString("dd/MM/yyyy"),
                         tipo = "Correctivo",
-                        tipoEquipo = tipoEquipoBitacora
+                        tipoEquipo = tipoEquipoMensaje
                     }
                 });
             }

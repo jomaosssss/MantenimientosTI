@@ -331,6 +331,7 @@ namespace ProyectoMantenimientos.Controllers
                 estatus = usuario.Estatus
             });
         }
+
         [HttpPost]
         public async Task<IActionResult> ActualizarUsuario([FromBody] UsuarioEditModel model)
         {
@@ -348,6 +349,10 @@ namespace ProyectoMantenimientos.Controllers
                     return NotFound(new { success = false, message = "Usuario no encontrado" });
                 }
 
+                // ✅ CAPTURAR EL ESTATUS ANTERIOR PARA DETECTAR CAMBIOS
+                var estatusAnterior = usuario.Estatus;
+                var estatusNuevo = model.Estatus;
+
                 // 2. Actualiza sus propiedades en memoria
                 usuario.ClaveRol = model.ClaveRol;
                 usuario.ClaveZona = model.ClaveZona;
@@ -357,30 +362,66 @@ namespace ProyectoMantenimientos.Controllers
                 usuario.Correo = model.Correo;
                 usuario.Estatus = model.Estatus;
 
-                // ✅ 3. BITÁCORA CORREGIDA - CON FORMATO DE PIPES
+                // ✅ 3. BITÁCORA MEJORADA - DETECTA ACTIVACIÓN/DESACTIVACIÓN
                 var adminQueActualiza = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
+                var rpeAdmin = HttpContext.Session.GetString("Rpe") ?? "N/A";
+                var rolAdmin = HttpContext.Session.GetString("NombreRol") ?? "N/A";
+                var zonaAdmin = HttpContext.Session.GetString("NombreZona") ?? "N/A";
 
-                // Obtener nombres del rol y zona
-                var rolUsuario = await _dbocontext.CatRols
-                    .Where(r => r.ClaveRol == model.ClaveRol)
-                    .Select(r => r.Nombre)
-                    .FirstOrDefaultAsync() ?? "Sin rol";
+                var usuarioAfectado = $"{model.Nombre} {model.ApellidoP}";
+                var rpeAfectado = model.Rpe;
 
-                var zonaUsuario = await _dbocontext.CatZonas
-                    .Where(z => z.ClaveZona == model.ClaveZona)
-                    .Select(z => z.NombreZona)
-                    .FirstOrDefaultAsync() ?? "Sin zona";
+                // ✅ DETECTAR SI HUBO CAMBIO DE ESTATUS
+                if (estatusAnterior.ToLower() != estatusNuevo.ToLower())
+                {
+                    if (estatusNuevo.ToLower() == "activo")
+                    {
+                        // ✅ REGISTRAR ACTIVACIÓN ESPECÍFICA
+                        await _bitacora.RegistrarActivacionUsuarioAsync(
+                            usuarioAdmin: adminQueActualiza,
+                            rpeAdmin: rpeAdmin,
+                            rolAdmin: rolAdmin,
+                            zonaAdmin: zonaAdmin,
+                            usuarioAfectado: usuarioAfectado,
+                            rpeAfectado: rpeAfectado
+                        );
+                    }
+                    else
+                    {
+                        // ✅ REGISTRAR DESACTIVACIÓN ESPECÍFICA
+                        await _bitacora.RegistrarDesactivacionUsuarioAsync(
+                            usuarioAdmin: adminQueActualiza,
+                            rpeAdmin: rpeAdmin,
+                            rolAdmin: rolAdmin,
+                            zonaAdmin: zonaAdmin,
+                            usuarioAfectado: usuarioAfectado,
+                            rpeAfectado: rpeAfectado
+                        );
+                    }
+                }
+                else
+                {
+                    // ✅ SI NO HUBO CAMBIO DE ESTATUS, REGISTRAR COMO ACTUALIZACIÓN NORMAL
+                    var rolUsuario = await _dbocontext.CatRols
+                        .Where(r => r.ClaveRol == model.ClaveRol)
+                        .Select(r => r.Nombre)
+                        .FirstOrDefaultAsync() ?? "Sin rol";
 
-                // ✅ FORMATO CON PIPES para información adicional
-                await _bitacora.RegistrarActualizacionUsuarioAsync(
-                    usuarioAdmin: adminQueActualiza,
-                    rpeAdmin: HttpContext.Session.GetString("Rpe") ?? "N/A",
-                    rolAdmin: HttpContext.Session.GetString("NombreRol") ?? "N/A",
-                    zonaAdmin: HttpContext.Session.GetString("NombreZona") ?? "N/A",
-                    usuarioActualizado: $"{model.Nombre} {model.ApellidoP}",
-                    rpeActualizado: model.Rpe,
-                    cambios: $"Rol: {rolUsuario}, Zona: {zonaUsuario}"
-                );
+                    var zonaUsuario = await _dbocontext.CatZonas
+                        .Where(z => z.ClaveZona == model.ClaveZona)
+                        .Select(z => z.NombreZona)
+                        .FirstOrDefaultAsync() ?? "Sin zona";
+
+                    await _bitacora.RegistrarActualizacionUsuarioAsync(
+                        usuarioAdmin: adminQueActualiza,
+                        rpeAdmin: rpeAdmin,
+                        rolAdmin: rolAdmin,
+                        zonaAdmin: zonaAdmin,
+                        usuarioActualizado: usuarioAfectado,
+                        rpeActualizado: rpeAfectado,
+                        cambios: $"Rol: {rolUsuario}, Zona: {zonaUsuario}"
+                    );
+                }
 
                 await _dbocontext.SaveChangesAsync();
 
