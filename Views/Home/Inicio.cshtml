@@ -303,11 +303,11 @@
                     <div class="card-body stats-card-content d-flex flex-column justify-content-center">
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="flex-grow-1">
-                                <span class="badge stats-badge bg-white text-dark mb-1">PROGRAMADOS @mesSiguiente</span>
+                                <span class="badge stats-badge bg-white text-secondary mb-1">PROGRAMADOS @mesSiguiente</span>
                                 <h2 class="stats-number text-white">@Model.ProgramadosProximoMesCount</h2>
                             </div>
                             <div class="stats-icon bg-white ms-2 flex-shrink-0">
-                                <i class="fas fa-calendar-alt text-dark"></i>
+                                <i class="fas fa-calendar-alt text-secondary"></i>
                             </div>
                         </div>
                     </div>
@@ -316,7 +316,6 @@
 
             <p class="text-dark text-center mt-3 mb-3 h4">Mantenimientos pendientes. ¡Buena suerte!</p>
 
-            <!-- TABLA CFEMÁTICOS CON ACCIONES -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-table me-1"></i> CFEmáticos
@@ -374,11 +373,15 @@
                                                         CANCELAR
                                                     </button>
                                                 }
-                                                else
+                                                else if (User.IsInRole("TÉCNICO DE ZONA"))
                                                 {
                                                     <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
                                                         CANCELAR
                                                     </button>
+                                                }
+                                                else if (User.IsInRole("CONSULTOR"))
+                                                {
+                                                    <span class="text-muted fst-italic">No disponible</span>
                                                 }
                                             }
                                             else if (item.Estatus == "PRE-CANCELADO")
@@ -392,9 +395,13 @@
                                                         <i class="bi bi-x-circle"></i>
                                                     </button>
                                                 }
-                                                else
+                                                else if (User.IsInRole("TÉCNICO DE ZONA"))
                                                 {
                                                     <span class="text-muted fst-italic">En espera de aprobación</span>
+                                                }
+                                                else if (User.IsInRole("CONSULTOR"))
+                                                {
+                                                    <span class="text-muted fst-italic">No disponible</span>
                                                 }
                                             }
                                             else
@@ -410,7 +417,6 @@
                 </div>
             </div>
 
-            <!-- TABLA ATENCIÓN A CLIENTES CON ACCIONES -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-table me-1"></i> Equipos de atención a clientes
@@ -466,11 +472,15 @@
                                                         CANCELAR
                                                     </button>
                                                 }
-                                                else
+                                                else if (User.IsInRole("TÉCNICO DE ZONA"))
                                                 {
                                                     <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
                                                         CANCELAR
                                                     </button>
+                                                }
+                                                else if (User.IsInRole("CONSULTOR"))
+                                                {
+                                                    <span class="text-muted fst-italic">No disponible</span>
                                                 }
                                             }
                                             else if (item.Estatus == "PRE-CANCELADO")
@@ -484,9 +494,13 @@
                                                         <i class="bi bi-x-circle"></i>
                                                     </button>
                                                 }
-                                                else
+                                                else if (User.IsInRole("TÉCNICO DE ZONA"))
                                                 {
                                                     <span class="text-muted fst-italic">En espera de aprobación</span>
+                                                }
+                                                else if (User.IsInRole("CONSULTOR"))
+                                                {
+                                                    <span class="text-muted fst-italic">No disponible</span>
                                                 }
                                             }
                                             else
@@ -502,7 +516,6 @@
                 </div>
             </div>
 
-            <!-- TABLA EQUIPOS DE CÓMPUTO CON ACCIONES -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-table me-1"></i> Equipos de cómputo
@@ -560,11 +573,15 @@
                                                         CANCELAR
                                                     </button>
                                                 }
-                                                else
+                                                else if (User.IsInRole("TÉCNICO DE ZONA"))
                                                 {
                                                     <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
                                                         CANCELAR
                                                     </button>
+                                                }
+                                                else if (User.IsInRole("CONSULTOR"))
+                                                {
+                                                    <span class="text-muted fst-italic">No disponible</span>
                                                 }
                                             }
                                             else if (item.Estatus == "PRE-CANCELADO")
@@ -578,9 +595,13 @@
                                                         <i class="bi bi-x-circle"></i>
                                                     </button>
                                                 }
-                                                else
+                                                else if (User.IsInRole("TÉCNICO DE ZONA"))
                                                 {
                                                     <span class="text-muted fst-italic">En espera de aprobación</span>
+                                                }
+                                                else if (User.IsInRole("CONSULTOR"))
+                                                {
+                                                    <span class="text-muted fst-italic">No disponible</span>
                                                 }
                                             }
                                             else

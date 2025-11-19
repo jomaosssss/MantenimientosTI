@@ -142,7 +142,7 @@ namespace ProyectoMantenimientos.Controllers
                            a.FechaProgramada <= ultimoDiaMesAnterior);
 
             // Filtro para mostrar conteos por zona si no es administrador
-            if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
+            if (claveRol == 2 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 terminadosQuery = terminadosQuery
                     .Where(a => a.NumActFijoNavigation != null &&
@@ -182,7 +182,7 @@ namespace ProyectoMantenimientos.Controllers
                            !estatusExcluidos.Contains(a.Estatus));
 
             // Filtro para mostrar registros por zona si no es administrador
-            if (claveRol != 1 && !string.IsNullOrEmpty(claveZonaUsuario))
+            if (claveRol == 2 && !string.IsNullOrEmpty(claveZonaUsuario))
             {
                 agendaQuery = agendaQuery
                     .Where(a => a.NumActFijoNavigation != null &&

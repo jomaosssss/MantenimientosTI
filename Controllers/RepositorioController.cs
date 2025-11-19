@@ -314,13 +314,24 @@ namespace MantenimientosTI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ObtenerMantenimientos()
+        public async Task<IActionResult> ObtenerMantenimientos(int? mes = null, int? anio = null)
         {
             try
             {
+                // Si no se especifican mes y año, usar el mes actual
+                if (!mes.HasValue || !anio.HasValue)
+                {
+                    mes = DateTime.Now.Month;
+                    anio = DateTime.Now.Year;
+                }
+
                 // Obtener el rol del usuario desde la sesión
                 var claveRolUsuario = HttpContext.Session.GetInt32("Rol");
-                var esAdministrador = claveRolUsuario == 1;
+                var esTecnico = claveRolUsuario == 2;
+
+                // Calcular el rango de fechas para el mes seleccionado
+                var fechaInicio = new DateTime(anio.Value, mes.Value, 1);
+                var fechaFin = fechaInicio.AddMonths(1).AddDays(-1);
 
                 // Consulta base para mantenimientos terminados
                 var query = _dbocontext.Mantenimientos
@@ -332,7 +343,7 @@ namespace MantenimientosTI.Controllers
                     .Where(m => m.Agendum.Estatus == "TERMINADO");
 
                 // Si no es administrador, filtrar por zona
-                if (!esAdministrador)
+                if (esTecnico)
                 {
                     var claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
                     if (string.IsNullOrEmpty(claveZonaUsuario))
@@ -342,68 +353,114 @@ namespace MantenimientosTI.Controllers
                     query = query.Where(m => m.Agendum.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
                 }
 
-                var mantenimientos = await query
+                // Aplicar filtro por rango de fechas (método compatible con EF)
+                query = query.Where(m => m.FechaInsercion >= fechaInicio && m.FechaInsercion <= fechaFin);
+
+                // CONSULTA PRINCIPAL OPTIMIZADA - Seleccionar solo los datos necesarios
+                var mantenimientosData = await query
                     .OrderByDescending(m => m.FechaInsercion)
+                    .Select(m => new
+                    {
+                        Mantenimiento = m,
+                        Centro = m.Agendum.NumActFijoNavigation.CatCentro,
+                        Agencia = m.Agendum.NumActFijoNavigation.CatCentro.CatAgencium,
+                        Zona = m.Agendum.NumActFijoNavigation.CatCentro.CatAgencium.CatZona
+                    })
                     .ToListAsync();
+
+                // Si no hay datos, retornar vacío
+                if (!mantenimientosData.Any())
+                {
+                    return Json(new
+                    {
+                        Cfematicos = new List<object>(),
+                        AtencionClientes = new List<object>(),
+                        EquiposComputo = new List<object>()
+                    });
+                }
+
+                // OBTENER TODOS LOS NUM_ACT_FIJO Y NUM_ORDEN DE UNA VEZ
+                var numActFijos = mantenimientosData.Select(x => x.Mantenimiento.NumActFijo).Distinct().ToList();
+                var numOrdenes = mantenimientosData.Select(x => x.Mantenimiento.NumOrden).Distinct().ToList();
+
+                // CONSULTAS MASIVAS EN LUGAR DE INDIVIDUALES
+
+                // 1. Equipos AC
+                var equiposAC = await _dbocontext.EquipoAcs
+                    .Include(e => e.ClaveTipoEquipoNavigation)
+                    .Where(e => numActFijos.Contains(e.NumActFijo))
+                    .ToDictionaryAsync(e => e.NumActFijo);
+
+                // 2. Equipos Computo
+                var equiposComputo = await _dbocontext.EquipoComputos
+                    .Include(e => e.ClaveTipoEquipoNavigation)
+                    .Where(e => numActFijos.Contains(e.NumActFijo))
+                    .ToDictionaryAsync(e => e.NumActFijo);
+
+                // 3. Equipos CFEmático
+                var equiposCfematico = await _dbocontext.EquipoCfematicos
+                    .Where(e => numActFijos.Contains(e.NumActFijo))
+                    .ToDictionaryAsync(e => e.NumActFijo);
+
+                // 4. Verificar fotos masivamente
+                var ordenesConFotos = await _dbocontext.Fotos
+                    .Where(f => numOrdenes.Contains(f.NumOrden))
+                    .Select(f => f.NumOrden)
+                    .Distinct()
+                    .ToHashSetAsync();
 
                 // Listas para cada categoría
                 var cfematicos = new List<object>();
                 var atencionClientes = new List<object>();
-                var equiposComputo = new List<object>();
+                var equiposComputoList = new List<object>();
 
-                foreach (var m in mantenimientos)
+                // PROCESAMIENTO OPTIMIZADO - Usar diccionarios en memoria
+                foreach (var item in mantenimientosData)
                 {
-                    // Obtener datos de ubicación
-                    var centro = m.Agendum.NumActFijoNavigation?.CatCentro;
-                    var agencia = centro?.CatAgencium;
-                    var zona = agencia?.CatZona;
+                    var m = item.Mantenimiento;
+                    var centro = item.Centro;
+                    var agencia = item.Agencia;
+                    var zona = item.Zona;
 
-                    // Determinar tipo de equipo
-                    var equipoAc = await _dbocontext.EquipoAcs
-                        .Include(e => e.ClaveTipoEquipoNavigation)
-                        .FirstOrDefaultAsync(e => e.NumActFijo == m.NumActFijo);
+                    // Verificar fotos usando el HashSet (muy rápido)
+                    var tieneFotos = ordenesConFotos.Contains(m.NumOrden);
 
-                    var equipoComputo = await _dbocontext.EquipoComputos
-                        .Include(e => e.ClaveTipoEquipoNavigation)
-                        .FirstOrDefaultAsync(e => e.NumActFijo == m.NumActFijo);
-
-                    // Buscar en EquipoCfematico solo si no es Atencion a Clientes ni Equipo de Computo
-                    var equipoCfematico = (equipoAc == null && equipoComputo == null) ?
-                        await _dbocontext.EquipoCfematicos
-                            .FirstOrDefaultAsync(e => e.NumActFijo == m.NumActFijo) :
-                        null;
+                    // Determinar tipo de equipo usando diccionarios (muy rápido)
+                    equiposAC.TryGetValue(m.NumActFijo, out var equipoAc);
+                    equiposComputo.TryGetValue(m.NumActFijo, out var equipoComputoDict);
+                    equiposCfematico.TryGetValue(m.NumActFijo, out var equipoCfematico);
 
                     // Crear el item para la tabla
-                    var item = new
+                    var itemTabla = new
                     {
                         m.NumOrden,
                         FechaProgramada = m.Agendum.FechaProgramada.ToString("dd/MM/yyyy"),
                         FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
                         FechaTerminada = m.FechaInsercion.ToString("dd/MM/yyyy HH:mm"),
                         m.EvidenciaHojaServicio,
-                        TieneFotos = await _dbocontext.Fotos.AnyAsync(f => f.NumOrden == m.NumOrden),
+                        TieneFotos = tieneFotos,
                         Rpe = m.Rpe,
                         Zona = zona?.NombreZona ?? "No especificado",
                         Agencia = agencia?.NombreAgencia ?? "No especificado",
                         Centro = centro?.NombreCentro ?? "No especificado",
                         NumCajero = equipoCfematico?.NumCajero ?? "N/A",
                         TipoEquipo = equipoAc?.ClaveTipoEquipoNavigation?.NombreTipoEquipo ??
-                                    equipoComputo?.ClaveTipoEquipoNavigation?.NombreTipoEquipo ??
+                                    equipoComputoDict?.ClaveTipoEquipoNavigation?.NombreTipoEquipo ??
                                     "CFEmático"
                     };
 
-                    // Clasificación
+                    // Clasificación usando los diccionarios
                     if (equipoAc != null)
                     {
-                        atencionClientes.Add(item);
+                        atencionClientes.Add(itemTabla);
                     }
-                    else if (equipoComputo != null)
+                    else if (equipoComputoDict != null)
                     {
-                        equiposComputo.Add(item);
+                        equiposComputoList.Add(itemTabla);
                     }
                     else
                     {
-                        cfematicos.Add(item);
+                        cfematicos.Add(itemTabla);
                     }
                 }
 
@@ -411,7 +468,7 @@ namespace MantenimientosTI.Controllers
                 {
                     Cfematicos = cfematicos,
                     AtencionClientes = atencionClientes,
-                    EquiposComputo = equiposComputo
+                    EquiposComputo = equiposComputoList
                 });
             }
             catch (Exception ex)

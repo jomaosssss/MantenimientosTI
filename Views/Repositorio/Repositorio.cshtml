@@ -4,7 +4,7 @@
 }
 
 <style>
-    /* ESTILOS RESPONSIVE PARA LAS TABLAS */
+    /* Estilos responsive para las tablas */
     .table-responsive {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
@@ -44,7 +44,47 @@
                 <h1 class="mb-0">Historial de mantenimientos</h1>
             </div>
             <div class="card-body">
-                <!-- TABLA CFEMÁTICOS CON RESPONSIVE -->
+                <!-- Selector de fecha y cuadro de busqueda -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-calendar-alt"></i>
+                            </span>
+                            <select id="filtroMes" class="form-select">
+                                <option value="1">Enero</option>
+                                <option value="2">Febrero</option>
+                                <option value="3">Marzo</option>
+                                <option value="4">Abril</option>
+                                <option value="5">Mayo</option>
+                                <option value="6">Junio</option>
+                                <option value="7">Julio</option>
+                                <option value="8">Agosto</option>
+                                <option value="9">Septiembre</option>
+                                <option value="10">Octubre</option>
+                                <option value="11">Noviembre</option>
+                                <option value="12">Diciembre</option>
+                            </select>
+                            <select id="filtroAnio" class="form-select" style="max-width: 120px;">
+                                <!-- Se llenará dinámicamente con JavaScript -->
+                            </select>
+                            <button id="btnFiltrar" class="btn btn-success">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" id="buscadorGeneral" class="form-control" placeholder="Buscar en todas las tablas...">
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Tabla de cfematicos -->
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
                         <i class="fas fa-table me-1"></i>
@@ -76,7 +116,7 @@
                     </div>
                 </div>
 
-                <!-- TABLA ATENCIÓN A CLIENTES CON RESPONSIVE -->
+                <!-- Tabla de equipos de atencion a clientes -->
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
                         <i class="fas fa-table me-1"></i>
@@ -108,7 +148,7 @@
                     </div>
                 </div>
 
-                <!-- TABLA EQUIPOS DE CÓMPUTO CON RESPONSIVE -->
+                <!-- Tablas de equipos de computo -->
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
                         <i class="fas fa-table me-1"></i>
@@ -180,6 +220,20 @@
 
     <script>
         $(document).ready(function () {
+            // Variables globales para las tablas
+            let tablaCFEmaticos, tablaAtencionClientes, tablaEquiposComputo;
+
+            // Inicializar filtros
+            inicializarFiltros();
+
+            // Función para obtener parámetros de filtro
+            function obtenerParametrosFiltro() {
+                return {
+                    mes: $('#filtroMes').val(),
+                    anio: $('#filtroAnio').val()
+                };
+            }
+
             // CONFIGURACIÓN COMÚN MEJORADA PARA DATATABLES
             const dataTablesOptions = {
                 language: {
@@ -192,196 +246,327 @@
                 pageLength: 10,
                 lengthMenu: [5, 10, 25, 50],
                 order: [[5, 'desc']],
+                processing: false, // Desactivar animación de procesamiento
+                serverSide: false,
                 ajax: {
                     url: '/Repositorio/ObtenerMantenimientos',
-                    dataSrc: ''
+                    type: 'GET',
+                    data: obtenerParametrosFiltro
                 }
             };
 
-            // Tabla CFEmáticos
-            const tablaCFEmaticos = $('#tablaCFEmaticos').DataTable({
-                ...dataTablesOptions,
-                columns: [
-                    { data: 'numOrden' },
-                    { data: 'zona' },
-                    { data: 'agencia' },
-                    { data: 'centro' },
-                    { data: 'numCajero' },
-                    { data: 'fechaProgramada' },
-                    { data: 'fechaAtencion' },
-                    { data: 'fechaTerminada' },
-                    {
-                        data: 'tieneFotos',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="antes">Ver</button>' :
-                                'N/A';
+            // Inicializar tablas
+            inicializarTablas();
+
+            function inicializarTablas() {
+                // Tabla CFEmáticos
+                tablaCFEmaticos = $('#tablaCFEmaticos').DataTable({
+                    ...dataTablesOptions,
+                    columns: [
+                        { data: 'numOrden' },
+                        { data: 'zona' },
+                        { data: 'agencia' },
+                        { data: 'centro' },
+                        { data: 'numCajero' },
+                        { data: 'fechaProgramada' },
+                        { data: 'fechaAtencion' },
+                        { data: 'fechaTerminada' },
+                        {
+                            data: 'tieneFotos',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="antes">Ver</button>' :
+                                    'N/A';
+                            },
+                            orderable: false
                         },
-                        orderable: false
-                    },
-                    {
-                        data: 'tieneFotos',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="durante">Ver</button>' :
-                                'N/A';
+                        {
+                            data: 'tieneFotos',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="durante">Ver</button>' :
+                                    'N/A';
+                            },
+                            orderable: false
                         },
-                        orderable: false
-                    },
-                    {
-                        data: 'tieneFotos',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="despues">Ver</button>' :
-                                'N/A';
+                        {
+                            data: 'tieneFotos',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="despues">Ver</button>' :
+                                    'N/A';
+                            },
+                            orderable: false
                         },
-                        orderable: false
-                    },
-                    {
-                        data: 'evidenciaHojaServicio',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
-                                'No disponible';
+                        {
+                            data: 'evidenciaHojaServicio',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
+                                    'No disponible';
+                            },
+                            orderable: false
                         },
-                        orderable: false
-                    },
-                    {
-                        data: 'numOrden',
-                        render: function(data, type, row) {
-                            return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
-                        },
-                        orderable: false
+                        {
+                            data: 'numOrden',
+                            render: function(data, type, row) {
+                                return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
+                            },
+                            orderable: false
+                        }
+                    ],
+                    ajax: {
+                        ...dataTablesOptions.ajax,
+                        dataSrc: 'cfematicos'
                     }
-                ],
-                ajax: {
-                    ...dataTablesOptions.ajax,
-                    dataSrc: 'cfematicos'
+                });
+
+                // Tabla Atención a Clientes
+                tablaAtencionClientes = $('#tablaAtencionClientes').DataTable({
+                    ...dataTablesOptions,
+                    columns: [
+                        { data: 'numOrden' },
+                        { data: 'zona' },
+                        { data: 'agencia' },
+                        { data: 'centro' },
+                        { data: 'tipoEquipo' },
+                        { data: 'fechaProgramada' },
+                        { data: 'fechaAtencion' },
+                        { data: 'fechaTerminada' },
+                        {
+                            data: 'tieneFotos',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="antes">Ver</button>' :
+                                    'N/A';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'tieneFotos',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="durante">Ver</button>' :
+                                    'N/A';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'tieneFotos',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="despues">Ver</button>' :
+                                    'N/A';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'evidenciaHojaServicio',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
+                                    'No disponible';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'numOrden',
+                            render: function(data, type, row) {
+                                return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
+                            },
+                            orderable: false
+                        }
+                    ],
+                    ajax: {
+                        ...dataTablesOptions.ajax,
+                        dataSrc: 'atencionClientes'
+                    }
+                });
+
+                // Tabla Equipos de Cómputo
+                tablaEquiposComputo = $('#tablaEquiposComputo').DataTable({
+                    ...dataTablesOptions,
+                    columns: [
+                        { data: 'numOrden' },
+                        { data: 'zona' },
+                        { data: 'agencia' },
+                        { data: 'centro' },
+                        { data: 'tipoEquipo' },
+                        { data: 'fechaProgramada' },
+                        { data: 'fechaAtencion' },
+                        { data: 'fechaTerminada' },
+                        {
+                            data: 'tieneFotos',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="antes">Ver</button>' :
+                                    'N/A';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'tieneFotos',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="durante">Ver</button>' :
+                                    'N/A';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'tieneFotos',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="despues">Ver</button>' :
+                                    'N/A';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'evidenciaHojaServicio',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
+                                    'No disponible';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'numOrden',
+                            render: function(data, type, row) {
+                                return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
+                            },
+                            orderable: false
+                        }
+                    ],
+                    ajax: {
+                        ...dataTablesOptions.ajax,
+                        dataSrc: 'equiposComputo'
+                    }
+                });
+            }
+
+            // Función para inicializar filtros
+            function inicializarFiltros() {
+                const fechaActual = new Date();
+                const mesActual = fechaActual.getMonth() + 1;
+                const anioActual = fechaActual.getFullYear();
+
+                // Establecer mes actual
+                $('#filtroMes').val(mesActual);
+
+                // Llenar combobox de años (últimos 5 años)
+                const selectAnio = $('#filtroAnio');
+                selectAnio.empty();
+                for (let i = anioActual; i >= anioActual - 5; i--) {
+                    selectAnio.append(new Option(i, i));
                 }
+                selectAnio.val(anioActual);
+            }
+
+            // Función para mostrar/ocultar animación del botón
+            function toggleBotonFiltrar(mostrarLoading) {
+                const $btn = $('#btnFiltrar');
+                const $icono = $btn.find('i');
+
+                if (mostrarLoading) {
+                    // Cambiar a estado de carga
+                    $btn.prop('disabled', true);
+                    $icono.removeClass('fa-search').addClass('fa-spinner fa-spin');
+                    $btn.html('<i class="fas fa-spinner fa-spin"></i> Buscando...');
+                } else {
+                    // Restaurar estado normal
+                    $btn.prop('disabled', false);
+                    $btn.html('<i class="fas fa-search"></i> Filtrar');
+                }
+            }
+
+            // Función para recargar todas las tablas
+            function recargarTablas() {
+                console.log('Recargando tablas con mes:', $('#filtroMes').val(), 'año:', $('#filtroAnio').val());
+
+                // Resetear buscador general
+                $('#buscadorGeneral').val('');
+
+                // Mostrar animación de carga
+                toggleBotonFiltrar(true);
+
+                // Contador para saber cuándo todas las tablas han terminado de cargar
+                let tablasCargadas = 0;
+                const totalTablas = 3;
+
+                function verificarCargaCompleta() {
+                    tablasCargadas++;
+                    if (tablasCargadas === totalTablas) {
+                        // Todas las tablas han terminado de cargar
+                        setTimeout(() => {
+                            toggleBotonFiltrar(false);
+                        }, 500); // Delay para mejor experiencia visual
+                    }
+                }
+
+                // Recargar cada tabla y contar cuando terminen
+                if (tablaCFEmaticos) {
+                    tablaCFEmaticos.ajax.reload(() => {
+                        verificarCargaCompleta();
+                    });
+                } else {
+                    verificarCargaCompleta();
+                }
+
+                if (tablaAtencionClientes) {
+                    tablaAtencionClientes.ajax.reload(() => {
+                        verificarCargaCompleta();
+                    });
+                } else {
+                    verificarCargaCompleta();
+                }
+
+                if (tablaEquiposComputo) {
+                    tablaEquiposComputo.ajax.reload(() => {
+                        verificarCargaCompleta();
+                    });
+                } else {
+                    verificarCargaCompleta();
+                }
+            }
+
+            // Función para buscar en todas las tablas
+            function buscarEnTodasLasTablas(termino) {
+                if (tablaCFEmaticos) {
+                    tablaCFEmaticos.search(termino).draw();
+                }
+                if (tablaAtencionClientes) {
+                    tablaAtencionClientes.search(termino).draw();
+                }
+                if (tablaEquiposComputo) {
+                    tablaEquiposComputo.search(termino).draw();
+                }
+            }
+
+            // Buscador general con debounce para mejor performance
+            let timeoutBusqueda;
+            $('#buscadorGeneral').on('input', function() {
+                const termino = $(this).val();
+
+                // Limpiar timeout anterior
+                clearTimeout(timeoutBusqueda);
+
+                // Esperar 300ms después de que el usuario deje de escribir
+                timeoutBusqueda = setTimeout(() => {
+                    buscarEnTodasLasTablas(termino);
+                }, 300);
             });
 
-            // Tabla Atención a Clientes
-            const tablaAtencionClientes = $('#tablaAtencionClientes').DataTable({
-                ...dataTablesOptions,
-                columns: [
-                    { data: 'numOrden' },
-                    { data: 'zona' },
-                    { data: 'agencia' },
-                    { data: 'centro' },
-                    { data: 'tipoEquipo' },
-                    { data: 'fechaProgramada' },
-                    { data: 'fechaAtencion' },
-                    { data: 'fechaTerminada' },
-                    {
-                        data: 'tieneFotos',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="antes">Ver</button>' :
-                                'N/A';
-                        },
-                        orderable: false
-                    },
-                    {
-                        data: 'tieneFotos',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="durante">Ver</button>' :
-                                'N/A';
-                        },
-                        orderable: false
-                    },
-                    {
-                        data: 'tieneFotos',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="despues">Ver</button>' :
-                                'N/A';
-                        },
-                        orderable: false
-                    },
-                    {
-                        data: 'evidenciaHojaServicio',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
-                                'No disponible';
-                        },
-                        orderable: false
-                    },
-                    {
-                        data: 'numOrden',
-                        render: function(data, type, row) {
-                            return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
-                        },
-                        orderable: false
-                    }
-                ],
-                ajax: {
-                    ...dataTablesOptions.ajax,
-                    dataSrc: 'atencionClientes'
-                }
+            // También buscar al pegar texto
+            $('#buscadorGeneral').on('paste', function() {
+                const termino = $(this).val();
+                buscarEnTodasLasTablas(termino);
             });
 
-            // Tabla Equipos de Cómputo
-            const tablaEquiposComputo = $('#tablaEquiposComputo').DataTable({
-                ...dataTablesOptions,
-                columns: [
-                    { data: 'numOrden' },
-                    { data: 'zona' },
-                    { data: 'agencia' },
-                    { data: 'centro' },
-                    { data: 'tipoEquipo' },
-                    { data: 'fechaProgramada' },
-                    { data: 'fechaAtencion' },
-                    { data: 'fechaTerminada' },
-                    {
-                        data: 'tieneFotos',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="antes">Ver</button>' :
-                                'N/A';
-                        },
-                        orderable: false
-                    },
-                    {
-                        data: 'tieneFotos',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="durante">Ver</button>' :
-                                'N/A';
-                        },
-                        orderable: false
-                    },
-                    {
-                        data: 'tieneFotos',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<button class="btn btn-sm btn-outline-primary ver-imagen" data-num-orden="' + row.numOrden + '" data-tipo="despues">Ver</button>' :
-                                'N/A';
-                        },
-                        orderable: false
-                    },
-                    {
-                        data: 'evidenciaHojaServicio',
-                        render: function(data, type, row) {
-                            return data ?
-                                '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
-                                'No disponible';
-                        },
-                        orderable: false
-                    },
-                    {
-                        data: 'numOrden',
-                        render: function(data, type, row) {
-                            return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
-                        },
-                        orderable: false
-                    }
-                ],
-                ajax: {
-                    ...dataTablesOptions.ajax,
-                    dataSrc: 'equiposComputo'
-                }
+            // SOLO filtrar al hacer clic en el botón
+            $('#btnFiltrar').click(function() {
+                recargarTablas();
             });
 
             // Manejar clic en botones de imágenes
