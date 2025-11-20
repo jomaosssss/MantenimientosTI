@@ -3,49 +3,50 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-5">
-    <div class="card shadow-sm">
-        <div class="card-header bg-white">
-            <h1 class="mb-0">Mantenimiento correctivo</h1>
-            <div class="alert alert-secondary mt-3">
-                <i class="fas fa-info-circle"></i> Complete el siguiente formulario para agendar un mantenimiento correctivo.
+    <div class="container mt-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h1 class="mb-0">Mantenimiento correctivo</h1>
+                <div class="alert alert-secondary mt-3">
+                    <i class="fas fa-info-circle"></i> Complete el siguiente formulario para agendar un mantenimiento correctivo.
+                </div>
             </div>
-        </div>
 
-        <div class="card-body">
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label">Zona:</label>
-                        <input type="text" class="form-control" value="@ViewBag.ZonaUsuario" readonly>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Zona:</label>
+                            <input type="text" class="form-control" value="@ViewBag.ZonaUsuario" readonly>
+                        </div>
                     </div>
-                </div>
 
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label">Agencia:</label>
-                        <select id="selectAgencia" class="form-select">
-                            <option value="">Seleccione una agencia</option>
-                            @foreach (var agencia in ViewBag.Agencias)
-                            {
-                                <option value="@agencia.ClaveAgencia"
-                                        data-division="@agencia.ClaveDivision"
-                                        data-zona="@agencia.ClaveZona">
-                                    @agencia.NombreAgencia
-                                </option>
-                            }
-                        </select>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Agencia:</label>
+                            <select id="selectAgencia" class="form-select">
+                                <option value="">Seleccione una agencia</option>
+                                @foreach (var agencia in ViewBag.Agencias)
+                                {
+                                    <option value="@agencia.ClaveAgencia"
+                                            data-division="@agencia.ClaveDivision"
+                                            data-zona="@agencia.ClaveZona">
+                                        @agencia.NombreAgencia
+                                    </option>
+                                }
+                            </select>
+                        </div>
                     </div>
-                </div>
 
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label">Centro:</label>
-                        <select id="selectCentro" class="form-select" disabled>
-                            <option value="">Seleccione primero una agencia</option>
-                        </select>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Centro:</label>
+                            <select id="selectCentro" class="form-select" disabled>
+                                <option value="">Seleccione primero una agencia</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
+                </div> <!-- ✅ CIERRE CORRECTO de la primera fila -->
 
                 <!-- NUEVO: Combobox para Tipo de Equipo -->
                 <div class="col-md-4">
@@ -102,14 +103,13 @@
             </div>
         </div>
 
-        <div class="card-footer text-end">
-            <button type="button" id="btnAgendar" class="btn btn-success btn-md">
-                <i class="bi bi-calendar-check me-2"></i> Agendar
-            </button>
+            <div class="card-footer text-end">
+                <button type="button" id="btnAgendar" class="btn btn-success btn-md">
+                    <i class="bi bi-calendar-check me-2"></i> Agendar
+                </button>
+            </div>
         </div>
-
     </div>
-</div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -376,6 +376,7 @@
                 // Obtener datos del formulario
                 var numActFijo = $('#numActivoFijo').val();
                 var fechaProgramada = $('#fechaProgramada').val();
+                var tipoEquipo = $('#selectTipoEquipo').val();
 
                 // Mostrar loading en el botón
                 var $btn = $(this);
@@ -388,7 +389,8 @@
                     contentType: 'application/x-www-form-urlencoded',
                     data: {
                         numActFijo: numActFijo,
-                        fechaProgramada: fechaProgramada
+                        fechaProgramada: fechaProgramada,
+                        tipoEquipo: tipoEquipo
                     },
                     success: function(response) {
                         if (response.success) {
@@ -430,6 +432,6 @@
                     }
                 });
             });
-        });
-    </script>
-}
+        });;
+        </script>
+    }

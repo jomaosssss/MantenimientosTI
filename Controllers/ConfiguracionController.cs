@@ -162,7 +162,14 @@ namespace ProyectoMantenimientos.Controllers
                     ? "Habilitó la función de carga masiva de mantenimientos."
                     : "Deshabilitó la función de carga masiva de mantenimientos.";
 
-                _bitacora.RegistrarActividad(usuario, accion, descripcion);
+                await _bitacora.RegistrarActividadAsync(
+                    usuario: usuario,
+                    rpe: HttpContext.Session.GetString("Rpe") ?? "N/A",
+                    rol: HttpContext.Session.GetString("NombreRol") ?? "N/A",
+                    zona: HttpContext.Session.GetString("NombreZona") ?? "N/A",
+                    centro: HttpContext.Session.GetString("ClaveDivision") ?? "N/A",
+                    claveAccion: habilitar ? "HABILITAR_CARGA_CSV" : "DESHABILITAR_CARGA_CSV"
+                );
 
                 await _dbocontext.SaveChangesAsync();
 

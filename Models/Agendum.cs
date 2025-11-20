@@ -15,9 +15,15 @@ public partial class Agendum
 
     public string Estatus { get; set; } = null!;
 
+ 
     public virtual CatTipoMantenimiento ClaveTipoMttoNavigation { get; set; } = null!;
 
     public virtual ICollection<Mantenimiento> Mantenimientos { get; set; } = new List<Mantenimiento>();
 
     public virtual Equipo NumActFijoNavigation { get; set; } = null!;
+
+    public virtual ICollection<MotivoCancelacion> MotivosCancelacion { get; set; } = new List<MotivoCancelacion>();
+
+   
 }
+

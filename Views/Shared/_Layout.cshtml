@@ -182,10 +182,35 @@
                                         <div class="sb-nav-link-icon"><i class="fas fa-tools"></i></div>
                                         Mantenimiento correctivo
                                     </a>
-
+                                </a>
                                 </nav>
                             </div>
                         }
+                                    <nav class="sb-sidenav-menu-nested nav flex-column ps-3">
+                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA"))
+                        {
+                            <a href="/Repositorio/TerminarMantenimiento" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-upload"></i></div>
+                                Terminar mantenimiento
+                            </a>
+                        }
+                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA") || User.IsInRole("CONSULTOR"))
+                        {
+                            <a href="/Repositorio/Repositorio" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-history"></i></div>
+                                Historial de mantenimientos
+                            </a>
+                        }
+                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA"))
+                        {
+                            <a href="/Repositorio/InventarioEquipos" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-clipboard-list"></i></div>
+                                Inventario de equipos
+                            </a>
+                        }
+                        </div>
+                            </nav>
+                        </div>
 
                         @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA"))
                         {
@@ -223,6 +248,12 @@
                                 Bitácora de actividad
                             </a>
                         }
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="@Url.Action("UnifiedDashboard", "Analytics")">
+                                <i class="fas fa-chart-bar me-2"></i>Bitacora de analisis
+                            </a>
+                        </li>
 
                     </div>
                 </div>

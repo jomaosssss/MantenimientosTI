@@ -49,6 +49,8 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<Mantenimiento> Mantenimientos { get; set; }
 
+    public virtual DbSet<MotivoCancelacion> MotivosCancelacion { get; set; }
+
     public virtual DbSet<RegistroEvento> RegistroEventos { get; set; }
 
     public virtual DbSet<RegistroActividad> RegistroActividad { get; set; }
@@ -57,10 +59,10 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
-//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//        => optionsBuilder.UseSqlServer("Server=MATEBOOKD14;Database=MantenimientosTI;Trusted_Connection=True;TrustServerCertificate=True;");
+    public virtual DbSet<CatMotivoCancelacion> CatMotivosCancelacion { get; set; }
 
+
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Agendum>(entity =>
@@ -92,6 +94,16 @@ public partial class MantenimientosTIContext : DbContext
             entity.HasOne(d => d.NumActFijoNavigation).WithMany(p => p.Agenda)
                 .HasForeignKey(d => d.NumActFijo)
                 .HasConstraintName("FK_Agenda_numActF1_02FC7413");
+        });
+
+        modelBuilder.Entity<MotivoCancelacion>(entity =>
+        {
+            entity.HasKey(e => e.ClaveMotivoCancelacion);
+
+            entity.HasOne(d => d.ClaveAgendaNavigation)
+                .WithMany(p => p.MotivosCancelacion)
+                .HasForeignKey(d => d.ClaveAgenda)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<CatAccion>(entity =>
@@ -246,6 +258,34 @@ public partial class MantenimientosTIContext : DbContext
                 .HasMaxLength(80)
                 .IsUnicode(false)
                 .HasColumnName("descripcion");
+        });
+
+        modelBuilder.Entity<CatMotivoCancelacion>(entity =>
+        {
+            entity.ToTable("CatMotivoCancelacion");
+
+            entity.HasKey(e => e.ClaveMotivo);
+
+            entity.Property(e => e.ClaveMotivo)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("ClaveMotivo");
+
+            entity.Property(e => e.MotivoCancelacion)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("MotivoCancelacion");
+
+            entity.Property(e => e.Estatus)
+                .IsRequired()
+                .HasMaxLength(10)
+                .HasDefaultValue("ACTIVO")
+                .HasColumnName("Estatus");
+
+            // Relación con MotivosCancelacion
+            entity.HasMany(e => e.MotivosCancelacion)
+                .WithOne(m => m.CatMotivo)
+                .HasForeignKey(m => m.ClaveMotivo)
+                .HasConstraintName("FK_MotivosCancelacion_CatMotivo");
         });
 
         modelBuilder.Entity<CatRol>(entity =>

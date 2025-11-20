@@ -52,6 +52,11 @@
         background-color: #008e60 !important;
         color: white;
     }
+
+    /* Nuevo estilo para el timestamp oculto */
+    .timestamp-oculto {
+        display: none;
+    }
 </style>
 
 <div class="container mt-4">
@@ -99,6 +104,7 @@
                     <thead>
                         <tr>
                             <th>Fecha y hora</th>
+                            <th class="timestamp-oculto">Timestamp</th>
                             <th>Usuario</th>
                             <th>Acción</th>
                             <th>Descripción</th>
@@ -113,17 +119,20 @@
                                     <small>@registro.FechaHora.ToString("dd/MM/yyyy")</small><br>
                                     <strong>@registro.FechaHora.ToString("HH:mm:ss")</strong>
                                 </td>
+                                <td class="timestamp-oculto">
+                                    @registro.FechaHora.ToString("yyyy-MM-dd HH:mm:ss")
+                                </td>
                                 <td>
                                     <div class="fw-bold">@registro.Usuario</div>
-                                    <small class="text-muted">@ObtenerTipoUsuario(registro.DescripcionAccion, registro.Usuario)</small>
+                                    <small class="text-muted">@ObtenerTipoUsuario(registro.Usuario)</small>
                                 </td>
                                 <td>
                                     <span class="badge @GetBadgeAccionClass(registro.ClaveAccion)">
-                                        @ObtenerAccionLimpia(registro.ClaveAccion)
+                                        @FormatearNombreAccion(registro.ClaveAccion)
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold">@ObtenerDescripcionPrincipal(registro.DescripcionAccion)</div>
+                                    <div class="fw-semibold">@registro.DescripcionAccion</div>
                                 </td>
                                 <td>
                                     @if (TieneInformacionAdicional(registro.DescripcionAccion))
@@ -160,96 +169,65 @@
 </div>
 
 @functions {
-    public string ObtenerTipoUsuario(string descripcion, string usuario)
+    public string ObtenerTipoUsuario(string usuario)
     {
-        if (usuario.Contains("TECNICO") || descripcion.Contains("MEM03"))
+        if (usuario.Contains("TECNICO") || usuario.Contains("MEM03"))
             return "Técnico";
 
-        if (descripcion.Contains("ADMIN") || usuario.Contains("ADMIN") || usuario.Contains("XD XD"))
+        if (usuario.Contains("ADMIN") || usuario.Contains("XD XD"))
             return "Administrador";
 
         return "Usuario";
     }
 
-    public string ObtenerAccionLimpia(string accion)
+    public string FormatearNombreAccion(string claveAccion)
     {
-        return accion switch
-        {
-            "INFO_9.55.0(1,ADMIN)" => "Inicio Sesión",
-            "INICIO_SESION_ADMIN" => "Sesión Admin",
-            "INICIO_SESION_TECNICO" => "Sesión Técnico",
-            "ACTUALIZA (USUARIO)" => "Actualizar Usuario",
-            "ACTUALIZAR_USUARIO" => "Actualizar Usuario",
-            "CREAR_USUARIO" => "Crear Usuario",
-            "HABILITAR_CARGA_CSV" => "Habilitar CSV",
-            "DESHABILITAR_CARGA_CSV" => "Deshabilitar CSV",
-            _ => accion
-        };
-    }
-
-    public string ObtenerDescripcionPrincipal(string descripcion)
-    {
-        if (descripcion.Contains("|"))
-            return descripcion.Split('|')[0].Trim();
-        return descripcion.Length > 60 ? descripcion.Substring(0, 60) + "..." : descripcion;
+        // Formato simple para hacer más legible la clave
+        return claveAccion.Replace("_", " ");
     }
 
     public bool TieneInformacionAdicional(string descripcion)
     {
-        return descripcion.Contains("|") ||
-               descripcion.Contains("RPE:") ||
-               descripcion.Contains("Zona:") ||
-               descripcion.Contains("Agencia:") ||
-               descripcion.Contains("Centro:") ||
-               descripcion.Contains("Rol:");
+        // Solo verificar si tiene pipes (la información adicional ya viene formateada)
+        return descripcion.Contains("|");
     }
 
     public List<string> ObtenerDetallesAdicionales(string descripcion)
     {
         var detalles = new List<string>();
 
-        if (descripcion.Contains("RPE:"))
-            detalles.Add("RPE: " + ExtraerValor(descripcion, "RPE:"));
-        if (descripcion.Contains("Rol:"))
-            detalles.Add("Rol: " + ExtraerValor(descripcion, "Rol:"));
-        if (descripcion.Contains("Zona:"))
-            detalles.Add("Zona: " + ExtraerValor(descripcion, "Zona:"));
-        if (descripcion.Contains("Agencia:"))
-            detalles.Add("Agencia: " + ExtraerValor(descripcion, "Agencia:"));
-        if (descripcion.Contains("Centro:"))
-            detalles.Add("Centro: " + ExtraerValor(descripcion, "Centro:"));
+        if (descripcion.Contains("|"))
+        {
+            var partes = descripcion.Split('|');
+            foreach (var parte in partes)
+            {
+                var parteLimpia = parte.Trim();
+                if (!string.IsNullOrEmpty(parteLimpia))
+                {
+                    detalles.Add(parteLimpia);
+                }
+            }
+        }
 
         return detalles;
     }
 
-    public string ExtraerValor(string texto, string clave)
-    {
-        var inicio = texto.IndexOf(clave) + clave.Length;
-        var fin = texto.IndexOf("|", inicio);
-        if (fin == -1) fin = texto.Length;
-        return texto.Substring(inicio, fin - inicio).Trim();
-    }
-
     public string GetBadgeAccionClass(string claveAccion)
     {
-        return claveAccion switch
-        {
-            "INFO_9.55.0(1,ADMIN)" => "badge-sesion",
-            "INICIO_SESION_ADMIN" => "badge-sesion",
-            "INICIO_SESION_TECNICO" => "badge-sesion",
-            "LOGOUT_SISTEMA" => "badge-sesion",
-            "ACTUALIZA (USUARIO)" => "badge-usuario",
-            "ACTUALIZAR_USUARIO" => "badge-usuario",
-            "CREAR_USUARIO" => "badge-usuario",
-            "HABILITAR_CARGA_CSV" => "badge-configuracion",
-            "DESHABILITAR_CARGA_CSV" => "badge-configuracion",
-            "CARGA_CSV" => "badge-configuracion",
-            "CARGA_MTTO_CORRECTIVO" => "badge-mantenimiento",
-            "TERMINACION_MTTO" => "badge-mantenimiento",
-            "PRECANCELACION_MTTO" => "badge-mantenimiento",
-            "CONFIRMACION_CANCELACION" => "badge-mantenimiento",
-            _ => "badge-sistema"
-        };
+        // Lógica simplificada basada en patrones
+        if (claveAccion.Contains("SESION") || claveAccion.Contains("LOGOUT"))
+            return "badge-sesion";
+
+        if (claveAccion.Contains("USUARIO"))
+            return "badge-usuario";
+
+        if (claveAccion.Contains("CSV"))
+            return "badge-configuracion";
+
+        if (claveAccion.Contains("MTTO") || claveAccion.Contains("MANTENIMIENTO"))
+            return "badge-mantenimiento";
+
+        return "badge-sistema";
     }
 }
 
@@ -263,10 +241,18 @@
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                 },
-                order: [[0, 'desc']],
+                order: [[1, 'desc']],
+                columnDefs: [
+                    {
+                        target: 1,
+                        visible: false,
+                        searchable: false
+                    }
+                ],
                 pageLength: 25,
                 responsive: true,
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip'
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+                stateSave: false
             });
         });
     </script>
