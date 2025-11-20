@@ -1,9 +1,10 @@
 ﻿// Controllers/AnalyticsController.cs
+using MantenimientosTI.Helpers;
+using MantenimientosTI.Models;
+using MantenimientosTI.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MantenimientosTI.Models;
-using MantenimientosTI.Models.ViewModels;
 using System.Linq;
 
 namespace MantenimientosTI.Controllers
@@ -19,11 +20,12 @@ namespace MantenimientosTI.Controllers
         }
 
         public async Task<IActionResult> UnifiedDashboard(
-            DateTime? startDate = null,
-            DateTime? endDate = null,
-            string userId = null)
+             DateTime? startDate = null,
+             DateTime? endDate = null,
+             string userId = null)
         {
-            startDate ??= DateTime.Today.AddDays(-7);
+            // POR DEFECTO: Últimas 24 horas
+            startDate ??= DateTime.Today;
             endDate ??= DateTime.Today.AddDays(1);
 
             var model = new UnifiedDashboardViewModel
@@ -62,41 +64,34 @@ namespace MantenimientosTI.Controllers
                 .Take(10)
                 .ToListAsync();
 
-            // Ahora para cada usuario, obtenemos el detalle de sus acciones
             var topUsersWithDetails = new List<TopUser>();
 
             foreach (var user in topUsers)
             {
-                // Obtener los datos básicos de la base de datos
+                // Obtener las acciones REALES del usuario con las descripciones COMPLETAS
+                // USANDO EL MISMO ENFOQUE QUE LA BITÁCORA
                 var userActionsData = await _context.RegistroActividad
                     .Where(r => r.Usuario == user.UserName &&
                                r.FechaHora >= model.StartDate &&
                                r.FechaHora <= model.EndDate)
-                    .GroupBy(r => r.Accion)
+                    .GroupBy(r => r.Descripcion) // Agrupar por la descripción REAL
                     .Select(g => new
                     {
-                        ActionType = g.Key,
+                        Description = g.Key,
                         Count = g.Count(),
-                        LastPerformed = g.Max(x => x.FechaHora)
+                        LastPerformed = g.Max(x => x.FechaHora),
+                        ActionType = g.First().Accion // Tomar el tipo de acción del primer registro
                     })
                     .OrderByDescending(x => x.Count)
                     .Take(5)
                     .ToListAsync();
 
-                // Obtener descripciones desde CatAcciones
-                var actionTypes = userActionsData.Select(d => d.ActionType).Distinct().ToList();
-                var actionDescriptions = await _context.CatAcciones
-                    .Where(ca => actionTypes.Contains(ca.ClaveAccion))
-                    .ToDictionaryAsync(ca => ca.ClaveAccion, ca => ca.Descripcion);
-
-                // Convertir a UserActionDetail con descripciones desde BD
+                // Usar las descripciones REALES de los registros (igual que en la bitácora)
                 var userActionDetails = userActionsData
                     .Select(d => new UserActionDetail
                     {
                         ActionType = d.ActionType,
-                        ActionDescription = actionDescriptions.ContainsKey(d.ActionType)
-                            ? ExtractFirstSentence(actionDescriptions[d.ActionType])
-                            : d.ActionType,
+                        ActionDescription = FormatDescriptionForDashboard(d.Description),
                         Count = d.Count,
                         LastPerformed = d.LastPerformed
                     })
@@ -117,19 +112,72 @@ namespace MantenimientosTI.Controllers
             model.TopUsers = topUsersWithDetails;
         }
 
+        // Formatear la descripción para el dashboard (más concisa)
+        private string FormatDescriptionForDashboard(string description)
+        {
+            if (string.IsNullOrEmpty(description))
+                return "Actividad del sistema";
+
+            // Si la descripción tiene pipes, tomar solo la primera parte (antes del primer pipe)
+            if (description.Contains("|"))
+            {
+                var primeraParte = description.Split('|')[0].Trim();
+                return primeraParte.Length > 80 ? primeraParte.Substring(0, 80) + "..." : primeraParte;
+            }
+
+            // Si es muy larga, recortar
+            return description.Length > 100 ? description.Substring(0, 100) + "..." : description;
+        }
+
+        // Nuevo método para formatear descripciones de manera más legible
+        private string GetFormattedActionDescription(string actionType, string latestDescription, Dictionary<string, string> actionDescriptions)
+        {
+            // Primero intentar obtener la descripción de CatAcciones
+            if (actionDescriptions.ContainsKey(actionType))
+            {
+                var catDescription = actionDescriptions[actionType];
+
+                // Si la descripción de CatAcciones es genérica, usar la del registro específico
+                if (catDescription.Contains("(Usuario)") || catDescription.Contains("(RPE)"))
+                {
+                    return !string.IsNullOrEmpty(latestDescription) ? latestDescription : catDescription;
+                }
+
+                return catDescription;
+            }
+
+            // Si no hay en CatAcciones, usar la del registro
+            return !string.IsNullOrEmpty(latestDescription) ? latestDescription : actionType;
+        }
+
         // Obtener rol desde la base de datos
         private async Task<string> GetUserRoleFromDatabase(string userName)
         {
             if (string.IsNullOrEmpty(userName)) return "Usuario";
 
-            // Buscar el usuario en la base de datos
-            var usuario = await _context.Usuarios
-                .Include(u => u.ClaveRolNavigation)
-                .FirstOrDefaultAsync(u =>
-                    (u.Nombre + " " + u.ApellidoP + " " + u.ApellidoM).Contains(userName) ||
-                    u.Rpe == userName);
+            try
+            {
+                // Buscar por RPE exacto primero (más preciso)
+                var usuario = await _context.Usuarios
+                    .Include(u => u.ClaveRolNavigation)
+                    .FirstOrDefaultAsync(u => u.Rpe == userName);
 
-            return usuario?.ClaveRolNavigation?.Nombre ?? "Usuario";
+                // Si no encuentra por RPE, buscar por nombre
+                if (usuario == null)
+                {
+                    usuario = await _context.Usuarios
+                        .Include(u => u.ClaveRolNavigation)
+                        .FirstOrDefaultAsync(u =>
+                            (u.Nombre + " " + u.ApellidoP + " " + u.ApellidoM).Contains(userName) ||
+                            u.Nombre.Contains(userName));
+                }
+
+                return usuario?.ClaveRolNavigation?.Nombre ?? "Usuario";
+            }
+            catch (Exception)
+            {
+                return "Usuario";
+            }
         }
 
         // Extraer primera oración de la descripción
@@ -175,7 +223,6 @@ namespace MantenimientosTI.Controllers
             var query = _context.RegistroActividad
                 .Where(r => r.FechaHora >= model.StartDate && r.FechaHora <= model.EndDate);
 
-            // Usar las constantes reales de la base de datos
             model.FailedLogins = await query
                 .CountAsync(r => r.Descripcion.Contains("fallido") || r.Descripcion.Contains("incorrect"));
 
@@ -187,8 +234,9 @@ namespace MantenimientosTI.Controllers
             model.CsvUploads = await query
                 .CountAsync(r => r.Accion.Contains("CSV"));
 
+            // SOLO MANTENIMIENTOS TERMINADOS
             model.MaintenanceActions = await query
-                .CountAsync(r => r.Accion.Contains("MTTO"));
+                .CountAsync(r => r.Accion == BitacoraAcciones.TerminacionMtto);
         }
 
         private async Task LoadActivityByHour(UnifiedDashboardViewModel model)
@@ -280,13 +328,12 @@ namespace MantenimientosTI.Controllers
                            (r.Accion.Contains("ERROR") || r.Descripcion.Contains("fallido") ||
                             r.Descripcion.Contains("error") || r.Descripcion.Contains("incorrecto")))
                 .OrderByDescending(r => r.FechaHora)
-                .Take(15)
                 .Select(r => new SecurityEvent
                 {
                     Timestamp = r.FechaHora,
                     UserName = r.Usuario,
                     EventType = r.Accion,
-                    Description = r.Descripcion.Length > 100 ? r.Descripcion.Substring(0, 100) + "..." : r.Descripcion,
+                    Description = r.Descripcion, // QUITAR EL RECORTE DE TEXTO
                     Severity = GetSecuritySeverity(r.Accion, r.Descripcion)
                 })
                 .ToListAsync();
@@ -299,13 +346,13 @@ namespace MantenimientosTI.Controllers
             model.RecentActivities = await _context.RegistroActividad
                 .Where(r => r.FechaHora >= model.StartDate && r.FechaHora <= model.EndDate)
                 .OrderByDescending(r => r.FechaHora)
-                .Take(15)
+                // QUITAR ESTA LÍNEA: .Take(15)
                 .Select(r => new RecentActivity
                 {
                     Timestamp = r.FechaHora,
                     UserName = r.Usuario,
                     Action = r.Accion,
-                    Description = r.Descripcion.Length > 80 ? r.Descripcion.Substring(0, 80) + "..." : r.Descripcion
+                    Description = r.Descripcion
                 })
                 .ToListAsync();
         }

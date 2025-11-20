@@ -59,10 +59,10 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
-//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//        => optionsBuilder.UseSqlServer("Server=MATEBOOKD14;Database=MantenimientosTI;Trusted_Connection=True;TrustServerCertificate=True;");
+    public virtual DbSet<CatMotivoCancelacion> CatMotivosCancelacion { get; set; }
 
+
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Agendum>(entity =>
@@ -258,6 +258,34 @@ public partial class MantenimientosTIContext : DbContext
                 .HasMaxLength(80)
                 .IsUnicode(false)
                 .HasColumnName("descripcion");
+        });
+
+        modelBuilder.Entity<CatMotivoCancelacion>(entity =>
+        {
+            entity.ToTable("CatMotivoCancelacion");
+
+            entity.HasKey(e => e.ClaveMotivo);
+
+            entity.Property(e => e.ClaveMotivo)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("ClaveMotivo");
+
+            entity.Property(e => e.MotivoCancelacion)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("MotivoCancelacion");
+
+            entity.Property(e => e.Estatus)
+                .IsRequired()
+                .HasMaxLength(10)
+                .HasDefaultValue("ACTIVO")
+                .HasColumnName("Estatus");
+
+            // Relación con MotivosCancelacion
+            entity.HasMany(e => e.MotivosCancelacion)
+                .WithOne(m => m.CatMotivo)
+                .HasForeignKey(m => m.ClaveMotivo)
+                .HasConstraintName("FK_MotivosCancelacion_CatMotivo");
         });
 
         modelBuilder.Entity<CatRol>(entity =>

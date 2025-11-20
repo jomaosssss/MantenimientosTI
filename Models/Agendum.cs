@@ -15,15 +15,7 @@ public partial class Agendum
 
     public string Estatus { get; set; } = null!;
 
-    //public string? MotivoCancelacion { get; set; }
-    //public string? JustificacionCancelacion { get; set; }
-    //public DateTime? FechaSolicitudCancelacion { get; set; }
-    //public string? UsuarioSolicitudCancelacion { get; set; }
-    //public DateTime? FechaAprobacionCancelacion { get; set; }
-    //public string? UsuarioAprobacionCancelacion { get; set; }
-
-
-
+ 
     public virtual CatTipoMantenimiento ClaveTipoMttoNavigation { get; set; } = null!;
 
     public virtual ICollection<Mantenimiento> Mantenimientos { get; set; } = new List<Mantenimiento>();

@@ -71,7 +71,7 @@ namespace MantenimientosTI.Models.ViewModels
     public class ActivityByType
     {
         public string ActionType { get; set; }
-        public string Description { get; set; } // ✅ CORRECTO (con una 'c')
+            public string Description { get; set; } // ✅ CORRECTO (con una 'c')
 
         public int Count { get; set; }
         public string Color { get; set; }

@@ -1,4 +1,5 @@
-﻿@{
+﻿//Views/ANalytics/Inicio.cshtml
+@{
     ViewData["Title"] = "Inicio";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -544,114 +545,122 @@
             }
         });
 
-        function mostrarModalCancelacion(idAgenda, esAdmin) {
+               function mostrarModalCancelacion(idAgenda, esAdmin) {
             const titulo = esAdmin ? 'Cancelar Mantenimiento' : 'Solicitar Cancelación';
             const textoConfirmacion = esAdmin ?
                 'Este mantenimiento será cancelado permanentemente.' :
                 'Esta solicitud de cancelación será enviada a un administrador para su aprobación.';
 
-            Swal.fire({
-                title: titulo,
-                html: `
-                    <div class="text-start">
-                        <p>${textoConfirmacion}</p>
-                        <div class="mb-3">
-                            <label for="motivoCancelacion" class="form-label">Motivo de cancelación:</label>
-                            <select class="form-select" id="motivoCancelacion" required>
-                                <option value="">Seleccione un motivo</option>
-                                <option value="ERROR_DE_REDACCION">Error de redacción</option>
-                                <option value="REPROGRAMACION">Reprogramación necesaria</option>
-                                <option value="PERSONAL_NO_DISPONIBLE">Personal no disponible</option>
-                                <option value="OTRO">Otro</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="justificacionCancelacion" class="form-label">
-                                Justificación detallada:
-                                <small class="text-muted float-end">
-                                    <span id="contadorCaracteres">0</span>/250 caracteres
-                                </small>
-                            </label>
-                            <textarea class="form-control" id="justificacionCancelacion"
-                                      rows="4"
-                                      maxlength="250"
-                                      placeholder="Describa detalladamente el motivo de la cancelación..."
-                                      required></textarea>
-                            <div class="form-text">
-                                <span id="caracteresRestantes" class="text-muted">250 caracteres restantes</span>
-                            </div>
-                        </div>
-                    </div>
-                `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: esAdmin ? '#d33' : '#3085d6',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: esAdmin ? 'Sí, cancelar' : 'Sí, solicitar',
-                cancelButtonText: 'Cancelar',
-                focusConfirm: false,
-                preConfirm: () => {
-                    const motivo = document.getElementById('motivoCancelacion').value;
-                    const justificacion = document.getElementById('justificacionCancelacion').value;
-
-                    if (!motivo) {
-                        Swal.showValidationMessage('Por favor seleccione un motivo');
-                        return false;
-                    }
-                    if (!justificacion.trim()) {
-                        Swal.showValidationMessage('Por favor ingrese una justificación');
-                        return false;
-                    }
-                    if (justificacion.trim().length < 10) {
-                        Swal.showValidationMessage('La justificación debe tener al menos 10 caracteres');
-                        return false;
-                    }
-                    if (justificacion.trim().length > 250) {
-                        Swal.showValidationMessage('La justificación no puede exceder los 250 caracteres');
-                        return false;
-                    }
-
-                    return { motivo, justificacion };
-                },
-                didOpen: () => {
-                    const textarea = document.getElementById('justificacionCancelacion');
-                    const contador = document.getElementById('contadorCaracteres');
-                    const restantes = document.getElementById('caracteresRestantes');
-
-                    // Event listener para el contador
-                    textarea.addEventListener('input', function() {
-                        // Asegurar que no pase de 250
-                        if (this.value.length > 250) {
-                            this.value = this.value.substring(0, 250);
-                        }
-
-                        const longitud = this.value.length;
-                        contador.textContent = longitud;
-                        const caracteresRestantes = 250 - longitud;
-                        restantes.textContent = `${caracteresRestantes} caracteres restantes`;
-
-                        // Cambiar color según el límite
-                        if (longitud > 200) {
-                            contador.className = 'text-warning fw-bold';
-                            restantes.className = 'text-warning fw-bold';
-                        } else if (longitud >= 250) {
-                            contador.className = 'text-danger fw-bold';
-                            restantes.className = 'text-danger fw-bold';
-                        } else {
-                            contador.className = 'text-muted';
-                            restantes.className = 'text-muted';
-                        }
+            // Hacer petición para obtener los motivos del catálogo
+            $.get('@Url.Action("ObtenerMotivosCancelacion", "Agenda")', function(motivos) {
+                // Construir opciones del dropdown
+                let opcionesMotivos = '<option value="">Seleccione un motivo</option>';
+                if (motivos && motivos.length > 0) {
+                    motivos.forEach(function(motivo) {
+                        opcionesMotivos += `<option value="${motivo.claveMotivo}">${motivo.motivoCancelacion}</option>`;
                     });
                 }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const { motivo, justificacion } = result.value;
-                    if (esAdmin) {
-                        cancelarDirecto(idAgenda, motivo, justificacion);
-                    } else {
-                        preCancelar(idAgenda, motivo, justificacion);
+
+                Swal.fire({
+                    title: titulo,
+                    html: `
+                        <div class="text-start">
+                            <p>${textoConfirmacion}</p>
+                            <div class="mb-3">
+                                <label for="motivoCancelacion" class="form-label">Motivo de cancelación:</label>
+                                <select class="form-select" id="motivoCancelacion" required>
+                                    ${opcionesMotivos}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="justificacionCancelacion" class="form-label">
+                                    Justificación detallada:
+                                    <small class="text-muted float-end">
+                                        <span id="contadorCaracteres">0</span>/500 caracteres
+                                </small>
+                                </label>
+                                <textarea class="form-control" id="justificacionCancelacion"
+                                          rows="4"
+                                          maxlength="500"
+                                          placeholder="Describa detalladamente el motivo de la cancelación..."
+                                          required></textarea>
+                                <div class="form-text">
+                                    <span id="caracteresRestantes" class="text-muted">500 caracteres restantes</span>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: esAdmin ? '#d33' : '#3085d6',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: esAdmin ? 'Sí, cancelar' : 'Sí, solicitar',
+                    cancelButtonText: 'Cancelar',
+                    focusConfirm: false,
+                    preConfirm: () => {
+                        const claveMotivo = parseInt(document.getElementById('motivoCancelacion').value);
+                        const justificacion = document.getElementById('justificacionCancelacion').value;
+
+                        if (!claveMotivo || claveMotivo <= 0) {
+                            Swal.showValidationMessage('Por favor seleccione un motivo válido');
+                            return false;
+                        }
+                        if (!justificacion.trim()) {
+                            Swal.showValidationMessage('Por favor ingrese una justificación');
+                            return false;
+                        }
+                        if (justificacion.trim().length < 10) {
+                            Swal.showValidationMessage('La justificación debe tener al menos 10 caracteres');
+                            return false;
+                        }
+                        if (justificacion.trim().length > 500) {
+                            Swal.showValidationMessage('La justificación no puede exceder los 500 caracteres');
+                            return false;
+                        }
+
+                        return { claveMotivo, justificacion };
+                    },
+                    didOpen: () => {
+                        const textarea = document.getElementById('justificacionCancelacion');
+                        const contador = document.getElementById('contadorCaracteres');
+                        const restantes = document.getElementById('caracteresRestantes');
+
+                        // Event listener para el contador
+                        textarea.addEventListener('input', function() {
+                            if (this.value.length > 500) {
+                                this.value = this.value.substring(0, 500);
+                            }
+
+                            const longitud = this.value.length;
+                            contador.textContent = longitud;
+                            const caracteresRestantes = 500 - longitud;
+                            restantes.textContent = `${caracteresRestantes} caracteres restantes`;
+
+                            // Cambiar color según el límite
+                            if (longitud > 450) {
+                                contador.className = 'text-warning fw-bold';
+                                restantes.className = 'text-warning fw-bold';
+                            } else if (longitud >= 500) {
+                                contador.className = 'text-danger fw-bold';
+                                restantes.className = 'text-danger fw-bold';
+                            } else {
+                                contador.className = 'text-muted';
+                                restantes.className = 'text-muted';
+                            }
+                        });
                     }
-                }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const { claveMotivo, justificacion } = result.value;
+                        if (esAdmin) {
+                            cancelarDirecto(idAgenda, claveMotivo, justificacion);
+                        } else {
+                            preCancelar(idAgenda, claveMotivo, justificacion);
+                        }
+                    }
+                });
+            }).fail(function() {
+                Swal.fire('Error', 'No se pudieron cargar los motivos de cancelación', 'error');
             });
         }
 
@@ -681,13 +690,13 @@
             }
         }
 
-        function cancelarDirecto(idAgenda, motivo, justificacion) {
+                function cancelarDirecto(idAgenda, claveMotivo, justificacion) {
             const fila = $(`tr[data-clave-agenda="${idAgenda}"]`);
             const button = fila.find('.btn-cancelar-directo');
 
             $.post('@Url.Action("CancelarDirecto", "Agenda")', {
                 idAgenda: idAgenda,
-                motivo: motivo,
+                claveMotivo: claveMotivo,  // ← CAMBIADO: ahora es claveMotivo
                 justificacion: justificacion
             })
             .done(function(response) {
@@ -708,13 +717,13 @@
             });
         }
 
-        function preCancelar(idAgenda, motivo, justificacion) {
+        function preCancelar(idAgenda, claveMotivo, justificacion) {
             const fila = $(`tr[data-clave-agenda="${idAgenda}"]`);
             const button = fila.find('.btn-precancelar');
 
             $.post('@Url.Action("PreCancelar", "Agenda")', {
                 idAgenda: idAgenda,
-                motivo: motivo,
+                claveMotivo: claveMotivo,  // ← CAMBIADO: ahora es claveMotivo
                 justificacion: justificacion
             })
             .done(function(response) {

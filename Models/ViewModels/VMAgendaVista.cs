@@ -1,4 +1,4 @@
-﻿// ViewModels/VMAgendaVista.cs
+﻿// ViewModels/VMAgendaVista.cs - ACTUALIZADO
 using System.ComponentModel.DataAnnotations;
 
 namespace MantenimientosTI.Models.ViewModels
@@ -17,13 +17,16 @@ namespace MantenimientosTI.Models.ViewModels
         public string UsuarioAsignado { get; set; }
         public int ClaveAgenda { get; set; }
 
-        // PROPIEDADES PARA MOTIVOS (mismos tamaños que la tabla original)
-        [StringLength(100, ErrorMessage = "El motivo no puede exceder los 100 caracteres.")]
+        // NUEVO: Para referencia interna
+        public int ClaveMotivo { get; set; }
+
+        // PROPIEDADES PARA MOTIVOS (ahora desde catálogo)
         public string? MotivoCancelacion { get; set; }
 
         [StringLength(500, ErrorMessage = "La justificación no puede exceder los 500 caracteres.")]
         public string? JustificacionCancelacion { get; set; }
 
+        // AHORA SON RPEs (varchar(5))
         public string? UsuarioSolicitudCancelacion { get; set; }
         public DateTime? FechaSolicitudCancelacion { get; set; }
         public string? UsuarioAprobacionCancelacion { get; set; }
