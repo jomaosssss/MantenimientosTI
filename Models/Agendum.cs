@@ -20,4 +20,6 @@ public partial class Agendum
     public virtual ICollection<Mantenimiento> Mantenimientos { get; set; } = new List<Mantenimiento>();
 
     public virtual Equipo NumActFijoNavigation { get; set; } = null!;
+    public virtual ICollection<MotivoCancelacion> MotivosCancelacion { get; set; } = new List<MotivoCancelacion>();
+
 }

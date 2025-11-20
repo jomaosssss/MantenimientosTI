@@ -223,7 +223,14 @@
                                 Bitácora de actividad
                             </a>
                         }
-
+                        @if (User.IsInRole("ADMINISTRADOR"))
+                        {
+                        <li class="nav-item">
+                            <a class="nav-link" href="@Url.Action("UnifiedDashboard", "Analytics")">
+                                <i class="fas fa-chart-bar me-2"></i>Bitacora de analisis
+                            </a>
+                        </li>
+                        }
                     </div>
                 </div>
 

@@ -14,9 +14,9 @@
         box-shadow: 0 10px 20px rgba(220, 53, 69, 0.2) !important;
     }
 
-    .card[style*="background-color: #ffc107"]:hover {
+    .card[style*="background-color: #6c757d"]:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(255, 193, 7, 0.2) !important;
+        box-shadow: 0 10px 20px rgba(108, 117, 125, 0.2) !important;
     }
 
     .badge-pre-cancelado {
@@ -26,6 +26,84 @@
 
     .table-actions {
         white-space: nowrap;
+    }
+
+    .detalles-cell {
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ESTILOS PARA DETALLES CLICKABLE */
+    .detalles-clickable {
+        cursor: pointer;
+        color: #0d6efd;
+        font-weight: bold;
+        transition: all 0.2s ease;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        border: none;
+        background: none;
+    }
+
+        .detalles-clickable:hover {
+            background-color: #e3f2fd;
+            text-decoration: underline;
+        }
+
+    /* ESTILOS PARA EL MODAL */
+    .modal-detalles .modal-header {
+        background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+        color: white;
+        border-bottom: none;
+    }
+
+    .modal-detalles .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .info-item {
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #198754;
+    }
+
+        .info-item strong {
+            color: #495057;
+            font-size: 0.9rem;
+        }
+
+    .motivo-content {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+
+    .justificacion-content {
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+
+    .badge-estatus {
+        font-size: 0.8rem;
+        padding: 6px 12px;
     }
 </style>
 
@@ -40,7 +118,6 @@
         </div>
 
         <div class="card-body">
-
             <div class="row g-3 mb-4">
                 <div class="col-xl-6 col-md-6">
                     <div class="card border-0 h-100 hover-scale" style="border-radius: 15px; background-color: #dc3545; min-height: 100px;">
@@ -75,7 +152,6 @@
                 </div>
             </div>
 
-
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <i class="fas fa-clock me-1"></i> Mantenimientos pre-cancelados pendientes de aprobación
@@ -94,7 +170,7 @@
                                         <th>Agencia</th>
                                         <th>Centro</th>
                                         <th>Tipo de equipo</th>
-                                        <th>Tipo mantenimiento</th>
+                                        <th>Detalles</th>
                                         <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
@@ -119,18 +195,51 @@
                                             <td>@item.Centro</td>
                                             <td>
                                                 <span class="badge bg-secondary">@item.Tipo</span>
+                                                <br />
+                                                <small class="text-muted">@item.TipoMantenimiento</small>
                                             </td>
-                                            <td>
-                                                <span class="badge @(item.TipoMantenimiento == "PREVENTIVO" ? "bg-primary" : "bg-danger")">
-                                                    @item.TipoMantenimiento
-                                                </span>
+                                            <td class="detalles-cell">
+                                                @if (!string.IsNullOrEmpty(item.MotivoCancelacion))
+                                                {
+                                                    <button class="detalles-clickable"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalDetalles"
+                                                            data-motivo="@item.MotivoCancelacion"
+                                                            data-justificacion="@item.JustificacionCancelacion"
+                                                            data-usuario="@item.UsuarioSolicitudCancelacion"
+                                                            data-fecha="@item.FechaSolicitudFormateada"
+                                                            data-orden="@item.ClaveAgenda"
+                                                            data-activofijo="@item.NumActFijo"
+                                                            data-cajero="@item.NumCajero"
+                                                            data-zona="@item.Zona"
+                                                            data-agencia="@item.Agencia"
+                                                            data-centro="@item.Centro"
+                                                            data-tipoequipo="@item.Tipo"
+                                                            data-tipomantenimiento="@item.TipoMantenimiento">
+                                                        <strong>Ver detalles</strong>
+                                                    </button>
+                                                    <br />
+                                                    <small class="text-muted">@item.FechaSolicitudFormateada</small>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sin detalles</span>
+                                                }
                                             </td>
                                             <td class="text-center table-actions">
-                                                <div class="btn-group" role="group">
-                                                    <button class="btn btn-success btn-sm btn-confirmar" data-id="@item.ClaveAgenda" title="Confirmar Cancelación">
+                                                <div class="btn-group-vertical btn-group-sm" role="group">
+                                                    <button class="btn btn-success btn-sm btn-confirmar mb-1"
+                                                            data-id="@item.ClaveAgenda"
+                                                            data-motivo="@item.MotivoCancelacion"
+                                                            data-justificacion="@item.JustificacionCancelacion"
+                                                            title="Confirmar Cancelación">
                                                         <i class="fas fa-check me-1"></i>Confirmar
                                                     </button>
-                                                    <button class="btn btn-danger btn-sm btn-rechazar" data-id="@item.ClaveAgenda" title="Rechazar Cancelación">
+                                                    <button class="btn btn-danger btn-sm btn-rechazar"
+                                                            data-id="@item.ClaveAgenda"
+                                                            data-motivo="@item.MotivoCancelacion"
+                                                            data-justificacion="@item.JustificacionCancelacion"
+                                                            title="Rechazar Cancelación">
                                                         <i class="fas fa-times me-1"></i>Rechazar
                                                     </button>
                                                 </div>
@@ -154,6 +263,81 @@
     </div>
 </div>
 
+<!-- MODAL CORREGIDO -->
+<div class="modal fade" id="modalDetalles" tabindex="-1" aria-labelledby="modalDetallesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalDetallesLabel">
+                    <i class="fas fa-info-circle me-2"></i>Detalles de la Solicitud de Cancelación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>Número de Orden:</strong>
+                        <div class="fw-bold text-success" id="modalOrden">-</div>
+                    </div>
+                    <div class="info-item">
+                        <strong>Activo Fijo:</strong>
+                        <div class="fw-bold" id="modalActivoFijo">-</div>
+                    </div>
+                    <div class="info-item">
+                        <strong>Cajero:</strong>
+                        <div id="modalCajero">-</div>
+                    </div>
+                    <div class="info-item">
+                        <strong>Ubicación:</strong>
+                        <div id="modalUbicacion">-</div>
+                    </div>
+                    <div class="info-item">
+                        <strong>Tipo de Equipo:</strong>
+                        <div id="modalTipoEquipo">-</div>
+                    </div>
+                    <div class="info-item">
+                        <strong>Tipo Mantenimiento:</strong>
+                        <div id="modalTipoMantenimiento">-</div>
+                    </div>
+                </div>
+
+                <div class="motivo-content">
+                    <h6 class="fw-bold text-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Motivo de Cancelación
+                    </h6>
+                    <p class="mb-0" id="modalMotivoTexto">-</p>
+                </div>
+
+                <div class="justificacion-content">
+                    <h6 class="fw-bold text-primary">
+                        <i class="fas fa-file-alt me-1"></i>Justificación Detallada
+                    </h6>
+                    <p class="mb-0" id="modalJustificacion">-</p>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded">
+                    <div>
+                        <small class="text-muted">Solicitado por:</small>
+                        <div class="fw-bold" id="modalUsuario">-</div>
+                    </div>
+                    <div>
+                        <small class="text-muted">Fecha de solicitud:</small>
+                        <div class="fw-bold" id="modalFecha">-</div>
+                    </div>
+                    <div>
+                        <span class="badge bg-warning text-dark badge-estatus">PRE-CANCELADO</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -162,6 +346,12 @@
 
     <script>
         $(document).ready(function() {
+            // Inicializar tooltips de Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
             // Configurar DataTable
             $('#tablaPreCanceladas').DataTable({
                 language: {
@@ -169,23 +359,64 @@
                 },
                 order: [[1, 'asc']],
                 pageLength: 10,
-                responsive: true
+                responsive: true,
+                columnDefs: [
+                    { targets: [7], orderable: false } // Solo detalles no ordenable (antes era 7,8)
+                ]
             });
 
-            // Confirmar cancelación
+            // Manejar clic en detalles para mostrar el modal
+            $(document).on('click', '.detalles-clickable', function() {
+                const motivo = $(this).data('motivo') || 'No especificado';
+                const justificacion = $(this).data('justificacion') || 'No especificada';
+                const usuario = $(this).data('usuario') || 'No especificado';
+                const fecha = $(this).data('fecha') || 'No especificada';
+                const orden = $(this).data('orden') || '-';
+                const activoFijo = $(this).data('activofijo') || '-';
+                const cajero = $(this).data('cajero') || 'N/A';
+                const zona = $(this).data('zona') || '-';
+                const agencia = $(this).data('agencia') || '-';
+                const centro = $(this).data('centro') || '-';
+                const tipoEquipo = $(this).data('tipoequipo') || '-';
+                const tipoMantenimiento = $(this).data('tipomantenimiento') || '-';
+
+                console.log('Datos del motivo:', { motivo, justificacion, usuario });
+
+                // Llenar el modal con los datos
+                $('#modalOrden').text(orden);
+                $('#modalActivoFijo').text(activoFijo);
+                $('#modalCajero').text(cajero);
+                $('#modalUbicacion').text(`${zona} - ${agencia} - ${centro}`);
+                $('#modalTipoEquipo').text(tipoEquipo);
+                $('#modalTipoMantenimiento').text(tipoMantenimiento);
+                $('#modalMotivoTexto').text(motivo);
+                $('#modalJustificacion').text(justificacion);
+                $('#modalUsuario').text(usuario);
+                $('#modalFecha').text(fecha);
+            });
+
+            // Confirmar cancelación CON INFORMACIÓN DE MOTIVOS
             $('.btn-confirmar').on('click', function() {
                 var id = $(this).data('id');
+                var motivo = $(this).data('motivo');
+                var justificacion = $(this).data('justificacion');
                 var button = $(this);
+
+                var mensajeMotivo = "";
+                if (motivo && justificacion) {
+                    mensajeMotivo = `<br><br><strong>Motivo:</strong> ${motivo}<br><strong>Justificación:</strong> ${justificacion}`;
+                }
 
                 Swal.fire({
                     title: '¿Confirmar Cancelación?',
-                    text: "Esta acción confirmará la cancelación permanentemente.",
+                    html: `Esta acción confirmará la cancelación permanentemente.${mensajeMotivo}`,
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#28a745',
                     cancelButtonColor: '#6c757d',
                     confirmButtonText: 'Sí, confirmar',
-                    cancelButtonText: 'Cancelar'
+                    cancelButtonText: 'Cancelar',
+                    width: 600
                 }).then((result) => {
                     if (result.isConfirmed) {
                         // Mostrar loading
@@ -223,20 +454,28 @@
                 });
             });
 
-            // Rechazar cancelación
+            // Rechazar cancelación CON INFORMACIÓN DE MOTIVOS
             $('.btn-rechazar').on('click', function() {
                 var id = $(this).data('id');
+                var motivo = $(this).data('motivo');
+                var justificacion = $(this).data('justificacion');
                 var button = $(this);
+
+                var mensajeMotivo = "";
+                if (motivo && justificacion) {
+                    mensajeMotivo = `<br><br><strong>Motivo original:</strong> ${motivo}<br><strong>Justificación:</strong> ${justificacion}`;
+                }
 
                 Swal.fire({
                     title: '¿Rechazar Cancelación?',
-                    text: "El mantenimiento volverá a estar PENDIENTE.",
+                    html: `El mantenimiento volverá a estar PENDIENTE.${mensajeMotivo}`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#dc3545',
                     cancelButtonColor: '#6c757d',
                     confirmButtonText: 'Sí, rechazar',
-                    cancelButtonText: 'Cancelar'
+                    cancelButtonText: 'Cancelar',
+                    width: 600
                 }).then((result) => {
                     if (result.isConfirmed) {
                         // Mostrar loading
@@ -263,12 +502,12 @@
                                     });
                                 } else {
                                     Swal.fire('Error', response.message, 'error');
-                                    button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazado');
+                                    button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazar');
                                 }
                             })
                             .fail(function() {
                                 Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
-                                button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazado');
+                                button.prop('disabled', false).html('<i class="fas fa-times me-1"></i>Rechazar');
                             });
                     }
                 });

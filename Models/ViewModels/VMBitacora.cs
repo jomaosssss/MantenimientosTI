@@ -2,6 +2,7 @@
 {
     public class VMBitacora
     {
+        public int IdRegistroActividad { get; set; }
         public DateTime FechaHora { get; set; }
         public string Usuario { get; set; }
         public string RPE { get; set; }

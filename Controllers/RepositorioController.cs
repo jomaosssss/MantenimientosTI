@@ -10,16 +10,20 @@ using System.Globalization;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using MantenimientosTI.Services;
 
 namespace MantenimientosTI.Controllers
 {
     public class RepositorioController : Controller
     {
         private readonly MantenimientosTIContext _dbocontext;
+        private readonly BitacoraService _bitacora;
 
-        public RepositorioController(MantenimientosTIContext context)
+
+        public RepositorioController(MantenimientosTIContext context, BitacoraService bitacora)
         {
             _dbocontext = context;
+            _bitacora = bitacora;
         }
 
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
@@ -248,6 +252,22 @@ namespace MantenimientosTI.Controllers
 
                     // Actualizar agenda
                     agendaItem.Estatus = "TERMINADO";
+
+                    // ✅ REGISTRO EN BITÁCORA - AGREGADO
+                    var usuario = HttpContext.Session.GetString("NombreUsuario") ?? "Usuario no identificado";
+                    var rol = HttpContext.Session.GetString("NombreRol") ?? "N/A";
+                    var zona = HttpContext.Session.GetString("NombreZona") ?? "N/A";
+                    var centro = HttpContext.Session.GetString("ClaveDivision") ?? "N/A";
+
+                    await _bitacora.RegistrarTerminacionMantenimientoAsync(
+                        usuario: usuario,
+                        rpe: rpe,
+                        rol: rol,
+                        zona: zona,
+                        centro: centro,
+                        claveAgenda: numOrden.ToString(),
+                        equipo: agendaItem.NumActFijo
+                    );
 
                     await _dbocontext.SaveChangesAsync();
                     await transaction.CommitAsync();

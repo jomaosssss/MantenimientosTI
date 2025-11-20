@@ -153,11 +153,13 @@ namespace ProyectoMantenimientos.Controllers
                     HttpContext.Session.SetString("Correo", usuarioAdmin.Correo);
 
                     // Registro en bitacora (usuario local (no del directorio activo))
-                    await _bitacora.RegistrarYGuardarAsync(
-                        HttpContext.Session.GetString("NombreUsuario"),
-                        BitacoraAcciones.InicioSesionAdmin,
-                        $"El administrador {usuarioAdmin.Rpe} inició sesión localmente."
-                    );
+                    await _bitacora.RegistrarInicioSesionAsync(
+                       usuario: HttpContext.Session.GetString("NombreUsuario"),
+                       rpe: usuarioAdmin.Rpe,
+                       rol: usuarioAdmin.ClaveRolNavigation?.Nombre ?? "ADMINISTRADOR",
+                       zona: usuarioAdmin.CatZona?.NombreZona ?? "N/A",
+                       ubicacion: "sistema web"
+                   );
 
                     if (HttpContext.Session.GetString("NombreRol").Equals("ADMINISTRADOR") || User.IsInRole("CONSULTOR"))
                     {
@@ -246,10 +248,12 @@ namespace ProyectoMantenimientos.Controllers
                             HttpContext.Session.SetString("Correo", usuario.Correo);
 
                             // Registro en bitacora del usuario del directorio activo
-                            await _bitacora.RegistrarYGuardarAsync(
-                                HttpContext.Session.GetString("NombreUsuario"),
-                                BitacoraAcciones.InicioSesionTecnico,
-                                $"El usuario {usuario.Rpe} inició sesión."
+                            await _bitacora.RegistrarInicioSesionAsync(
+                                usuario: HttpContext.Session.GetString("NombreUsuario"),
+                                rpe: usuario.Rpe,
+                                rol: usuario.ClaveRolNavigation?.Nombre ?? "TÉCNICO",
+                                zona: usuario.CatZona?.NombreZona ?? "N/A",
+                                ubicacion: "sistema web"
                             );
 
                             if (HttpContext.Session.GetString("NombreRol").Equals("ADMINISTRADOR") || User.IsInRole("CONSULTOR"))
@@ -293,7 +297,7 @@ namespace ProyectoMantenimientos.Controllers
 
             if (!string.IsNullOrEmpty(usuario))
             {
-                await _bitacora.RegistrarLogoutAsync(usuario, rpe, rol, zona, centro);
+                await _bitacora.RegistrarCierreSesionAsync(usuario, rpe, rol, zona);
             }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -361,6 +365,10 @@ namespace ProyectoMantenimientos.Controllers
                     return NotFound(new { success = false, message = "Usuario no encontrado" });
                 }
 
+                // ✅ CAPTURAR EL ESTATUS ANTERIOR PARA DETECTAR CAMBIOS
+                var estatusAnterior = usuario.Estatus;
+                var estatusNuevo = model.Estatus;
+
                 // 2. Actualiza sus propiedades en memoria
                 usuario.ClaveRol = model.ClaveRol;
                 usuario.ClaveZona = model.ClaveZona;
@@ -370,10 +378,66 @@ namespace ProyectoMantenimientos.Controllers
                 usuario.Correo = model.Correo;
                 usuario.Estatus = model.Estatus;
 
-                // 3. Prepara el registro de bitácora
+                // ✅ 3. BITÁCORA MEJORADA - DETECTA ACTIVACIÓN/DESACTIVACIÓN
                 var adminQueActualiza = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
-                var descripcion = $"Actualizó los datos del usuario '{usuario.Nombre} {usuario.ApellidoP}' con RPE '{model.Rpe}'.";
-                _bitacora.RegistrarActividad(adminQueActualiza, "ACTUALIZAR_USUARIO", descripcion);
+                var rpeAdmin = HttpContext.Session.GetString("Rpe") ?? "N/A";
+                var rolAdmin = HttpContext.Session.GetString("NombreRol") ?? "N/A";
+                var zonaAdmin = HttpContext.Session.GetString("NombreZona") ?? "N/A";
+
+                var usuarioAfectado = $"{model.Nombre} {model.ApellidoP}";
+                var rpeAfectado = model.Rpe;
+
+                // ✅ DETECTAR SI HUBO CAMBIO DE ESTATUS
+                if (estatusAnterior.ToLower() != estatusNuevo.ToLower())
+                {
+                    if (estatusNuevo.ToLower() == "activo")
+                    {
+                        // ✅ REGISTRAR ACTIVACIÓN ESPECÍFICA
+                        await _bitacora.RegistrarActivacionUsuarioAsync(
+                            usuarioAdmin: adminQueActualiza,
+                            rpeAdmin: rpeAdmin,
+                            rolAdmin: rolAdmin,
+                            zonaAdmin: zonaAdmin,
+                            usuarioAfectado: usuarioAfectado,
+                            rpeAfectado: rpeAfectado
+                        );
+                    }
+                    else
+                    {
+                        // ✅ REGISTRAR DESACTIVACIÓN ESPECÍFICA
+                        await _bitacora.RegistrarDesactivacionUsuarioAsync(
+                            usuarioAdmin: adminQueActualiza,
+                            rpeAdmin: rpeAdmin,
+                            rolAdmin: rolAdmin,
+                            zonaAdmin: zonaAdmin,
+                            usuarioAfectado: usuarioAfectado,
+                            rpeAfectado: rpeAfectado
+                        );
+                    }
+                }
+                else
+                {
+                    // ✅ SI NO HUBO CAMBIO DE ESTATUS, REGISTRAR COMO ACTUALIZACIÓN NORMAL
+                    var rolUsuario = await _dbocontext.CatRols
+                        .Where(r => r.ClaveRol == model.ClaveRol)
+                        .Select(r => r.Nombre)
+                        .FirstOrDefaultAsync() ?? "Sin rol";
+
+                    var zonaUsuario = await _dbocontext.CatZonas
+                        .Where(z => z.ClaveZona == model.ClaveZona)
+                        .Select(z => z.NombreZona)
+                        .FirstOrDefaultAsync() ?? "Sin zona";
+
+                    await _bitacora.RegistrarActualizacionUsuarioAsync(
+                        usuarioAdmin: adminQueActualiza,
+                        rpeAdmin: rpeAdmin,
+                        rolAdmin: rolAdmin,
+                        zonaAdmin: zonaAdmin,
+                        usuarioActualizado: usuarioAfectado,
+                        rpeActualizado: rpeAfectado,
+                        cambios: $"Rol: {rolUsuario}, Zona: {zonaUsuario}"
+                    );
+                }
 
                 // 4. Guarda ambos cambios (actualización y bitácora) en una sola transacción
                 await _dbocontext.SaveChangesAsync();
@@ -426,11 +490,31 @@ namespace ProyectoMantenimientos.Controllers
                 };
                 _dbocontext.Usuarios.Add(nuevoUsuario);
 
-                // 2. Prepara el registro de bitácora
+                // ✅ 2. BITÁCORA CORREGIDA - CON FORMATO DE PIPES
                 var adminQueCrea = HttpContext.Session.GetString("NombreUsuario") ?? "Sistema";
-                var descripcion = $"Creó al nuevo usuario '{model.Nombre} {model.ApellidoP}' con RPE '{model.Rpe}'.";
-                // Usamos el método que solo prepara, sin guardar
-                _bitacora.RegistrarActividad(adminQueCrea, "CREAR_USUARIO", descripcion);
+
+                // Obtener nombres del rol y zona
+                var rolNuevoUsuario = await _dbocontext.CatRols
+                    .Where(r => r.ClaveRol == model.ClaveRol)
+                    .Select(r => r.Nombre)
+                    .FirstOrDefaultAsync() ?? "Sin rol";
+
+                var zonaNuevoUsuario = await _dbocontext.CatZonas
+                    .Where(z => z.ClaveZona == model.ClaveZona)
+                    .Select(z => z.NombreZona)
+                    .FirstOrDefaultAsync() ?? "Sin zona";
+
+                // ✅ FORMATO CON PIPES para información adicional
+                await _bitacora.RegistrarCreacionUsuarioAsync(
+                    usuarioAdmin: adminQueCrea,
+                    rpeAdmin: HttpContext.Session.GetString("Rpe") ?? "N/A",
+                    rolAdmin: HttpContext.Session.GetString("NombreRol") ?? "N/A",
+                    zonaAdmin: HttpContext.Session.GetString("NombreZona") ?? "N/A",
+                    usuarioCreado: $"{model.Nombre} {model.ApellidoP}",
+                    rpeCreado: model.Rpe,
+                    rolCreado: rolNuevoUsuario,
+                    zonaCreada: zonaNuevoUsuario
+                );
 
                 // 3. Guarda ambos cambios en una sola transacción
                 await _dbocontext.SaveChangesAsync();

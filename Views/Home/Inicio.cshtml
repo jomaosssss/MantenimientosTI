@@ -725,107 +725,210 @@
         $(document).ready(function () {
             var esAdmin = @User.IsInRole("ADMINISTRADOR").ToString().ToLower();
 
-            // Configuración mejorada para DataTables con soporte responsivo
-            var configComun = {
+            // Configuración para las tablas
+            $('#tablaCFEmaticos, #tablaAC, #tablaEC').DataTable({
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-                },
-                responsive: true,
-                autoWidth: false,
-                scrollX: true,
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-                pageLength: 10,
-                lengthMenu: [5, 10, 25, 50],
-                stateSave: true
-            };
-
-            // Aplicar configuración a cada tabla
-            $('#tablaCFEmaticos').DataTable(configComun);
-            $('#tablaAC').DataTable(configComun);
-            $('#tablaEC').DataTable(configComun);
-
-            // Eventos para cancelaciones
-            $('#tablaCFEmaticos, #tablaAC, #tablaEC').on('click', '.btn-cancelar-directo', function() {
-                var id = $(this).data('id');
-                var fila = $(this).closest('tr');
-                var button = $(this);
-
-                Swal.fire({
-                    title: '¿Cancelar mantenimiento?',
-                    text: "Este mantenimiento será cancelado permanentemente.",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Sí, cancelar',
-                    cancelButtonText: 'No'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.post('@Url.Action("CancelarDirecto", "Agenda")', { idAgenda: id })
-                            .done(function(response) {
-                                if (response.success) {
-                                    Swal.fire('¡Cancelado!', response.message, 'success');
-
-                                    // Actualizar la fila
-                                    var celdaEstatus = fila.find('.estatus-agenda');
-                                    celdaEstatus.html('<span class="badge bg-secondary">CANCELADO</span>');
-
-                                    var celdaAcciones = button.closest('td');
-                                    celdaAcciones.html('<span class="text-muted">N/A</span>');
-                                } else {
-                                    Swal.fire('Error', response.message, 'error');
-                                }
-                            })
-                            .fail(function() {
-                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
-                            });
-                    }
-                });
+                }
             });
 
-            $('#tablaCFEmaticos, #tablaAC, #tablaEC').on('click', '.btn-precancelar', function() {
-                var id = $(this).data('id');
-                var fila = $(this).closest('tr');
-                var button = $(this);
+            // FUNCIONES MEJORADAS DE CANCELACIÓN (DE LA VISTA DEL COMPAÑERO)
+            function mostrarModalCancelacion(idAgenda, esAdmin) {
+                const titulo = esAdmin ? 'Cancelar Mantenimiento' : 'Solicitar Cancelación';
+                const textoConfirmacion = esAdmin ?
+                    'Este mantenimiento será cancelado permanentemente.' :
+                    'Esta solicitud de cancelación será enviada a un administrador para su aprobación.';
 
-                Swal.fire({
-                    title: '¿Solicitar Cancelación?',
-                    text: "Este mantenimiento se marcará como pre-cancelado y un administrador deberá confirmarla.",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Sí, solicitar',
-                    cancelButtonText: 'No'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.post('@Url.Action("PreCancelar", "Agenda")', { idAgenda: id })
-                            .done(function(response) {
-                                if (response.success) {
-                                    Swal.fire('¡Hecho!', response.message, 'success');
-
-                                    // Actualizar la fila
-                                    var celdaEstatus = fila.find('.estatus-agenda');
-                                    celdaEstatus.html('<span class="badge bg-warning text-dark">PRE-CANCELADO</span>');
-
-                                    var celdaAcciones = button.closest('td');
-                                    if (esAdmin) {
-                                        celdaAcciones.html('<button class="btn btn-success btn-sm btn-confirmar-cancelacion" data-id="' + id + '" title="Confirmar Cancelación"><i class="bi bi-check-circle"></i></button> <button class="btn btn-danger btn-sm btn-rechazar-cancelacion" data-id="' + id + '" title="Rechazar Cancelación"><i class="bi bi-x-circle"></i></button>');
-                                    } else {
-                                        celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
-                                    }
-                                } else {
-                                    Swal.fire('Error', response.message, 'error');
-                                }
-                            })
-                            .fail(function() {
-                                Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
-                            });
+                // Hacer petición para obtener los motivos del catálogo
+                $.get('@Url.Action("ObtenerMotivosCancelacion", "Agenda")', function(motivos) {
+                    // Construir opciones del dropdown
+                    let opcionesMotivos = '<option value="">Seleccione un motivo</option>';
+                    if (motivos && motivos.length > 0) {
+                        motivos.forEach(function(motivo) {
+                            opcionesMotivos += `<option value="${motivo.claveMotivo}">${motivo.motivoCancelacion}</option>`;
+                        });
                     }
+
+                    Swal.fire({
+                        title: titulo,
+                        html: `
+                            <div class="text-start">
+                                <p>${textoConfirmacion}</p>
+                                <div class="mb-3">
+                                    <label for="motivoCancelacion" class="form-label">Motivo de cancelación:</label>
+                                    <select class="form-select" id="motivoCancelacion" required>
+                                        ${opcionesMotivos}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="justificacionCancelacion" class="form-label">
+                                        Justificación detallada:
+                                        <small class="text-muted float-end">
+                                            <span id="contadorCaracteres">0</span>/500 caracteres
+                                    </small>
+                                    </label>
+                                    <textarea class="form-control" id="justificacionCancelacion"
+                                              rows="4"
+                                              maxlength="500"
+                                              placeholder="Describa detalladamente el motivo de la cancelación..."
+                                              required></textarea>
+                                    <div class="form-text">
+                                        <span id="caracteresRestantes" class="text-muted">500 caracteres restantes</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: esAdmin ? '#d33' : '#3085d6',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: esAdmin ? 'Sí, cancelar' : 'Sí, solicitar',
+                        cancelButtonText: 'Cancelar',
+                        focusConfirm: false,
+                        preConfirm: () => {
+                            const claveMotivo = parseInt(document.getElementById('motivoCancelacion').value);
+                            const justificacion = document.getElementById('justificacionCancelacion').value;
+
+                            if (!claveMotivo || claveMotivo <= 0) {
+                                Swal.showValidationMessage('Por favor seleccione un motivo válido');
+                                return false;
+                            }
+                            if (!justificacion.trim()) {
+                                Swal.showValidationMessage('Por favor ingrese una justificación');
+                                return false;
+                            }
+                            if (justificacion.trim().length < 10) {
+                                Swal.showValidationMessage('La justificación debe tener al menos 10 caracteres');
+                                return false;
+                            }
+                            if (justificacion.trim().length > 500) {
+                                Swal.showValidationMessage('La justificación no puede exceder los 500 caracteres');
+                                return false;
+                            }
+
+                            return { claveMotivo, justificacion };
+                        },
+                        didOpen: () => {
+                            const textarea = document.getElementById('justificacionCancelacion');
+                            const contador = document.getElementById('contadorCaracteres');
+                            const restantes = document.getElementById('caracteresRestantes');
+
+                            // Event listener para el contador
+                            textarea.addEventListener('input', function() {
+                                if (this.value.length > 500) {
+                                    this.value = this.value.substring(0, 500);
+                                }
+
+                                const longitud = this.value.length;
+                                contador.textContent = longitud;
+                                const caracteresRestantes = 500 - longitud;
+                                restantes.textContent = `${caracteresRestantes} caracteres restantes`;
+
+                                // Cambiar color según el límite
+                                if (longitud > 450) {
+                                    contador.className = 'text-warning fw-bold';
+                                    restantes.className = 'text-warning fw-bold';
+                                } else if (longitud >= 500) {
+                                    contador.className = 'text-danger fw-bold';
+                                    restantes.className = 'text-danger fw-bold';
+                                } else {
+                                    contador.className = 'text-muted';
+                                    restantes.className = 'text-muted';
+                                }
+                            });
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const { claveMotivo, justificacion } = result.value;
+                            if (esAdmin) {
+                                cancelarDirecto(idAgenda, claveMotivo, justificacion);
+                            } else {
+                                preCancelar(idAgenda, claveMotivo, justificacion);
+                            }
+                        }
+                    });
+                }).fail(function() {
+                    Swal.fire('Error', 'No se pudieron cargar los motivos de cancelación', 'error');
                 });
+            }
+
+            function cancelarDirecto(idAgenda, claveMotivo, justificacion) {
+                const fila = $(`tr[data-clave-agenda="${idAgenda}"]`);
+                const button = fila.find('.btn-cancelar-directo');
+
+                $.post('@Url.Action("CancelarDirecto", "Agenda")', {
+                    idAgenda: idAgenda,
+                    claveMotivo: claveMotivo,
+                    justificacion: justificacion
+                })
+                .done(function(response) {
+                    if (response.success) {
+                        Swal.fire('¡Cancelado!', response.message, 'success');
+                        // Actualizar la fila
+                        const celdaEstatus = fila.find('.estatus-agenda');
+                        celdaEstatus.html('<span class="badge bg-secondary">CANCELADO</span>');
+
+                        const celdaAcciones = button.closest('td');
+                        celdaAcciones.html('<span class="text-muted">N/A</span>');
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                })
+                .fail(function() {
+                    Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                });
+            }
+
+            function preCancelar(idAgenda, claveMotivo, justificacion) {
+                const fila = $(`tr[data-clave-agenda="${idAgenda}"]`);
+                const button = fila.find('.btn-precancelar');
+
+                $.post('@Url.Action("PreCancelar", "Agenda")', {
+                    idAgenda: idAgenda,
+                    claveMotivo: claveMotivo,
+                    justificacion: justificacion
+                })
+                .done(function(response) {
+                    if (response.success) {
+                        Swal.fire('¡Solicitud Enviada!', response.message, 'success');
+                        // Actualizar la fila
+                        const celdaEstatus = fila.find('.estatus-agenda');
+                        celdaEstatus.html('<span class="badge bg-warning text-dark">PRE-CANCELADO</span>');
+
+                        const celdaAcciones = button.closest('td');
+                        if (esAdmin) {
+                            celdaAcciones.html(`
+                                <button class="btn btn-success btn-sm btn-confirmar-cancelacion" data-id="${idAgenda}" title="Confirmar Cancelación">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm btn-rechazar-cancelacion" data-id="${idAgenda}" title="Rechazar Cancelación">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            `);
+                        } else {
+                            celdaAcciones.html('<span class="text-muted fst-italic">En espera de aprobación</span>');
+                        }
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                })
+                .fail(function() {
+                    Swal.fire('Error de Conexión', 'No se pudo comunicar con el servidor.', 'error');
+                });
+            }
+
+            // EVENT HANDLERS PARA CANCELACIONES
+            $(document).on('click', '.btn-cancelar-directo', function() {
+                const id = $(this).data('id');
+                mostrarModalCancelacion(id, true);
             });
 
-            $('#tablaCFEmaticos, #tablaAC, #tablaEC').on('click', '.btn-confirmar-cancelacion', function() {
+            $(document).on('click', '.btn-precancelar', function() {
+                const id = $(this).data('id');
+                mostrarModalCancelacion(id, false);
+            });
+
+            $(document).on('click', '.btn-confirmar-cancelacion', function() {
                 var id = $(this).data('id');
                 var fila = $(this).closest('tr');
 
@@ -861,7 +964,7 @@
                 });
             });
 
-            $('#tablaCFEmaticos, #tablaAC, #tablaEC').on('click', '.btn-rechazar-cancelacion', function() {
+            $(document).on('click', '.btn-rechazar-cancelacion', function() {
                 var id = $(this).data('id');
                 var fila = $(this).closest('tr');
 
@@ -901,7 +1004,7 @@
                 });
             });
 
-            // Modal para información del equipo
+            // EL RESTO DE TU CÓDIGO JAVASCRIPT PERMANECE IGUAL
             $('[data-bs-target="#modalInfo"]').on('click', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');
@@ -920,7 +1023,7 @@
                 $('#modalInfoBody').html('');
             });
 
-            // Para generar los PDFs de CFEmáticos
+            // Para generar los PDFs
             $('#tablaCFEmaticos').on('click', '[data-bs-target="#modalPdf"]', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');
@@ -936,12 +1039,20 @@
                 $('#nombreTecnico').prop('required', false);
             });
 
-            // Para generar PDFs de Equipos de Atención a Clientes
             $('#tablaAC').on('click', '.btnGenerarPdf', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');
                 var tipoEquipo = fila.data('tipo-equipo');
                 var fechaProgramada = fila.find('td:first').text().trim();
+
+                var prefix = 'HojaServicio';
+                if (tipoEquipo.toUpperCase().includes('CFECAM')) {
+                    prefix += 'CFECAM';
+                } else if (tipoEquipo.toUpperCase().includes('CFETURNO')) {
+                    prefix += 'CFETURNO';
+                } else {
+                    prefix += 'EquipoAC';
+                }
 
                 var $btn = $(this);
                 $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
@@ -952,30 +1063,18 @@
                     data: {
                         numActFijo: numActFijo,
                         fechaProgramada: fechaProgramada,
-                        responsable: "TÉCNICO DE ZONA",
+                        responsable: "TECNICO_DE_ZONA",
                         nombreTecnico: "@Context.Session.GetString("NombreUsuario")",
                         tipoEquipo: tipoEquipo
                     },
                     xhrFields: {
                         responseType: 'blob'
                     },
-                    success: function(data, status, xhr) {
+                    success: function(data) {
                         var url = URL.createObjectURL(data);
                         var a = document.createElement('a');
                         a.href = url;
-
-                        var contentDisposition = xhr.getResponseHeader('Content-Disposition');
-                        var fileName = 'documento.pdf';
-
-                        if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
-                            var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                            var matches = filenameRegex.exec(contentDisposition);
-                            if (matches != null && matches[1]) {
-                                fileName = matches[1].replace(/['"]/g, '');
-                            }
-                        }
-
-                        a.download = fileName;
+                        a.download = prefix + '_' + numActFijo + '.pdf';
                         document.body.appendChild(a);
                         a.click();
                         setTimeout(function() {
@@ -987,12 +1086,11 @@
                         alert('Error al generar el PDF: ' + xhr.responseText);
                     },
                     complete: function() {
-                        $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf me-1"></i>');
+                        $btn.prop('disabled', false).html('<i class="bi bi-file-earmark-pdf"></i>Descargar');
                     }
                 });
             });
 
-            // Para generar PDFs de Equipos de Cómputo
             $('#tablaEC').on('click', '.btnGenerarPdf', function() {
                 var fila = $(this).closest('tr');
                 var numActFijo = fila.data('num-act-fijo');
@@ -1010,7 +1108,6 @@
                 });
             });
 
-            // Mostrar/ocultar campo de técnico externo
             $('#responsable').change(function() {
                 if ($(this).val() === 'TECNICO_EXTERNO') {
                     $('#divTecnicoExterno').show();
@@ -1021,11 +1118,14 @@
                 }
             });
 
-            // Generar PDF para CFEmáticos
             $('#btnGenerarPdf').click(function() {
                 if ($('#formHojaServicio')[0].checkValidity()) {
                     var formData = $('#formHojaServicio').serialize();
                     var $btn = $(this);
+                    var numCajero = $('#numCajeroPdf').val();
+                    var fileName = numCajero ?
+                        'HojaServicioCFEMATICO_' + numCajero + '.pdf' :
+                        'HojaServicioCFEMATICO_' + $('#numActFijoPdf').val() + '.pdf';
 
                     $btn.prop('disabled', true).html('<i class="bi bi-hourglass me-2"></i>Generando...');
 
@@ -1036,22 +1136,10 @@
                         xhrFields: {
                             responseType: 'blob'
                         },
-                        success: function(data, status, xhr) {
+                        success: function(data) {
                             var url = URL.createObjectURL(data);
                             var a = document.createElement('a');
                             a.href = url;
-
-                            var contentDisposition = xhr.getResponseHeader('Content-Disposition');
-                            var fileName = 'documento.pdf';
-
-                            if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
-                                var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                                var matches = filenameRegex.exec(contentDisposition);
-                                if (matches != null && matches[1]) {
-                                    fileName = matches[1].replace(/['"]/g, '');
-                                }
-                            }
-
                             a.download = fileName;
                             document.body.appendChild(a);
                             a.click();
@@ -1073,7 +1161,6 @@
                 }
             });
 
-            // Funciones para Equipos de Cómputo
             $('#btnContinuarComputo').click(function() {
                 descargarPdfComputo(false);
             });
@@ -1090,8 +1177,8 @@
                 var formData = {
                     numActFijo: $('#numActFijoPdfComputo').val(),
                     fechaProgramada: $('#fechaProgramadaPdfComputo').val(),
-                    responsable: "TÉCNICO DE ZONA",
-                    nombreTecnico: "@Context.Session.GetString("NombreUsuario")"
+                    responsable: "TECNICO_DE_ZONA",
+                    nombreTecnico: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Context.Session.GetString("NombreUsuario")))
                 };
 
                 if (usarDatosModificados) {
@@ -1113,23 +1200,11 @@
                     xhrFields: {
                         responseType: 'blob'
                     },
-                    success: function(data, status, xhr) {
+                    success: function(data) {
                         var url = URL.createObjectURL(data);
                         var a = document.createElement('a');
                         a.href = url;
-
-                        var contentDisposition = xhr.getResponseHeader('Content-Disposition');
-                        var fileName = 'documento.pdf';
-
-                        if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
-                            var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                            var matches = filenameRegex.exec(contentDisposition);
-                            if (matches != null && matches[1]) {
-                                fileName = matches[1].replace(/['"]/g, '');
-                            }
-                        }
-
-                        a.download = fileName;
+                        a.download = 'HojaServicioEquipoComputo_' + formData.numActFijo + '.pdf';
                         document.body.appendChild(a);
                         a.click();
                         setTimeout(function() {
