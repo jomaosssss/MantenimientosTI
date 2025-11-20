@@ -1,10 +1,15 @@
 ﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using MantenimientosTI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
 using System.Globalization;
-using ClosedXML.Excel;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace MantenimientosTI.Controllers
 {
@@ -333,6 +338,10 @@ namespace MantenimientosTI.Controllers
                 var fechaInicio = new DateTime(anio.Value, mes.Value, 1);
                 var fechaFin = fechaInicio.AddMonths(1).AddDays(-1);
 
+                // Convertir a DateOnly para comparar con FechaProgramada
+                var fechaInicioDateOnly = DateOnly.FromDateTime(fechaInicio);
+                var fechaFinDateOnly = DateOnly.FromDateTime(fechaFin);
+
                 // Consulta base para mantenimientos terminados
                 var query = _dbocontext.Mantenimientos
                     .Include(m => m.Agendum)
@@ -353,15 +362,17 @@ namespace MantenimientosTI.Controllers
                     query = query.Where(m => m.Agendum.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
                 }
 
-                // Aplicar filtro por rango de fechas (método compatible con EF)
-                query = query.Where(m => m.FechaInsercion >= fechaInicio && m.FechaInsercion <= fechaFin);
+                // ✅ CAMBIO: Filtrar por FECHA PROGRAMADA en lugar de FechaInsercion
+                query = query.Where(m => m.Agendum.FechaProgramada >= fechaInicioDateOnly &&
+                                        m.Agendum.FechaProgramada <= fechaFinDateOnly);
 
-                // CONSULTA PRINCIPAL OPTIMIZADA - Seleccionar solo los datos necesarios
+                // CONSULTA PRINCIPAL OPTIMIZADA
                 var mantenimientosData = await query
-                    .OrderByDescending(m => m.FechaInsercion)
+                    .OrderByDescending(m => m.Agendum.FechaProgramada) // ✅ CAMBIO: Ordenar por FechaProgramada
                     .Select(m => new
                     {
                         Mantenimiento = m,
+                        Agenda = m.Agendum, // ✅ Incluir Agenda para acceder a FechaProgramada
                         Centro = m.Agendum.NumActFijoNavigation.CatCentro,
                         Agencia = m.Agendum.NumActFijoNavigation.CatCentro.CatAgencium,
                         Zona = m.Agendum.NumActFijoNavigation.CatCentro.CatAgencium.CatZona
@@ -418,6 +429,7 @@ namespace MantenimientosTI.Controllers
                 foreach (var item in mantenimientosData)
                 {
                     var m = item.Mantenimiento;
+                    var agenda = item.Agenda; // ✅ Usar la agenda que incluye FechaProgramada
                     var centro = item.Centro;
                     var agencia = item.Agencia;
                     var zona = item.Zona;
@@ -434,7 +446,7 @@ namespace MantenimientosTI.Controllers
                     var itemTabla = new
                     {
                         m.NumOrden,
-                        FechaProgramada = m.Agendum.FechaProgramada.ToString("dd/MM/yyyy"),
+                        FechaProgramada = agenda.FechaProgramada.ToString("dd/MM/yyyy"), // ✅ Usar fecha de la agenda
                         FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
                         FechaTerminada = m.FechaInsercion.ToString("dd/MM/yyyy HH:mm"),
                         m.EvidenciaHojaServicio,
@@ -478,17 +490,14 @@ namespace MantenimientosTI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ObtenerImagen(int numOrden, string tipo)
+        public async Task<IActionResult> ObtenerImagen(int numOrden, string tipo, bool esMiniatura = false)
         {
             try
             {
                 var foto = await _dbocontext.Fotos
                     .FirstOrDefaultAsync(f => f.NumOrden == numOrden);
 
-                if (foto == null)
-                {
-                    return NotFound("No se encontró el registro de fotos");
-                }
+                if (foto == null) return NotFound("No se encontró el registro de fotos");
 
                 string imagenBase64 = tipo switch
                 {
@@ -499,24 +508,59 @@ namespace MantenimientosTI.Controllers
                 };
 
                 if (string.IsNullOrEmpty(imagenBase64))
-                {
                     return NotFound("No se encontró la imagen solicitada");
-                }
 
-                // Limpiar el string Base64 por si tiene prefijos
+                // Limpiar Base64
                 var cleanBase64 = imagenBase64.StartsWith("data:image")
                     ? imagenBase64.Split(',')[1]
                     : imagenBase64;
 
-                // Convertir a bytes
                 byte[] imageBytes = Convert.FromBase64String(cleanBase64);
 
-                // Determinar el tipo de imagen
+                // ✅ NUEVO: Redimensionar según el uso
+                if (esMiniatura)
+                {
+                    // Para miniaturas: calidad baja, tamaño pequeño
+                    imageBytes = RedimensionarImagen(imageBytes, 80, 80, 50);
+                }
+                else
+                {
+                    // Para modal: calidad media, tamaño moderado
+                    imageBytes = RedimensionarImagen(imageBytes, 800, 600, 70);
+                }
+
                 return File(imageBytes, "image/jpeg");
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error al procesar la imagen: {ex.Message}");
+            }
+        }
+
+        // ✅ NUEVO: Método para redimensionar imágenes
+        private byte[] RedimensionarImagen(byte[] imageBytes, int maxWidth, int maxHeight, int calidad)
+        {
+            using (var memoryStream = new MemoryStream(imageBytes))
+            using (var image = Image.Load(memoryStream))
+            {
+                // Calcular nuevo tamaño manteniendo aspecto
+                var options = new ResizeOptions
+                {
+                    Mode = ResizeMode.Max,
+                    Size = new Size(maxWidth, maxHeight)
+                };
+
+                image.Mutate(x => x.Resize(options));
+
+                // Guardar con compresión
+                using (var outputStream = new MemoryStream())
+                {
+                    image.Save(outputStream, new JpegEncoder
+                    {
+                        Quality = calidad
+                    });
+                    return outputStream.ToArray();
+                }
             }
         }
 

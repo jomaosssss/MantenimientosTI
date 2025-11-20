@@ -368,6 +368,30 @@
             min-width: 0;
         }
     }
+
+    /* Estilos para la tabla de resumen */
+    .table-responsive {
+        border-radius: 8px;
+    }
+
+    .table th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        background-color: #f8f9fa;
+    }
+
+    .table td {
+        font-size: 0.9rem;
+        vertical-align: middle;
+    }
+
+    .table-active {
+        background-color: #e9ecef !important;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,.075);
+    }
 </style>
 
 <div class="container mt-4">
@@ -469,10 +493,10 @@
                                     <div class="d-flex align-items-center gap-2 flex-grow-1">
                                         <label class="form-label mb-0 text-nowrap">Rango de fechas:</label>
                                         <input type="date" class="form-control form-control-sm" id="filtroFechaInicio"
-                                               style="max-width: 110px;" title="Fecha Inicio">
+                                               style="max-width: 150px;" title="Fecha Inicio">
                                         <span class="text-muted">al</span>
                                         <input type="date" class="form-control form-control-sm" id="filtroFechaFin"
-                                               style="max-width: 110px;" title="Fecha Fin">
+                                               style="max-width: 150px;" title="Fecha Fin">
                                         <label class="form-label mb-0 text-nowrap ms-3">Zona:</label>
                                         <select class="form-select form-select-sm" id="filtroZona" style="max-width: 150px;">
                                             <option value="TODAS">TODAS</option>
@@ -553,6 +577,7 @@
                             </div>
 
                             <div class="row g-3" id="contenedorGraficasTipos" style="display: none;">
+                                <!-- Gráficas individuales -->
                                 <div class="col-md-4">
                                     <div class="card tipo-equipo-card border-0 shadow-sm h-100">
                                         <div class="tipo-equipo-header">
@@ -562,20 +587,16 @@
                                             <div class="chart-container flex-grow-1 position-relative">
                                                 <canvas id="chart-cfematicos"></canvas>
                                             </div>
-                                            <div class="resumen-stats">
-                                                <div class="stat-item">
-                                                    <span class="stat-label">Programados:</span>
-                                                    <span class="stat-value" id="cfematicos-programados">0</span>
-                                                </div>
-                                                <div class="stat-item">
-                                                    <span class="stat-label">Terminados:</span>
-                                                    <span class="stat-value" id="cfematicos-terminados">0</span>
-                                                    <span class="stat-percentage" id="cfematicos-terminados-porcentaje">(0%)</span>
-                                                </div>
-                                                <div class="stat-item">
-                                                    <span class="stat-label">Pendientes:</span>
-                                                    <span class="stat-value" id="cfematicos-pendientes">0</span>
-                                                    <span class="stat-percentage" id="cfematicos-pendientes-porcentaje">(0%)</span>
+                                            <div class="legend-container mt-2">
+                                                <div class="d-flex flex-column align-items-center gap-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="color-box bg-success me-2"></div>
+                                                        <small class="text-muted">Terminados: <span id="cfematicos-terminados">0</span></small>
+                                                    </div>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="color-box bg-warning me-2"></div>
+                                                        <small class="text-muted">Pendientes: <span id="cfematicos-pendientes">0</span></small>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -591,20 +612,16 @@
                                             <div class="chart-container flex-grow-1 position-relative">
                                                 <canvas id="chart-equipos-ac"></canvas>
                                             </div>
-                                            <div class="resumen-stats">
-                                                <div class="stat-item">
-                                                    <span class="stat-label">Programados:</span>
-                                                    <span class="stat-value" id="equipos-ac-programados">0</span>
-                                                </div>
-                                                <div class="stat-item">
-                                                    <span class="stat-label">Terminados:</span>
-                                                    <span class="stat-value" id="equipos-ac-terminados">0</span>
-                                                    <span class="stat-percentage" id="equipos-ac-terminados-porcentaje">(0%)</span>
-                                                </div>
-                                                <div class="stat-item">
-                                                    <span class="stat-label">Pendientes:</span>
-                                                    <span class="stat-value" id="equipos-ac-pendientes">0</span>
-                                                    <span class="stat-percentage" id="equipos-ac-pendientes-porcentaje">(0%)</span>
+                                            <div class="legend-container mt-2">
+                                                <div class="d-flex flex-column align-items-center gap-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="color-box bg-success me-2"></div>
+                                                        <small class="text-muted">Terminados: <span id="equipos-ac-terminados">0</span></small>
+                                                    </div>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="color-box bg-warning me-2"></div>
+                                                        <small class="text-muted">Pendientes: <span id="equipos-ac-pendientes">0</span></small>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -620,21 +637,71 @@
                                             <div class="chart-container flex-grow-1 position-relative">
                                                 <canvas id="chart-equipos-computo"></canvas>
                                             </div>
-                                            <div class="resumen-stats">
-                                                <div class="stat-item">
-                                                    <span class="stat-label">Programados:</span>
-                                                    <span class="stat-value" id="equipos-computo-programados">0</span>
+                                            <div class="legend-container mt-2">
+                                                <div class="d-flex flex-column align-items-center gap-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="color-box bg-success me-2"></div>
+                                                        <small class="text-muted">Terminados: <span id="equipos-computo-terminados">0</span></small>
+                                                    </div>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="color-box bg-warning me-2"></div>
+                                                        <small class="text-muted">Pendientes: <span id="equipos-computo-pendientes">0</span></small>
+                                                    </div>
                                                 </div>
-                                                <div class="stat-item">
-                                                    <span class="stat-label">Terminados:</span>
-                                                    <span class="stat-value" id="equipos-computo-terminados">0</span>
-                                                    <span class="stat-percentage" id="equipos-computo-terminados-porcentaje">(0%)</span>
-                                                </div>
-                                                <div class="stat-item">
-                                                    <span class="stat-label">Pendientes:</span>
-                                                    <span class="stat-value" id="equipos-computo-pendientes">0</span>
-                                                    <span class="stat-percentage" id="equipos-computo-pendientes-porcentaje">(0%)</span>
-                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tabla de resumen que ocupa todo el ancho -->
+                                <div class="col-12 mt-4">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0 text-dark">Tabla de avance</h5>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-hover mb-0">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th class="text-center">CATEGORÍA</th>
+                                                            <th class="text-center">PROGRAMADOS</th>
+                                                            <th class="text-center">TERMINADOS</th>
+                                                            <th class="text-center">PENDIENTES</th>
+                                                            <th class="text-center">PORCENTAJE</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="text-start">CFEMÁTICOS</td>
+                                                            <td class="text-center" id="tabla-cfematicos-programados">0</td>
+                                                            <td class="text-center" id="tabla-cfematicos-terminados">0</td>
+                                                            <td class="text-center" id="tabla-cfematicos-pendientes">0</td>
+                                                            <td class="text-center" id="tabla-cfematicos-porcentaje">0%</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="text-start">EQUIPOS DE ATENCIÓN A CLIENTES</td>
+                                                            <td class="text-center" id="tabla-equipos-ac-programados">0</td>
+                                                            <td class="text-center" id="tabla-equipos-ac-terminados">0</td>
+                                                            <td class="text-center" id="tabla-equipos-ac-pendientes">0</td>
+                                                            <td class="text-center" id="tabla-equipos-ac-porcentaje">0%</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="text-start">EQUIPOS DE CÓMPUTO</td>
+                                                            <td class="text-center" id="tabla-equipos-computo-programados">0</td>
+                                                            <td class="text-center" id="tabla-equipos-computo-terminados">0</td>
+                                                            <td class="text-center" id="tabla-equipos-computo-pendientes">0</td>
+                                                            <td class="text-center" id="tabla-equipos-computo-porcentaje">0%</td>
+                                                        </tr>
+                                                        <tr class="table-active fw-bold">
+                                                            <td class="text-start">TOTAL</td>
+                                                            <td class="text-center" id="tabla-total-programados">0</td>
+                                                            <td class="text-center" id="tabla-total-terminados">0</td>
+                                                            <td class="text-center" id="tabla-total-pendientes">0</td>
+                                                            <td class="text-center" id="tabla-total-porcentaje">0%</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
                                     </div>
@@ -1206,52 +1273,94 @@
                 });
             }
 
-            function actualizarGraficasPorTipoEquipo(datosGraficas, zonaSeleccionada) {
-                // Destruir gráficas existentes
-                if (chartCfematicos) chartCfematicos.destroy();
-                if (chartEquiposAC) chartEquiposAC.destroy();
-                if (chartEquiposComputo) chartEquiposComputo.destroy();
+        function actualizarGraficasPorTipoEquipo(datosGraficas, zonaSeleccionada) {
+            // Destruir gráficas existentes
+            if (chartCfematicos) chartCfematicos.destroy();
+            if (chartEquiposAC) chartEquiposAC.destroy();
+            if (chartEquiposComputo) chartEquiposComputo.destroy();
 
-                // Procesar datos para cada tipo de equipo
-                const datosCfematicos = datosGraficas.find(d => d.tipoEquipo === 'CFEMÁTICOS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
-                const datosEquiposAC = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_AC') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
-                const datosEquiposComputo = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_COMPUTO') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+            // Procesar datos para cada tipo de equipo
+            const datosCfematicos = datosGraficas.find(d => d.tipoEquipo === 'CFEMÁTICOS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+            const datosEquiposAC = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_AC') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+            const datosEquiposComputo = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_COMPUTO') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
 
-                // Actualizar estadísticas
-                actualizarEstadisticas('cfematicos', datosCfematicos);
-                actualizarEstadisticas('equipos-ac', datosEquiposAC);
-                actualizarEstadisticas('equipos-computo', datosEquiposComputo);
+            // Actualizar estadísticas de las tarjetas
+            actualizarEstadisticas('cfematicos', datosCfematicos);
+            actualizarEstadisticas('equipos-ac', datosEquiposAC);
+            actualizarEstadisticas('equipos-computo', datosEquiposComputo);
 
-                // Crear nuevas gráficas con animación escalonada
-                setTimeout(() => {
-                    chartCfematicos = crearGraficaPastel('chart-cfematicos', datosCfematicos, ['#28a745', '#ffc107', '#6c757d'], 'CFEMÁTICOS', zonaSeleccionada);
-                }, 100);
+            // Actualizar tabla de resumen
+            actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo);
 
-                setTimeout(() => {
-                    chartEquiposAC = crearGraficaPastel('chart-equipos-ac', datosEquiposAC, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_AC', zonaSeleccionada);
-                }, 300);
+            // Crear nuevas gráficas con animación escalonada
+            setTimeout(() => {
+                chartCfematicos = crearGraficaPastel('chart-cfematicos', datosCfematicos, ['#28a745', '#ffc107', '#6c757d'], 'CFEMÁTICOS', zonaSeleccionada);
+            }, 100);
 
-                setTimeout(() => {
-                    chartEquiposComputo = crearGraficaPastel('chart-equipos-computo', datosEquiposComputo, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_COMPUTO', zonaSeleccionada);
-                }, 500);
-            }
+            setTimeout(() => {
+                chartEquiposAC = crearGraficaPastel('chart-equipos-ac', datosEquiposAC, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_AC', zonaSeleccionada);
+            }, 300);
 
-            function actualizarEstadisticas(prefijo, datos) {
-                const programados = datos.programados || 0;
-                const terminados = datos.terminados || 0;
-                const pendientes = datos.pendientes || 0;
+            setTimeout(() => {
+                chartEquiposComputo = crearGraficaPastel('chart-equipos-computo', datosEquiposComputo, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_COMPUTO', zonaSeleccionada);
+            }, 500);
+        }
 
-                // Calcular porcentajes
-                const porcentajeTerminados = programados > 0 ? Math.round((terminados / programados) * 100) : 0;
-                const porcentajePendientes = programados > 0 ? Math.round((pendientes / programados) * 100) : 0;
+                // Nueva función para actualizar la tabla de resumen
+        function actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo) {
+            // CFEMÁTICOS
+            const cfematicosProgramados = datosCfematicos.programados || 0;
+            const cfematicosTerminados = datosCfematicos.terminados || 0;
+            const cfematicosPendientes = datosCfematicos.pendientes || 0;
+            const cfematicosPorcentaje = cfematicosProgramados > 0 ? Math.round((cfematicosTerminados / cfematicosProgramados) * 100) : 0;
 
-                // Actualizar elementos HTML
-                $(`#${prefijo}-programados`).text(programados);
-                $(`#${prefijo}-terminados`).text(terminados);
-                $(`#${prefijo}-terminados-porcentaje`).text(`(${porcentajeTerminados}%)`);
-                $(`#${prefijo}-pendientes`).text(pendientes);
-                $(`#${prefijo}-pendientes-porcentaje`).text(`(${porcentajePendientes}%)`);
-            }
+            $('#tabla-cfematicos-programados').text(cfematicosProgramados);
+            $('#tabla-cfematicos-terminados').text(cfematicosTerminados);
+            $('#tabla-cfematicos-pendientes').text(cfematicosPendientes);
+            $('#tabla-cfematicos-porcentaje').text(cfematicosPorcentaje + '%');
+
+            // EQUIPOS DE ATENCIÓN A CLIENTES
+            const equiposACProgramados = datosEquiposAC.programados || 0;
+            const equiposACTerminados = datosEquiposAC.terminados || 0;
+            const equiposACPendientes = datosEquiposAC.pendientes || 0;
+            const equiposACPorcentaje = equiposACProgramados > 0 ? Math.round((equiposACTerminados / equiposACProgramados) * 100) : 0;
+
+            $('#tabla-equipos-ac-programados').text(equiposACProgramados);
+            $('#tabla-equipos-ac-terminados').text(equiposACTerminados);
+            $('#tabla-equipos-ac-pendientes').text(equiposACPendientes);
+            $('#tabla-equipos-ac-porcentaje').text(equiposACPorcentaje + '%');
+
+            // EQUIPOS DE CÓMPUTO
+            const equiposComputoProgramados = datosEquiposComputo.programados || 0;
+            const equiposComputoTerminados = datosEquiposComputo.terminados || 0;
+            const equiposComputoPendientes = datosEquiposComputo.pendientes || 0;
+            const equiposComputoPorcentaje = equiposComputoProgramados > 0 ? Math.round((equiposComputoTerminados / equiposComputoProgramados) * 100) : 0;
+
+            $('#tabla-equipos-computo-programados').text(equiposComputoProgramados);
+            $('#tabla-equipos-computo-terminados').text(equiposComputoTerminados);
+            $('#tabla-equipos-computo-pendientes').text(equiposComputoPendientes);
+            $('#tabla-equipos-computo-porcentaje').text(equiposComputoPorcentaje + '%');
+
+            // TOTALES
+            const totalProgramados = cfematicosProgramados + equiposACProgramados + equiposComputoProgramados;
+            const totalTerminados = cfematicosTerminados + equiposACTerminados + equiposComputoTerminados;
+            const totalPendientes = cfematicosPendientes + equiposACPendientes + equiposComputoPendientes;
+            const totalPorcentaje = totalProgramados > 0 ? Math.round((totalTerminados / totalProgramados) * 100) : 0;
+
+            $('#tabla-total-programados').text(totalProgramados);
+            $('#tabla-total-terminados').text(totalTerminados);
+            $('#tabla-total-pendientes').text(totalPendientes);
+            $('#tabla-total-porcentaje').text(totalPorcentaje + '%');
+        }
+
+        function actualizarEstadisticas(prefijo, datos) {
+            const terminados = datos.terminados || 0;
+            const pendientes = datos.pendientes || 0;
+
+            // Actualizar elementos HTML de las tarjetas
+            $(`#${prefijo}-terminados`).text(terminados);
+            $(`#${prefijo}-pendientes`).text(pendientes);
+        }
 
             function crearGraficaPastel(canvasId, datos, colores, tipoEquipo, zonaSeleccionada) {
                 const ctx = document.getElementById(canvasId);

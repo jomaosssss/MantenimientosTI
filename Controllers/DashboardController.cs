@@ -477,7 +477,7 @@ namespace MantenimientosTI.Controllers
             try
             {
                 var usuariosAdministradores = await _context.Usuarios
-                    .Where(u => u.ClaveRol == 1 && u.Estatus.ToLower() == "activo")
+                    .Where(u => u.ClaveRol != 2 && u.Estatus.ToLower() == "activo")
                     .Select(u => new
                     {
                         rpe = u.Rpe,
@@ -1017,7 +1017,7 @@ namespace MantenimientosTI.Controllers
                         break;
                 }
 
-                // Obtener registros con información adicional - CONSULTA CORREGIDA
+                // Obtener registros con información adicional
                 var registros = await baseQuery
                     .Select(a => new
                     {
