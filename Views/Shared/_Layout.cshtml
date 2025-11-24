@@ -216,20 +216,19 @@
                             </a>
                         }
 
-                        @if (User.IsInRole("ADMINISTRADOR"))
+@*                         @if (User.IsInRole("ADMINISTRADOR"))
                         {
                             <a href="@Url.Action("Index", "Bitacora")" class="nav-link ajax-link text-white">
                                 <div class="sb-nav-link-icon"><i class="fas fa-history"></i></div>
                                 Bitácora de actividad
                             </a>
-                        }
+                        } *@
                         @if (User.IsInRole("ADMINISTRADOR"))
                         {
-                        <li class="nav-item">
-                            <a class="nav-link" href="@Url.Action("UnifiedDashboard", "Analytics")">
-                                <i class="fas fa-chart-bar me-2"></i>Bitacora de analisis
-                            </a>
-                        </li>
+                            <a href="@Url.Action("UnifiedDashboard", "Analytics")" class="nav-link ajax-link text-white">
+                                <div class="sb-nav-link-icon"><i class="fas fa-chart-bar"></i></div>
+                            Bitácora de análisis
+                        </a>
                         }
                     </div>
                 </div>
