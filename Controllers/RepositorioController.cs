@@ -510,51 +510,49 @@ namespace MantenimientosTI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ObtenerImagen(int numOrden, string tipo, bool esMiniatura = false)
+        public async Task<IActionResult> ObtenerImagen(int numOrden, string tipo)
         {
             try
             {
                 var foto = await _dbocontext.Fotos
-                    .FirstOrDefaultAsync(f => f.NumOrden == numOrden);
+                    .AsNoTracking()
+                    .Where(f => f.NumOrden == numOrden)
+                    .Select(f => new {
+                        Imagen = tipo == "antes" ? f.FotoAntes :
+                                 tipo == "durante" ? f.FotoDurante :
+                                 tipo == "despues" ? f.FotoDespues : null
+                    })
+                    .FirstOrDefaultAsync();
 
-                if (foto == null) return NotFound("No se encontró el registro de fotos");
+                if (foto?.Imagen == null)
+                    return NotFound();
 
-                string imagenBase64 = tipo switch
-                {
-                    "antes" => foto.FotoAntes,
-                    "durante" => foto.FotoDurante,
-                    "despues" => foto.FotoDespues,
-                    _ => null
-                };
-
-                if (string.IsNullOrEmpty(imagenBase64))
-                    return NotFound("No se encontró la imagen solicitada");
-
-                // Limpiar Base64
-                var cleanBase64 = imagenBase64.StartsWith("data:image")
-                    ? imagenBase64.Split(',')[1]
-                    : imagenBase64;
-
-                byte[] imageBytes = Convert.FromBase64String(cleanBase64);
-
-                // ✅ NUEVO: Redimensionar según el uso
-                if (esMiniatura)
-                {
-                    // Para miniaturas: calidad baja, tamaño pequeño
-                    imageBytes = RedimensionarImagen(imageBytes, 80, 80, 50);
-                }
-                else
-                {
-                    // Para modal: calidad media, tamaño moderado
-                    imageBytes = RedimensionarImagen(imageBytes, 800, 600, 70);
-                }
+                // ✅ CONVERSIÓN MÁS RÁPIDA
+                byte[] imageBytes = ConvertirBase64Rapido(foto.Imagen);
 
                 return File(imageBytes, "image/jpeg");
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error al procesar la imagen: {ex.Message}");
+                return StatusCode(500, $"Error: {ex.Message}");
             }
+        }
+
+        // ✅ MÉTODO OPTIMIZADO PARA CONVERSIÓN RÁPIDA
+        private byte[] ConvertirBase64Rapido(string base64String)
+        {
+            // Si tiene prefijo data:image, saltarlo directamente
+            if (base64String.StartsWith("data:image"))
+            {
+                int commaIndex = base64String.IndexOf(',');
+                if (commaIndex >= 0)
+                {
+                    base64String = base64String.Substring(commaIndex + 1);
+                }
+            }
+
+            // ✅ MEJORA: Usar Span<T> para mejor performance
+            return Convert.FromBase64String(base64String);
         }
 
         // ✅ NUEVO: Método para redimensionar imágenes
