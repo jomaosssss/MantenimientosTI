@@ -1,10 +1,11 @@
-using Microsoft.Extensions.FileProviders;
 using MantenimientosTI.Models;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 using MantenimientosTI.Services;
+using MantenimientosTI.Services.ImageValidation;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,9 +18,12 @@ builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>
 
 // Servicios personalizados
 //builder.Services.AddScoped<MantenimientosTI.Services.BitacoraService>();
+
 builder.Services.AddScoped<MantenimientosTI.Services.PlantillaBitacoraService>();
 builder.Services.AddScoped<InformacionSistema>();
 builder.Services.AddScoped<ReporteService>();
+builder.Services.AddScoped<IPerceptualHashService, PerceptualHashService>();
+builder.Services.AddScoped<IImageValidator, BasicImageValidator>();
 builder.Services.AddScoped<BitacoraService>();
 builder.Services.AddHostedService<ScheduledEmailService>();
 

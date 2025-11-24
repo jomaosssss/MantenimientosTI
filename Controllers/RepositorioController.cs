@@ -1,16 +1,19 @@
 ﻿using ClosedXML.Excel;
 using ClosedXML.Excel;
 using MantenimientosTI.Models;
+using MantenimientosTI.Services;
+using MantenimientosTI.Services.ImageValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Processing;
 using System.Globalization;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using MantenimientosTI.Services;
+using MantenimientosTI.Services.ImageValidation; // ← AGREGAR ESTE USING
+using MantenimientosTI.Models.ImageValidation;   // ← AGREGAR ESTE USING
 
 namespace MantenimientosTI.Controllers
 {
@@ -18,12 +21,14 @@ namespace MantenimientosTI.Controllers
     {
         private readonly MantenimientosTIContext _dbocontext;
         private readonly BitacoraService _bitacora;
+        private readonly IImageValidator _imageValidator; // ← NUEVO
 
 
-        public RepositorioController(MantenimientosTIContext context, BitacoraService bitacora)
+        public RepositorioController(MantenimientosTIContext context, BitacoraService bitacora, IImageValidator imageValidator) // ← AGREGAR ESTE PARÁMETRO)
         {
             _dbocontext = context;
             _bitacora = bitacora;
+            _imageValidator = imageValidator;
         }
 
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
@@ -162,52 +167,50 @@ namespace MantenimientosTI.Controllers
             {
                 try
                 {
-                    if (!DateOnly.TryParseExact(fechaAtencion, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly fechaAtencionParsed))
-                    {
-                        return Json(new { success = false, message = "Formato de fecha inválida" });
-                    }
-
-                    var agendaItem = await _dbocontext.Agenda
-                        .FirstOrDefaultAsync(a => a.ClaveAgenda == numOrden);
-
-                    if (agendaItem == null)
-                        return Json(new { success = false, message = "Registro no encontrado en la Agenda" });
+                    // ... tu código existente ...
 
                     var rpe = HttpContext.Session.GetString("Rpe");
                     if (string.IsNullOrEmpty(rpe))
                         return Json(new { success = false, message = "Sesión inválida, RPE no encontrado" });
 
-                    var mantenimiento = new Mantenimiento
-                    {
-                        NumOrden = agendaItem.ClaveAgenda,
-                        ClaveAgenda = agendaItem.ClaveAgenda,
-                        NumActFijo = agendaItem.NumActFijo,
-                        ClaveTipoMtto = agendaItem.ClaveTipoMtto,
-                        Rpe = rpe,
-                        Problemas = problemas ?? string.Empty,
-                        Diagnostico = diagnostico ?? string.Empty,
-                        Observaciones = observaciones ?? string.Empty,
-                        FechaInsercion = DateTime.Now,
-                        FechaAtencion = fechaAtencionParsed
-                    };
+                    // ⚡ NUEVO: Validar imágenes ANTES de procesar el mantenimiento
+                    var validationWarnings = new List<string>();
+                    var validationResults = new Dictionary<string, ImageValidationResult>();
 
-                    if (archivoPdf != null && archivoPdf.Length > 0)
+                    if (fotoAntes != null && fotoAntes.Length > 0)
                     {
-                        if (archivoPdf.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La hoja de servicio no debe exceder los 5MB" });
-
-                        if (Path.GetExtension(archivoPdf.FileName).ToLower() != ".pdf")
-                            return Json(new { success = false, message = "Solo se permiten archivos PDF" });
-
-                        mantenimiento.EvidenciaHojaServicio = await GuardarArchivo(archivoPdf);
-                    }
-                    else
-                    {
-                        return Json(new { success = false, message = "La hoja de servicio es obligatoria" });
+                        var validationResult = await _imageValidator.ValidateImageAsync(fotoAntes, rpe, numOrden, "Antes");
+                        validationResults["Antes"] = validationResult;
+                        
+                        if (validationResult.ValidationStatus == "Suspicious")
+                        {
+                            validationWarnings.Add("⚠️ La foto 'Antes' ha sido marcada para revisión por posible duplicado");
+                        }
                     }
 
-                    _dbocontext.Mantenimientos.Add(mantenimiento);
-                    await _dbocontext.SaveChangesAsync();
+                    if (fotoDurante != null && fotoDurante.Length > 0)
+                    {
+                        var validationResult = await _imageValidator.ValidateImageAsync(fotoDurante, rpe, numOrden, "Durante");
+                        validationResults["Durante"] = validationResult;
+                        
+                        if (validationResult.ValidationStatus == "Suspicious")
+                        {
+                            validationWarnings.Add("⚠️ La foto 'Durante' ha sido marcada para revisión por posible duplicado");
+                        }
+                    }
+
+                    if (fotoDespues != null && fotoDespues.Length > 0)
+                    {
+                        var validationResult = await _imageValidator.ValidateImageAsync(fotoDespues, rpe, numOrden, "Despues");
+                        validationResults["Despues"] = validationResult;
+                        
+                        if (validationResult.ValidationStatus == "Suspicious")
+                        {
+                            validationWarnings.Add("⚠️ La foto 'Después' ha sido marcada para revisión por posible duplicado");
+                        }
+                    }
+
+                    // ... resto de tu código existente para guardar mantenimiento ...
 
                     var foto = new Foto
                     {
@@ -216,7 +219,9 @@ namespace MantenimientosTI.Controllers
                     };
 
                     bool seAgregoAlgunaFoto = false;
+                    int? fotoId = null;
 
+                    // Procesar imágenes (tu código existente)
                     if (fotoAntes != null && fotoAntes.Length > 0)
                     {
                         if (fotoAntes.Length > 5 * 1024 * 1024)
@@ -226,62 +231,50 @@ namespace MantenimientosTI.Controllers
                         seAgregoAlgunaFoto = true;
                     }
 
-                    if (fotoDurante != null && fotoDurante.Length > 0)
-                    {
-                        if (fotoDurante.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Durante' no debe exceder los 5MB" });
-
-                        foto.FotoDurante = await ProcesarImagen(fotoDurante);
-                        seAgregoAlgunaFoto = true;
-                    }
-
-                    if (fotoDespues != null && fotoDespues.Length > 0)
-                    {
-                        if (fotoDespues.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Después' no debe exceder los 5MB" });
-
-                        foto.FotoDespues = await ProcesarImagen(fotoDespues);
-                        seAgregoAlgunaFoto = true;
-                    }
+                    // ... procesar fotoDurante y fotoDespues ...
 
                     // Solo se guarda la entidad Foto si se subió al menos una imagen
                     if (seAgregoAlgunaFoto)
                     {
                         _dbocontext.Fotos.Add(foto);
+                        await _dbocontext.SaveChangesAsync();
+                        fotoId = foto.Id; // Obtenemos el ID después de guardar
                     }
 
-                    // Actualizar agenda
-                    agendaItem.Estatus = "TERMINADO";
+                    // ⚡ NUEVO: Registrar logs de validación después de guardar las fotos
+                    if (fotoId.HasValue)
+                    {
+                        foreach (var validation in validationResults)
+                        {
+                            await _imageValidator.LogValidationAsync(
+                                validation.Value, 
+                                fotoId.Value, 
+                                numOrden, 
+                                rpe
+                            );
+                        }
+                    }
 
-                    // ✅ REGISTRO EN BITÁCORA - AGREGADO
-                    var usuario = HttpContext.Session.GetString("NombreUsuario") ?? "Usuario no identificado";
-                    var rol = HttpContext.Session.GetString("NombreRol") ?? "N/A";
-                    var zona = HttpContext.Session.GetString("NombreZona") ?? "N/A";
-                    var centro = HttpContext.Session.GetString("ClaveDivision") ?? "N/A";
+                    // ... resto de tu código existente ...
 
-                    await _bitacora.RegistrarTerminacionMantenimientoAsync(
-                        usuario: usuario,
-                        rpe: rpe,
-                        rol: rol,
-                        zona: zona,
-                        centro: centro,
-                        claveAgenda: numOrden.ToString(),
-                        equipo: agendaItem.NumActFijo
-                    );
-
-                    await _dbocontext.SaveChangesAsync();
-                    await transaction.CommitAsync();
+                    // ⚡ NUEVO: Mensaje con advertencias de validación si las hay
+                    var successMessage = "Mantenimiento Terminado Correctamente.";
+                    if (validationWarnings.Any())
+                    {
+                        successMessage += " " + string.Join(" ", validationWarnings);
+                    }
 
                     return Json(new
                     {
                         success = true,
-                        message = "Mantenimiento Terminado Correctamente."
+                        message = successMessage,
+                        warnings = validationWarnings, // ⚡ Enviar advertencias al frontend
+                        hasSuspiciousImages = validationWarnings.Any()
                     });
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    // Devuelve un mensaje de error más detallado para depuración
                     return Json(new
                     {
                         success = false,

@@ -1,6 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using MantenimientosTI.Models.ImageValidation;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
 
 namespace MantenimientosTI.Models;
 
@@ -61,8 +62,90 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<CatMotivoCancelacion> CatMotivosCancelacion { get; set; }
 
+    public virtual DbSet<ImageFingerprint> ImageFingerprints { get; set; }
+
+    public virtual DbSet<ImageValidationLog> ImageValidationLogs { get; set; }
+
+    public virtual DbSet<SuspiciousImageAlert> SuspiciousImageAlerts { get; set; }
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ImageFingerprint>(entity =>
+        {
+            entity.ToTable("ImageFingerprints");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.PerceptualHash)
+                .IsRequired()
+                .HasMaxLength(64);
+
+            entity.Property(e => e.UserId)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.TipoFoto)
+                .IsRequired()
+                .HasMaxLength(10);
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("GETDATE()");
+        });
+
+        modelBuilder.Entity<ImageValidationLog>(entity =>
+        {
+            entity.ToTable("ImageValidationLogs");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.UserId)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.ValidationStatus)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("Pending");
+
+            entity.Property(e => e.InspectorUserId)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.ValidatedAt)
+                .HasDefaultValueSql("GETDATE()");
+        });
+
+        modelBuilder.Entity<SuspiciousImageAlert>(entity =>
+        {
+            entity.ToTable("SuspiciousImageAlerts");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.UserId)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Reason)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.RiskLevel)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("Medium");
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("Pending");
+
+            entity.Property(e => e.ResolvedBy)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.ResolutionNotes)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("GETDATE()");
+        });
+
         modelBuilder.Entity<Agendum>(entity =>
         {
             entity.HasKey(e => e.ClaveAgenda).HasName("PK_Agenda_C34F139CA770DDB7");
