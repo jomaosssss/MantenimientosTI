@@ -1,6 +1,7 @@
-﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+﻿using MantenimientosTI.Services.ImageValidation.Interfaces;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.PixelFormats;
 using System.Text;
 
 namespace MantenimientosTI.Services.ImageValidation
@@ -18,27 +19,30 @@ namespace MantenimientosTI.Services.ImageValidation
         {
             try
             {
-                // Usar ImageSharp para procesamiento de imágenes
-                using var image = await Image.LoadAsync(imageStream);
+                // Cargar la imagen y convertir a formato que permita acceso a píxeles
+                using var image = await Image.LoadAsync<Rgb24>(imageStream);
 
                 // 1. Convertir a escala de grises
                 image.Mutate(x => x.Grayscale());
 
-                // 2. Reducir a 8x8 píxeles (ignorar detalles)
+                // 2. Reducir a 8x8 píxeles
                 image.Mutate(x => x.Resize(new Size(8, 8)));
 
                 // 3. Calcular promedio de color
                 double totalBrightness = 0;
-                var brightnessMatrix = new double[8, 8];
+                var brightnessValues = new double[64]; // 8x8 = 64 píxeles
+                int index = 0;
 
-                for (int y = 0; y < 8; y++)
+                // Acceso seguro a píxeles
+                for (int y = 0; y < image.Height; y++)
                 {
-                    for (int x = 0; x < 8; x++)
+                    for (int x = 0; x < image.Width; x++)
                     {
-                        var pixel = image[x, y];
+                        var pixel = image[x, y]; // ✅ Ahora funciona con Rgb24
                         var brightness = (pixel.R + pixel.G + pixel.B) / 3.0;
-                        brightnessMatrix[x, y] = brightness;
+                        brightnessValues[index] = brightness;
                         totalBrightness += brightness;
+                        index++;
                     }
                 }
 
@@ -46,26 +50,24 @@ namespace MantenimientosTI.Services.ImageValidation
 
                 // 4. Generar hash binario
                 var hashBuilder = new StringBuilder(64);
-                for (int y = 0; y < 8; y++)
+
+                foreach (var brightness in brightnessValues)
                 {
-                    for (int x = 0; x < 8; x++)
-                    {
-                        hashBuilder.Append(brightnessMatrix[x, y] > averageBrightness ? "1" : "0");
-                    }
+                    hashBuilder.Append(brightness > averageBrightness ? "1" : "0");
                 }
 
                 return hashBuilder.ToString();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al generar hash perceptual de la imagen");
-                throw new Exception("Error al generar hash perceptual de la imagen", ex);
+                _logger.LogError(ex, "Error al generar hash perceptual");
+                return string.Empty;
             }
         }
 
         public int CalculateHammingDistance(string hash1, string hash2)
         {
-            if (hash1.Length != hash2.Length)
+            if (string.IsNullOrEmpty(hash1) || string.IsNullOrEmpty(hash2) || hash1.Length != hash2.Length)
                 return int.MaxValue;
 
             int distance = 0;

@@ -214,7 +214,7 @@ namespace MantenimientosTI.Controllers
 
                     var foto = new Foto
                     {
-                        NumOrden = mantenimiento.NumOrden,
+                        NumOrden = numOrden, // ← USAR EL PARÁMETRO numOrden
                         FechaHora = DateTime.Now
                     };
 
@@ -238,7 +238,7 @@ namespace MantenimientosTI.Controllers
                     {
                         _dbocontext.Fotos.Add(foto);
                         await _dbocontext.SaveChangesAsync();
-                        fotoId = foto.Id; // Obtenemos el ID después de guardar
+                        fotoId = numOrden; // Obtenemos el ID después de guardar
                     }
 
                     // ⚡ NUEVO: Registrar logs de validación después de guardar las fotos

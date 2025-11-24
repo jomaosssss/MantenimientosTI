@@ -1,6 +1,7 @@
 using MantenimientosTI.Models;
 using MantenimientosTI.Services;
 using MantenimientosTI.Services.ImageValidation;
+using MantenimientosTI.Services.ImageValidation.Interfaces;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;

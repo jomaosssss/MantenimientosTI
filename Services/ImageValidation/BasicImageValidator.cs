@@ -1,6 +1,7 @@
-﻿using MantenimientosTI.Models;
-using MantenimientosTI.Models.ImageValidation;
+﻿using MantenimientosTI.Models.ImageValidation;
+using MantenimientosTI.Services.ImageValidation.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using MantenimientosTI.Models; // ← AGREGAR ESTE USING
 
 namespace MantenimientosTI.Services.ImageValidation
 {
@@ -10,7 +11,10 @@ namespace MantenimientosTI.Services.ImageValidation
         private readonly IPerceptualHashService _hashService;
         private readonly ILogger<BasicImageValidator> _logger;
 
-        public BasicImageValidator(MantenimientosTIContext context, IPerceptualHashService hashService, ILogger<BasicImageValidator> logger)
+        public BasicImageValidator(
+            MantenimientosTIContext context,
+            IPerceptualHashService hashService,
+            ILogger<BasicImageValidator> logger)
         {
             _context = context;
             _hashService = hashService;
@@ -23,30 +27,34 @@ namespace MantenimientosTI.Services.ImageValidation
 
             try
             {
-                // 1. Generar hash perceptual
                 using var stream = image.OpenReadStream();
                 var perceptualHash = await _hashService.GeneratePerceptualHashAsync(stream);
+
+                if (string.IsNullOrEmpty(perceptualHash))
+                {
+                    result.ValidationStatus = "Error";
+                    result.Warnings.Add("No se pudo procesar la imagen");
+                    return result;
+                }
+
                 result.PerceptualHash = perceptualHash;
 
-                // 2. Buscar duplicados
                 var duplicates = await FindDuplicatesAsync(perceptualHash, userId, mantenimientoId);
                 result.Duplicates = duplicates;
 
-                // 3. Calcular riesgo basado en duplicados
                 result.RiskScore = CalculateRiskScore(duplicates);
                 result.ValidationStatus = result.RiskScore >= 70 ? "Suspicious" : "Approved";
 
-                // 4. Agregar advertencias si hay duplicados
                 if (duplicates.Any())
                 {
-                    result.Warnings.Add($"Se encontraron {duplicates.Count} imágenes similares en el sistema");
+                    result.Warnings.Add($"Se encontraron {duplicates.Count} imágenes similares");
                 }
 
-                _logger.LogInformation($"Validación completada para usuario {userId}. Score: {result.RiskScore}, Status: {result.ValidationStatus}");
+                _logger.LogInformation($"Validación completada. Score: {result.RiskScore}, Status: {result.ValidationStatus}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error en validación de imagen para usuario {userId}");
+                _logger.LogError(ex, $"Error en validación para usuario {userId}");
                 result.ValidationStatus = "Error";
                 result.Warnings.Add("Error en el proceso de validación");
             }
@@ -58,27 +66,32 @@ namespace MantenimientosTI.Services.ImageValidation
         {
             var matches = new List<DuplicateMatch>();
 
-            // Buscar imágenes del mismo usuario en los últimos 30 días
-            var recentImages = await _context.ImageFingerprints
-                .Where(f => f.UserId == userId && f.CreatedAt >= DateTime.Now.AddDays(-30))
-                .ToListAsync();
-
-            foreach (var existing in recentImages)
+            try
             {
-                var distance = _hashService.CalculateHammingDistance(perceptualHash, existing.PerceptualHash);
+                var recentImages = await _context.ImageFingerprints
+                    .Where(f => f.UserId == userId && f.CreatedAt >= DateTime.Now.AddDays(-30))
+                    .ToListAsync();
 
-                // Si la distancia es menor al threshold, es un posible duplicado
-                if (distance <= 10) // 10/64 = ~15% de diferencia
+                foreach (var existing in recentImages)
                 {
-                    matches.Add(new DuplicateMatch
+                    var distance = _hashService.CalculateHammingDistance(perceptualHash, existing.PerceptualHash);
+
+                    if (distance <= 10)
                     {
-                        ExistingFotoId = existing.FotoId,
-                        SimilarityScore = 100 - (int)((distance / 64.0) * 100),
-                        HammingDistance = distance,
-                        ExistingImageDate = existing.CreatedAt,
-                        MantenimientoId = existing.MantenimientoId
-                    });
+                        matches.Add(new DuplicateMatch
+                        {
+                            ExistingFotoId = existing.FotoId,
+                            SimilarityScore = 100 - (int)((distance / 64.0) * 100),
+                            HammingDistance = distance,
+                            ExistingImageDate = existing.CreatedAt,
+                            MantenimientoId = existing.MantenimientoId
+                        });
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar duplicados");
             }
 
             return matches.OrderByDescending(m => m.SimilarityScore).ToList();
@@ -92,46 +105,52 @@ namespace MantenimientosTI.Services.ImageValidation
 
             return maxSimilarity switch
             {
-                >= 90 => 100, // Muy similar
-                >= 80 => 75,  // Similar
-                >= 70 => 50,  // Algo similar
-                _ => 25       // Poco similar
+                >= 90 => 100,
+                >= 80 => 75,
+                >= 70 => 50,
+                _ => 25
             };
         }
 
         public async Task LogValidationAsync(ImageValidationResult result, int fotoId, int mantenimientoId, string userId)
         {
-            var log = new ImageValidationLog
+            try
             {
-                FotoId = fotoId,
-                MantenimientoId = mantenimientoId,
-                UserId = userId,
-                ValidationResult = System.Text.Json.JsonSerializer.Serialize(result),
-                RiskScore = result.RiskScore,
-                ValidationStatus = result.ValidationStatus,
-                ValidatedAt = DateTime.Now
-            };
-
-            _context.ImageValidationLogs.Add(log);
-
-            // Crear alerta si es sospechosa
-            if (result.ValidationStatus == "Suspicious")
-            {
-                var alert = new SuspiciousImageAlert
+                var log = new ImageValidationLog
                 {
                     FotoId = fotoId,
                     MantenimientoId = mantenimientoId,
                     UserId = userId,
-                    Reason = string.Join("; ", result.Warnings),
-                    RiskLevel = result.RiskScore >= 80 ? "High" : "Medium",
-                    Status = "Pending",
-                    CreatedAt = DateTime.Now
+                    ValidationResult = System.Text.Json.JsonSerializer.Serialize(result),
+                    RiskScore = result.RiskScore,
+                    ValidationStatus = result.ValidationStatus,
+                    ValidatedAt = DateTime.Now
                 };
 
-                _context.SuspiciousImageAlerts.Add(alert);
-            }
+                _context.ImageValidationLogs.Add(log);
 
-            await _context.SaveChangesAsync();
+                if (result.ValidationStatus == "Suspicious")
+                {
+                    var alert = new SuspiciousImageAlert
+                    {
+                        FotoId = fotoId,
+                        MantenimientoId = mantenimientoId,
+                        UserId = userId,
+                        Reason = string.Join("; ", result.Warnings),
+                        RiskLevel = result.RiskScore >= 80 ? "High" : "Medium",
+                        Status = "Pending",
+                        CreatedAt = DateTime.Now
+                    };
+
+                    _context.SuspiciousImageAlerts.Add(alert);
+                }
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al guardar log de validación");
+            }
         }
     }
 }
