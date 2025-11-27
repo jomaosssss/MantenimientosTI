@@ -66,6 +66,9 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<ImageValidationLog> ImageValidationLogs { get; set; }
 
+    public virtual DbSet<ImageValidationConfig> ImageValidationConfigs { get; set; }
+
+
     public virtual DbSet<SuspiciousImageAlert> SuspiciousImageAlerts { get; set; }
 
 
@@ -110,6 +113,29 @@ public partial class MantenimientosTIContext : DbContext
                 .HasMaxLength(100);
 
             entity.Property(e => e.ValidatedAt)
+                .HasDefaultValueSql("GETDATE()");
+        });
+
+        modelBuilder.Entity<ImageValidationConfig>(entity =>
+        {
+            entity.ToTable("ImageValidationConfig");
+            entity.HasKey(e => e.ConfigKey);
+
+            entity.Property(e => e.ConfigKey)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.ConfigValue)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("GETDATE()");
         });
 

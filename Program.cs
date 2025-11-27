@@ -18,13 +18,15 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
 // Servicios personalizados
-//builder.Services.AddScoped<MantenimientosTI.Services.BitacoraService>();
-
 builder.Services.AddScoped<MantenimientosTI.Services.PlantillaBitacoraService>();
 builder.Services.AddScoped<InformacionSistema>();
 builder.Services.AddScoped<ReporteService>();
 builder.Services.AddScoped<IPerceptualHashService, PerceptualHashService>();
 builder.Services.AddScoped<IImageValidator, BasicImageValidator>();
+
+// NUEVO: Servicio de configuración de validación de imágenes
+builder.Services.AddScoped<IImageValidationConfigService, ImageValidationConfigService>();
+
 builder.Services.AddScoped<BitacoraService>();
 builder.Services.AddHostedService<ScheduledEmailService>();
 
@@ -54,6 +56,20 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 var app = builder.Build();
+
+// NUEVO: Inicializar configuración al iniciar la app
+try
+{
+    using var scope = app.Services.CreateScope();
+    var configService = scope.ServiceProvider.GetRequiredService<IImageValidationConfigService>();
+    await configService.EnsureDefaultConfigurationAsync();
+    Console.WriteLine(" Configuración de validación de imágenes inicializada correctamente");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"  Advertencia: No se pudo inicializar la configuración: {ex.Message}");
+    // No detenemos la aplicación si falla la inicialización de configuración
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -286,12 +286,44 @@ namespace MantenimientosTI.Controllers
             }
         }
 
-        private async Task<string> ProcesarImagen(IFormFile imagen)
+        private async Task<string> ProcesarImagen(IFormFile imagen, int maxSizeKB = 512)
         {
-            using (var ms = new MemoryStream())
+            // Validar tamaño primero
+            if (imagen.Length > maxSizeKB * 1024)
+                throw new InvalidOperationException($"La imagen excede el tamaño máximo de {maxSizeKB}KB");
+
+            try
             {
-                await imagen.CopyToAsync(ms);
-                return Convert.ToBase64String(ms.ToArray());
+                using var outputStream = new MemoryStream();
+
+                // Cargar y optimizar imagen
+                using var image = await Image.LoadAsync(imagen.OpenReadStream());
+
+                // Calcular nuevas dimensiones manteniendo aspecto
+                var maxWidth = 1200;
+                var maxHeight = 1200;
+
+                if (image.Width > maxWidth || image.Height > maxHeight)
+                {
+                    var options = new ResizeOptions
+                    {
+                        Size = new Size(maxWidth, maxHeight),
+                        Mode = ResizeMode.Max
+                    };
+                    image.Mutate(x => x.Resize(options));
+                }
+
+                // Guardar comprimido con calidad balanceada
+                await image.SaveAsJpegAsync(outputStream, new JpegEncoder
+                {
+                    Quality = 75
+                });
+
+                return Convert.ToBase64String(outputStream.ToArray());
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error al procesar la imagen: {ex.Message}", ex);
             }
         }
 
