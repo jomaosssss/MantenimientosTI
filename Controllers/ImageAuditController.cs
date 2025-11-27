@@ -1,10 +1,11 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
-using MantenimientosTI.Models;
+﻿using MantenimientosTI.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MantenimientosTI.Controllers
 {
-    // Controllers/ImageAuditController.cs
+    [Authorize(Roles = "ADMINISTRADOR,SUPERVISOR")]
     public class ImageAuditController : Controller
     {
         private readonly MantenimientosTIContext _context;
@@ -16,9 +17,8 @@ namespace MantenimientosTI.Controllers
 
         public async Task<IActionResult> Dashboard()
         {
+            // ✅ CORREGIDO: Sin Includes que causen problemas
             var alerts = await _context.SuspiciousImageAlerts
-                .Include(a => a.Mantenimiento)
-                .Include(a => a.Usuario)
                 .Where(a => a.Status == "Pending")
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
@@ -42,7 +42,7 @@ namespace MantenimientosTI.Controllers
             if (alert == null) return NotFound();
 
             alert.Status = "Resolved";
-            alert.ResolvedBy = User.Identity.Name;
+            alert.ResolvedBy = User.Identity?.Name ?? "Sistema";
             alert.ResolvedAt = DateTime.Now;
             alert.ResolutionNotes = notes;
 
@@ -50,6 +50,32 @@ namespace MantenimientosTI.Controllers
 
             TempData["Success"] = "Alerta resuelta exitosamente";
             return RedirectToAction("Dashboard");
+        }
+
+        // ✅ NUEVO: Método para obtener información relacionada cuando sea necesario
+        public async Task<JsonResult> GetAlertDetails(long alertId)
+        {
+            var alert = await _context.SuspiciousImageAlerts.FindAsync(alertId);
+            if (alert == null) return Json(new { error = "Alerta no encontrada" });
+
+            // Obtener información del mantenimiento por separado
+            var mantenimiento = await _context.Mantenimientos
+                .Include(m => m.RpeNavigation)
+                .Include(m => m.NumActFijoNavigation)
+                .FirstOrDefaultAsync(m => m.NumOrden == alert.MantenimientoId);
+
+            return Json(new
+            {
+                alert,
+                mantenimientoInfo = mantenimiento != null ? new
+                {
+                    mantenimiento.NumOrden,
+                    mantenimiento.Rpe,
+                    Usuario = mantenimiento.RpeNavigation != null ?
+                        $"{mantenimiento.RpeNavigation.Nombre} {mantenimiento.RpeNavigation.ApellidoP}" : "N/A",
+                    Equipo = mantenimiento.NumActFijoNavigation?.NumActFijo ?? "N/A"
+                } : null
+            });
         }
     }
 }

@@ -1,0 +1,194 @@
+﻿@model IEnumerable<MantenimientosTI.Models.ImageValidation.SuspiciousImageAlert>
+
+@{
+    ViewData["Title"] = "Dashboard de Auditoría de Imágenes";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">Dashboard de Auditoría de Imágenes</h1>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <!-- ... tus estadísticas existentes ... -->
+    </div>
+
+    <!-- Lista de Alertas -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Alertas de Imágenes Sospechosas</h6>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Usuario (RPE)</th>
+                                <th>Mantenimiento ID</th>
+                                <th>Razón</th>
+                                <th>Nivel Riesgo</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var alert in Model)
+                            {
+                                <tr>
+                                    <td>@alert.Id</td>
+                                    <td>@alert.UserId</td>
+                                    <td>#@alert.MantenimientoId</td>
+                                    <td>@alert.Reason</td>
+                                    <td>
+                                        <span class="badge @GetRiskBadgeClass(alert.RiskLevel)">
+                                            @alert.RiskLevel
+                                        </span>
+                                    </td>
+                                    <td>@alert.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <button class="btn btn-info btn-sm" onclick="viewAlertDetails(@alert.Id)">
+                                            <i class="fas fa-eye"></i> Ver Detalles
+                                        </button>
+                                        <button class="btn btn-success btn-sm" onclick="resolveAlert(@alert.Id)">
+                                            <i class="fas fa-check"></i> Resolver
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> No hay alertas pendientes en este momento.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ver Detalles -->
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalles de Alerta</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+                <!-- Los detalles se cargarán aquí via AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Resolver Alerta (existente) -->
+<div class="modal fade" id="resolveModal" tabindex="-1" role="dialog">
+    <!-- ... tu modal existente para resolver ... -->
+</div>
+
+@section Scripts {
+    <script>
+        // Función para ver detalles via AJAX
+        function viewAlertDetails(alertId) {
+            $.get('@Url.Action("GetAlertDetails", "ImageAudit")', { alertId: alertId })
+                .done(function(data) {
+                    if (data.error) {
+                        $('#detailsContent').html('<div class="alert alert-danger">' + data.error + '</div>');
+                    } else {
+                        let content = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Información de la Alerta:</h6>
+                                    <p><strong>ID:</strong> ${data.alert.id}</p>
+                                    <p><strong>Usuario:</strong> ${data.alert.userId}</p>
+                                    <p><strong>Mantenimiento ID:</strong> ${data.alert.mantenimientoId}</p>
+                                    <p><strong>Razón:</strong> ${data.alert.reason}</p>
+                                    <p><strong>Nivel de Riesgo:</strong> <span class="badge ${getRiskBadgeClass(data.alert.riskLevel)}">${data.alert.riskLevel}</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Información del Mantenimiento:</h6>
+                        `;
+
+                        if (data.mantenimientoInfo) {
+                            content += `
+                                <p><strong>Orden:</strong> ${data.mantenimientoInfo.numOrden}</p>
+                                <p><strong>Técnico:</strong> ${data.mantenimientoInfo.usuario} (${data.mantenimientoInfo.rpe})</p>
+                                <p><strong>Equipo:</strong> ${data.mantenimientoInfo.equipo}</p>
+                            `;
+                        } else {
+                            content += `<p class="text-muted">No se encontró información del mantenimiento</p>`;
+                        }
+
+                        content += `</div></div>`;
+                        $('#detailsContent').html(content);
+                    }
+                    $('#detailsModal').modal('show');
+                })
+                .fail(function() {
+                    $('#detailsContent').html('<div class="alert alert-danger">Error al cargar los detalles</div>');
+                    $('#detailsModal').modal('show');
+                });
+        }
+
+        function getRiskBadgeClass(riskLevel) {
+            switch(riskLevel.toLowerCase()) {
+                case 'high': return 'badge-danger';
+                case 'medium': return 'badge-warning';
+                case 'low': return 'badge-info';
+                default: return 'badge-secondary';
+            }
+        }
+
+        // Tu función existente para resolver alertas
+        function resolveAlert(alertId) {
+            $('#alertId').val(alertId);
+            $('#resolveModal').modal('show');
+        }
+
+        $('#resolveForm').on('submit', function(e) {
+            e.preventDefault();
+
+            const alertId = $('#alertId').val();
+            const notes = $('#resolutionNotes').val();
+
+            $.post('@Url.Action("ResolveAlert", "ImageAudit")', {
+                alertId: alertId,
+                resolution: 'Resolved',
+                notes: notes
+            }).done(function() {
+                $('#resolveModal').modal('hide');
+                location.reload();
+            }).fail(function() {
+                alert('Error al resolver la alerta');
+            });
+        });
+    </script>
+}
+
+@functions {
+    public string GetRiskBadgeClass(string riskLevel)
+    {
+        return riskLevel.ToLower() switch
+        {
+            "high" => "badge-danger",
+            "medium" => "badge-warning",
+            "low" => "badge-info",
+            _ => "badge-secondary"
+        };
+    }
+}

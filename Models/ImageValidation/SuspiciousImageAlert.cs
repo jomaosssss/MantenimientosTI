@@ -10,7 +10,7 @@ namespace MantenimientosTI.Models.ImageValidation
 
         [Required]
         [StringLength(100)]
-        public string UserId { get; set; }
+        public string UserId { get; set; } // RPE del usuario
 
         [Required]
         [StringLength(500)]
@@ -33,5 +33,9 @@ namespace MantenimientosTI.Models.ImageValidation
 
         [StringLength(500)]
         public string ResolutionNotes { get; set; }
+
+        // ❌ ELIMINA estas propiedades de navegación si existen:
+        // public virtual Mantenimiento Mantenimiento { get; set; }
+        // public virtual Usuario Usuario { get; set; }
     }
 }

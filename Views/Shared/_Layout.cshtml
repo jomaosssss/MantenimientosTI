@@ -231,6 +231,17 @@
                             </a>
                         </li>
                         }
+
+                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("SUPERVISOR"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" href="@Url.Action("Dashboard", "ImageAudit")">
+                                    <i class="fas fa-search"></i>
+                                    <span>Auditoría Imágenes</span>
+                                </a>
+                            </li>
+                        }
+
                     </div>
                 </div>
 

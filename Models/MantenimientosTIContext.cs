@@ -781,6 +781,52 @@ public partial class MantenimientosTIContext : DbContext
                 .HasConstraintName("FK_RegistroEventos_CFEmatico");
         });
 
+        modelBuilder.Entity<SuspiciousImageAlert>(entity =>
+        {
+            entity.ToTable("SuspiciousImageAlerts");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.UserId)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Reason)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.RiskLevel)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("Medium");
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("Pending");
+
+            entity.Property(e => e.ResolvedBy)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.ResolutionNotes)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("GETDATE()");
+
+            // RELACIONES OPCIONALES
+            entity.HasOne<Mantenimiento>()
+                .WithMany()
+                .HasForeignKey(e => e.MantenimientoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<Usuario>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .HasPrincipalKey(u => u.Rpe)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+
         modelBuilder.Entity<Usuario>(entity =>
         {
             entity.HasKey(e => e.Rpe).HasName("PK__Usuario__CAFF7995E43DC2FF");
