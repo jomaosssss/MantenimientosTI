@@ -11,6 +11,8 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using MantenimientosTI.Services;
+using SixLabors.ImageSharp.PixelFormats; // <--- AGREGA ESTE
+using SixLabors.ImageSharp.Metadata.Profiles.Exif; // <--- NECESARIO PARA LEER FECHAS
 
 namespace MantenimientosTI.Controllers
 {
@@ -206,13 +208,70 @@ namespace MantenimientosTI.Controllers
                         return Json(new { success = false, message = "La hoja de servicio es obligatoria" });
                     }
 
+                    string? hashAntes = null, hashDurante = null, hashDespues = null;
+
+                    // Validar FOTO ANTES
+                    if (fotoAntes != null && fotoAntes.Length > 0)
+                    {
+                        hashAntes = GenerarHashVisual(fotoAntes);
+                        if (await EsImagenDuplicada(hashAntes))
+                        {
+                            return Json(new { success = false, message = "FRAUDE DETECTADO: La foto 'Antes' ya fue usada en un mantenimiento previo." });
+                        }
+
+                        var fechaCaptura = ObtenerFechaCaptura(fotoAntes);
+                        if (fechaCaptura.HasValue)
+                        {
+                            // Calculamos diferencia de días con la fecha del reporte
+                            var diasDiferencia = Math.Abs((fechaCaptura.Value.Date - fechaAtencionParsed.ToDateTime(TimeOnly.MinValue)).TotalDays);
+
+                            // Si la diferencia es mayor a 3 días, es sospechoso
+                            if (diasDiferencia > 3)
+                            {
+                                return Json(new { success = false, message = $"INCONSISTENCIA: La foto 'Antes' fue tomada el {fechaCaptura.Value:dd/MM/yyyy}, pero el reporte es del {fechaAtencion}. No coinciden." });
+                            }
+                        }
+                    }
+
+                    // Validar FOTO DURANTE
+                    if (fotoDurante != null && fotoDurante.Length > 0)
+                    {
+                        hashDurante = GenerarHashVisual(fotoDurante);
+                        if (await EsImagenDuplicada(hashDurante))
+                        {
+                            return Json(new { success = false, message = "FRAUDE DETECTADO: La foto 'Durante' ya existe en el sistema." });
+                        }
+                    }
+
+                    // Validar FOTO DESPUÉS
+                    if (fotoDespues != null && fotoDespues.Length > 0)
+                    {
+                        hashDespues = GenerarHashVisual(fotoDespues);
+
+                        // Validar que 'Después' no sea igual a 'Antes' del mismo reporte
+                        if (!string.IsNullOrEmpty(hashAntes) && hashDespues == hashAntes)
+                        {
+                            return Json(new { success = false, message = "ERROR: La foto 'Después' es idéntica a la foto 'Antes'. Deben ser diferentes." });
+                        }
+
+                        if (await EsImagenDuplicada(hashDespues))
+                        {
+                            return Json(new { success = false, message = "FRAUDE DETECTADO: La foto 'Después' ya existe en el sistema." });
+                        }
+                    }
+
                     _dbocontext.Mantenimientos.Add(mantenimiento);
                     await _dbocontext.SaveChangesAsync();
 
                     var foto = new Foto
                     {
                         NumOrden = mantenimiento.NumOrden,
-                        FechaHora = DateTime.Now
+                        FechaHora = DateTime.Now,
+
+                        // IMPORTANTE: Asignar los valores calculados arriba
+                        HashAntes = hashAntes,
+                        HashDurante = hashDurante,
+                        HashDespues = hashDespues
                     };
 
                     bool seAgregoAlgunaFoto = false;
@@ -920,5 +979,78 @@ namespace MantenimientosTI.Controllers
                 return Json(new { success = false, message = $"Error al generar el Excel: {ex.Message}" });
             }
         }
+        private string GenerarHashVisual(IFormFile archivo)
+        {
+            try
+            {
+                using (var stream = archivo.OpenReadStream())
+                using (var image = Image.Load<Rgba32>(stream))
+                {
+                    // 1. Reducir a 9x8 píxeles y escala de grises
+                    image.Mutate(x => x.Resize(9, 8).Grayscale());
+
+                    var hash = new System.Text.StringBuilder();
+
+                    // 2. Comparar brillo de píxeles adyacentes
+                    image.ProcessPixelRows(accessor =>
+                    {
+                        for (int y = 0; y < 8; y++)
+                        {
+                            var pixelRow = accessor.GetRowSpan(y);
+                            for (int x = 0; x < 8; x++)
+                            {
+                                // Si el pixel izquierdo es más brillante que el derecho = 1, sino 0
+                                var left = pixelRow[x].R;
+                                var right = pixelRow[x + 1].R;
+                                hash.Append(left > right ? "1" : "0");
+                            }
+                        }
+                    });
+
+                    return hash.ToString();
+                }
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private async Task<bool> EsImagenDuplicada(string hashNuevo)
+        {
+            if (string.IsNullOrEmpty(hashNuevo)) return false;
+
+            // Busca si este hash ya existe en CUALQUIER foto (antes, durante o después)
+            // de cualquier reporte anterior en la base de datos
+            return await _dbocontext.Fotos.AnyAsync(f =>
+                f.HashAntes == hashNuevo ||
+                f.HashDurante == hashNuevo ||
+                f.HashDespues == hashNuevo);
+        }
+        private DateTime? ObtenerFechaCaptura(IFormFile archivo)
+        {
+            try
+            {
+                using (var stream = archivo.OpenReadStream())
+                using (var image = Image.Load(stream))
+                {
+                    if (image.Metadata?.ExifProfile == null) return null;
+
+                    var valorTag = image.Metadata.ExifProfile.GetValue(ExifTag.DateTimeOriginal);
+
+                    if (valorTag != null && DateTime.TryParseExact(valorTag.ToString(),
+                        "yyyy:MM:dd HH:mm:ss",
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out DateTime fechaCaptura))
+                    {
+                        return fechaCaptura;
+                    }
+                }
+                return null;
+            }
+            catch { return null; }
+        }
+
     }
 }

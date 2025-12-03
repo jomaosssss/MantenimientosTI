@@ -13,6 +13,12 @@ public partial class Foto
 
     public string? FotoDespues { get; set; }
 
+    public string? HashAntes { get; set; }
+
+    public string? HashDurante { get; set; }
+
+    public string? HashDespues { get; set; }
+
     public DateTime FechaHora { get; set; } = DateTime.Now;
 
     public virtual Mantenimiento Mantenimiento { get; set; } = null!;
