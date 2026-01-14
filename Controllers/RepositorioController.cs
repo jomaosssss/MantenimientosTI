@@ -146,39 +146,34 @@ namespace MantenimientosTI.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
-
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         [HttpPost]
         public async Task<IActionResult> TerminarMantenimiento(
-            [FromForm] int numOrden,
-            [FromForm] string fechaAtencion,
-            [FromForm] string problemas,
-            [FromForm] string diagnostico,
-            [FromForm] string observaciones,
-            [FromForm] IFormFile archivoPdf,
-            [FromForm] IFormFile? fotoAntes,
-            [FromForm] IFormFile? fotoDurante,
-            [FromForm] IFormFile? fotoDespues)
+                    [FromForm] int numOrden,
+                    [FromForm] string fechaAtencion,
+                    [FromForm] string problemas,
+                    [FromForm] string diagnostico,
+                    [FromForm] string observaciones,
+                    [FromForm] IFormFile archivoPdf,
+                    [FromForm] IFormFile? fotoAntes,
+                    [FromForm] IFormFile? fotoDurante,
+                    [FromForm] IFormFile? fotoDespues)
         {
             using (var transaction = await _dbocontext.Database.BeginTransactionAsync())
             {
                 try
                 {
+                    // 1. Validaciones básicas (Fecha, PDF, Existencia) - ESTAS SÍ BLOQUEAN
                     if (!DateOnly.TryParseExact(fechaAtencion, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly fechaAtencionParsed))
-                    {
                         return Json(new { success = false, message = "Formato de fecha inválida" });
-                    }
 
-                    var agendaItem = await _dbocontext.Agenda
-                        .FirstOrDefaultAsync(a => a.ClaveAgenda == numOrden);
-
-                    if (agendaItem == null)
-                        return Json(new { success = false, message = "Registro no encontrado en la Agenda" });
+                    var agendaItem = await _dbocontext.Agenda.FirstOrDefaultAsync(a => a.ClaveAgenda == numOrden);
+                    if (agendaItem == null) return Json(new { success = false, message = "Registro no encontrado" });
 
                     var rpe = HttpContext.Session.GetString("Rpe");
-                    if (string.IsNullOrEmpty(rpe))
-                        return Json(new { success = false, message = "Sesión inválida, RPE no encontrado" });
+                    if (string.IsNullOrEmpty(rpe)) return Json(new { success = false, message = "Sesión inválida" });
 
+                    // Crear objeto Mantenimiento
                     var mantenimiento = new Mantenimiento
                     {
                         NumOrden = agendaItem.ClaveAgenda,
@@ -193,164 +188,154 @@ namespace MantenimientosTI.Controllers
                         FechaAtencion = fechaAtencionParsed
                     };
 
+                    // Procesar PDF (Obligatorio)
                     if (archivoPdf != null && archivoPdf.Length > 0)
                     {
-                        if (archivoPdf.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La hoja de servicio no debe exceder los 5MB" });
-
                         if (Path.GetExtension(archivoPdf.FileName).ToLower() != ".pdf")
-                            return Json(new { success = false, message = "Solo se permiten archivos PDF" });
-
+                            return Json(new { success = false, message = "Solo PDF" });
                         mantenimiento.EvidenciaHojaServicio = await GuardarArchivo(archivoPdf);
                     }
                     else
                     {
-                        return Json(new { success = false, message = "La hoja de servicio es obligatoria" });
+                        return Json(new { success = false, message = "Hoja de servicio obligatoria" });
                     }
 
+                    // =========================================================
+                    // 2. ANÁLISIS DE IMÁGENES (SIN BLOQUEO, SOLO DETECCIÓN)
+                    // =========================================================
                     string? hashAntes = null, hashDurante = null, hashDespues = null;
+                    bool hayAnomalias = false; // Bandera general para avisar al final
 
-                    // Validar FOTO ANTES
+                    // Variables para guardar el estado de cada foto
+                    bool dupAntes = false, dupDurante = false, dupDespues = false;
+                    bool fechaMalAntes = false, fechaMalDurante = false, fechaMalDespues = false;
+
+                    // --- FOTO ANTES ---
                     if (fotoAntes != null && fotoAntes.Length > 0)
                     {
                         hashAntes = GenerarHashVisual(fotoAntes);
-                        if (await EsImagenDuplicada(hashAntes))
-                        {
-                            return Json(new { success = false, message = "FRAUDE DETECTADO: La foto 'Antes' ya fue usada en un mantenimiento previo." });
-                        }
+                        dupAntes = await EsImagenDuplicada(hashAntes); // Solo detectamos, no retornamos
 
-                        var fechaCaptura = ObtenerFechaCaptura(fotoAntes);
-                        if (fechaCaptura.HasValue)
-                        {
-                            // Calculamos diferencia de días con la fecha del reporte
-                            var diasDiferencia = Math.Abs((fechaCaptura.Value.Date - fechaAtencionParsed.ToDateTime(TimeOnly.MinValue)).TotalDays);
+                        var fecha = ObtenerFechaCaptura(fotoAntes);
+                        if (fecha.HasValue && Math.Abs((fecha.Value.Date - fechaAtencionParsed.ToDateTime(TimeOnly.MinValue)).TotalDays) > 3)
+                            fechaMalAntes = true;
 
-                            // Si la diferencia es mayor a 3 días, es sospechoso
-                            if (diasDiferencia > 3)
-                            {
-                                return Json(new { success = false, message = $"INCONSISTENCIA: La foto 'Antes' fue tomada el {fechaCaptura.Value:dd/MM/yyyy}, pero el reporte es del {fechaAtencion}. No coinciden." });
-                            }
-                        }
+                        if (dupAntes || fechaMalAntes) hayAnomalias = true;
                     }
 
-                    // Validar FOTO DURANTE
+                    // --- FOTO DURANTE ---
                     if (fotoDurante != null && fotoDurante.Length > 0)
                     {
                         hashDurante = GenerarHashVisual(fotoDurante);
-                        if (await EsImagenDuplicada(hashDurante))
-                        {
-                            return Json(new { success = false, message = "FRAUDE DETECTADO: La foto 'Durante' ya existe en el sistema." });
-                        }
+                        dupDurante = await EsImagenDuplicada(hashDurante);
+
+                        var fecha = ObtenerFechaCaptura(fotoDurante);
+                        if (fecha.HasValue && Math.Abs((fecha.Value.Date - fechaAtencionParsed.ToDateTime(TimeOnly.MinValue)).TotalDays) > 3)
+                            fechaMalDurante = true;
+
+                        if (dupDurante || fechaMalDurante) hayAnomalias = true;
                     }
 
-                    // Validar FOTO DESPUÉS
+                    // --- FOTO DESPUÉS ---
                     if (fotoDespues != null && fotoDespues.Length > 0)
                     {
                         hashDespues = GenerarHashVisual(fotoDespues);
 
-                        // Validar que 'Después' no sea igual a 'Antes' del mismo reporte
-                        if (!string.IsNullOrEmpty(hashAntes) && hashDespues == hashAntes)
-                        {
-                            return Json(new { success = false, message = "ERROR: La foto 'Después' es idéntica a la foto 'Antes'. Deben ser diferentes." });
-                        }
+                        // Si es igual a la de Antes, cuenta como duplicado interno
+                        if (!string.IsNullOrEmpty(hashAntes) && hashDespues == hashAntes) dupDespues = true;
+                        else dupDespues = await EsImagenDuplicada(hashDespues);
 
-                        if (await EsImagenDuplicada(hashDespues))
-                        {
-                            return Json(new { success = false, message = "FRAUDE DETECTADO: La foto 'Después' ya existe en el sistema." });
-                        }
+                        var fecha = ObtenerFechaCaptura(fotoDespues);
+                        if (fecha.HasValue && Math.Abs((fecha.Value.Date - fechaAtencionParsed.ToDateTime(TimeOnly.MinValue)).TotalDays) > 3)
+                            fechaMalDespues = true;
+
+                        if (dupDespues || fechaMalDespues) hayAnomalias = true;
                     }
 
+                    // 3. Guardar Mantenimiento (SIEMPRE SE GUARDA)
                     _dbocontext.Mantenimientos.Add(mantenimiento);
                     await _dbocontext.SaveChangesAsync();
+
+                    // 4. Guardar Foto (CON LAS BANDERAS DE ALERTA)
+                    var gpsAntes = fotoAntes != null ? ObtenerCoordenadasGPS(fotoAntes) : (null, null);
+                    var gpsDurante = fotoDurante != null ? ObtenerCoordenadasGPS(fotoDurante) : (null, null);
+                    var gpsDespues = fotoDespues != null ? ObtenerCoordenadasGPS(fotoDespues) : (null, null);
 
                     var foto = new Foto
                     {
                         NumOrden = mantenimiento.NumOrden,
                         FechaHora = DateTime.Now,
-
-                        // IMPORTANTE: Asignar los valores calculados arriba
                         HashAntes = hashAntes,
                         HashDurante = hashDurante,
-                        HashDespues = hashDespues
+                        HashDespues = hashDespues,
+                        LatitudAntes = gpsAntes.Item1,
+                        LongitudAntes = gpsAntes.Item2,
+                        LatitudDurante = gpsDurante.Item1,
+                        LongitudDurante = gpsDurante.Item2,
+                        LatitudDespues = gpsDespues.Item1,
+                        LongitudDespues = gpsDespues.Item2,
+
+                        // Guardamos las alertas en la BD
+                        EsDuplicadaAntes = dupAntes,
+                        EsDuplicadaDurante = dupDurante,
+                        EsDuplicadaDespues = dupDespues,
+                        AlertaFechaAntes = fechaMalAntes,
+                        AlertaFechaDurante = fechaMalDurante,
+                        AlertaFechaDespues = fechaMalDespues
                     };
 
                     bool seAgregoAlgunaFoto = false;
+                    // Guardado de archivos (igual que antes)
+                    if (fotoAntes != null) { foto.FotoAntes = await ProcesarImagen(fotoAntes); seAgregoAlgunaFoto = true; }
+                    if (fotoDurante != null) { foto.FotoDurante = await ProcesarImagen(fotoDurante); seAgregoAlgunaFoto = true; }
+                    if (fotoDespues != null) { foto.FotoDespues = await ProcesarImagen(fotoDespues); seAgregoAlgunaFoto = true; }
 
-                    if (fotoAntes != null && fotoAntes.Length > 0)
-                    {
-                        if (fotoAntes.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Antes' no debe exceder los 5MB" });
+                    if (seAgregoAlgunaFoto) _dbocontext.Fotos.Add(foto);
 
-                        foto.FotoAntes = await ProcesarImagen(fotoAntes);
-                        seAgregoAlgunaFoto = true;
-                    }
-
-                    if (fotoDurante != null && fotoDurante.Length > 0)
-                    {
-                        if (fotoDurante.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Durante' no debe exceder los 5MB" });
-
-                        foto.FotoDurante = await ProcesarImagen(fotoDurante);
-                        seAgregoAlgunaFoto = true;
-                    }
-
-                    if (fotoDespues != null && fotoDespues.Length > 0)
-                    {
-                        if (fotoDespues.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Después' no debe exceder los 5MB" });
-
-                        foto.FotoDespues = await ProcesarImagen(fotoDespues);
-                        seAgregoAlgunaFoto = true;
-                    }
-
-                    // Solo se guarda la entidad Foto si se subió al menos una imagen
-                    if (seAgregoAlgunaFoto)
-                    {
-                        _dbocontext.Fotos.Add(foto);
-                    }
-
-                    // Actualizar agenda
+                    // Finalizar Agenda y Bitácora
                     agendaItem.Estatus = "TERMINADO";
 
-                    // ✅ REGISTRO EN BITÁCORA - AGREGADO
                     var usuario = HttpContext.Session.GetString("NombreUsuario") ?? "Usuario no identificado";
                     var rol = HttpContext.Session.GetString("NombreRol") ?? "N/A";
                     var zona = HttpContext.Session.GetString("NombreZona") ?? "N/A";
                     var centro = HttpContext.Session.GetString("ClaveDivision") ?? "N/A";
 
                     await _bitacora.RegistrarTerminacionMantenimientoAsync(
-                        usuario: usuario,
-                        rpe: rpe,
-                        rol: rol,
-                        zona: zona,
-                        centro: centro,
-                        claveAgenda: numOrden.ToString(),
-                        equipo: agendaItem.NumActFijo
+                        usuario: usuario, rpe: rpe, rol: rol, zona: zona, centro: centro,
+                        claveAgenda: numOrden.ToString(), equipo: agendaItem.NumActFijo
                     );
 
                     await _dbocontext.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    return Json(new
+                    // 5. RESPUESTA AL FRONTEND
+                    // Si hubo anomalías, mandamos warning. Si todo limpio, success.
+                    if (hayAnomalias)
                     {
-                        success = true,
-                        message = "Mantenimiento Terminado Correctamente."
-                    });
+                        return Json(new
+                        {
+                            success = true, // OJO: Es TRUE para que el JS recargue, pero con mensaje de alerta
+                            tipoAlerta = "warning",
+                            message = "Mantenimiento guardado, pero se detectaron inconsistencias en las imágenes (Duplicados o Fechas). Se ha generado una alerta de auditoría."
+                        });
+                    }
+                    else
+                    {
+                        return Json(new
+                        {
+                            success = true,
+                            tipoAlerta = "success",
+                            message = "Mantenimiento Terminado Correctamente."
+                        });
+                    }
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    // Devuelve un mensaje de error más detallado para depuración
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Error inesperado al procesar la solicitud.",
-                        error = ex.Message
-                    });
+                    return Json(new { success = false, message = "Error: " + ex.Message });
                 }
             }
         }
-
         private async Task<string> ProcesarImagen(IFormFile imagen)
         {
             using (var ms = new MemoryStream())
@@ -675,138 +660,100 @@ namespace MantenimientosTI.Controllers
         {
             try
             {
-                // Obtener el rol del usuario desde la sesión
                 var claveRolUsuario = HttpContext.Session.GetInt32("Rol");
                 var esAdministrador = claveRolUsuario == 1;
 
-                // Consulta base
+                // 1. Obtener Mantenimiento
                 var query = _dbocontext.Mantenimientos
-                    .Include(m => m.Agendum)
-                        .ThenInclude(a => a.NumActFijoNavigation)
-                            .ThenInclude(e => e.CatCentro)
-                                .ThenInclude(c => c.CatAgencium)
-                                    .ThenInclude(a => a.CatZona)
-                    .Include(m => m.Agendum)
-                        .ThenInclude(a => a.ClaveTipoMttoNavigation)
+                    .Include(m => m.Agendum).ThenInclude(a => a.NumActFijoNavigation).ThenInclude(e => e.CatCentro).ThenInclude(c => c.CatAgencium).ThenInclude(a => a.CatZona)
+                    .Include(m => m.Agendum).ThenInclude(a => a.ClaveTipoMttoNavigation)
                     .Include(m => m.RpeNavigation)
                     .Where(m => m.NumOrden == numOrden);
 
-                // Si no es administrador, filtrar por zona
                 if (!esAdministrador)
                 {
                     var claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
-                    if (string.IsNullOrEmpty(claveZonaUsuario))
-                    {
-                        return Content("<div class='alert alert-danger'>No se pudo determinar la zona del usuario</div>");
-                    }
+                    if (string.IsNullOrEmpty(claveZonaUsuario)) return RedirectToAction("AccessDenied", "Home");
                     query = query.Where(m => m.Agendum.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
                 }
 
                 var mantenimiento = await query.FirstOrDefaultAsync();
+                if (mantenimiento == null) return NotFound();
 
-                if (mantenimiento == null)
-                {
-                    return Content("<div class='alert alert-danger'>No se encontró el mantenimiento o no tienes permisos para verlo</div>");
-                }
+                // 2. Obtener Fotos y Datos Forenses
+                var fotoInfo = await _dbocontext.Fotos.AsNoTracking().FirstOrDefaultAsync(f => f.NumOrden == numOrden);
 
-                // Determinar tipo de equipo
+                // 3. Lógica de Tipos de Equipo (Tu lógica original)
                 string tipoEquipo = "CFEMÁTICO";
                 string numCajero = "N/A";
-
-                var equipoAC = await _dbocontext.EquipoAcs
-                    .Include(e => e.ClaveTipoEquipoNavigation)
-                    .FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
-
-                var equipoComputo = await _dbocontext.EquipoComputos
-                    .Include(e => e.ClaveTipoEquipoNavigation)
-                    .FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
+                var equipoAC = await _dbocontext.EquipoAcs.Include(e => e.ClaveTipoEquipoNavigation).FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
+                var equipoComputo = await _dbocontext.EquipoComputos.Include(e => e.ClaveTipoEquipoNavigation).FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
 
                 if (equipoAC == null && equipoComputo == null)
                 {
-                    var equipoCfematico = await _dbocontext.EquipoCfematicos
-                        .FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
-
-                    if (equipoCfematico != null)
-                    {
-                        tipoEquipo = "CFEMÁTICO";
-                        numCajero = equipoCfematico.NumCajero ?? "N/A";
-                    }
+                    var equipoCfematico = await _dbocontext.EquipoCfematicos.FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
+                    if (equipoCfematico != null) { tipoEquipo = "CFEMÁTICO"; numCajero = equipoCfematico.NumCajero ?? "N/A"; }
                 }
-                else if (equipoAC != null)
+                else if (equipoAC != null) tipoEquipo = equipoAC.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC";
+                else if (equipoComputo != null) tipoEquipo = equipoComputo.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo";
+
+                // 4. PREPARAR VIEWMODEL
+                var viewModel = new MantenimientosTI.Models.ViewModels.DetalleReporteViewModel
                 {
-                    tipoEquipo = equipoAC.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC";
-                }
-                else if (equipoComputo != null)
+                    Mantenimiento = mantenimiento,
+                    FotoInfo = fotoInfo,
+                    NombreUsuario = $"{mantenimiento.RpeNavigation?.Nombre} {mantenimiento.RpeNavigation?.ApellidoP} {mantenimiento.RpeNavigation?.ApellidoM}".Trim(),
+                    FechaProgramada = mantenimiento.Agendum?.FechaProgramada.ToString("dd/MM/yyyy") ?? "N/A",
+                    TipoEquipo = tipoEquipo,
+                    NumCajero = numCajero,
+                    Zona = mantenimiento.Agendum.NumActFijoNavigation?.CatCentro?.CatAgencium?.CatZona?.NombreZona ?? "N/A",
+                    Agencia = mantenimiento.Agendum.NumActFijoNavigation?.CatCentro?.CatAgencium?.NombreAgencia ?? "N/A",
+                    Centro = mantenimiento.Agendum.NumActFijoNavigation?.CatCentro?.NombreCentro ?? "N/A"
+                };
+
+                // 5. BUSCAR ORIGEN DEL FRAUDE (Investigación Forense)
+                if (fotoInfo != null)
                 {
-                    tipoEquipo = equipoComputo.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo";
+                    if (fotoInfo.EsDuplicadaAntes)
+                        viewModel.OrigenAntes = await BuscarPacienteCero(fotoInfo.HashAntes, numOrden);
+
+                    if (fotoInfo.EsDuplicadaDurante)
+                        viewModel.OrigenDurante = await BuscarPacienteCero(fotoInfo.HashDurante, numOrden);
+
+                    if (fotoInfo.EsDuplicadaDespues)
+                        viewModel.OrigenDespues = await BuscarPacienteCero(fotoInfo.HashDespues, numOrden);
                 }
 
-                var centro = mantenimiento.Agendum.NumActFijoNavigation?.CatCentro;
-                var agencia = centro?.CatAgencium;
-                var zona = agencia?.CatZona;
-
-                var fechaProgramada = mantenimiento.Agendum?.FechaProgramada.ToString("dd/MM/yyyy") ?? "No especificada";
-                var nombreUsuario = $"{mantenimiento.RpeNavigation?.Nombre ?? ""} {mantenimiento.RpeNavigation?.ApellidoP ?? ""} {mantenimiento.RpeNavigation?.ApellidoM ?? ""}".Trim();
-
-                // Construir el HTML con los detalles (num de cajero primero
-                var htmlInfoEquipo = @"
-                <ul class='list-group list-group-flush'>";
-
-                    // Mostrar número de cajero primero si es CFEMÁTICO y tiene valor
-                    if (tipoEquipo == "CFEMÁTICO" && numCajero != "N/A")
-                    {
-                        htmlInfoEquipo += $@"<li class='list-group-item'><strong>Número de Cajero:</strong> {numCajero}</li>";
-                    }
-
-                    htmlInfoEquipo += $@"
-                    <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {mantenimiento.NumActFijo}</li>
-                    <li class='list-group-item'><strong>Tipo de Equipo:</strong> {tipoEquipo}</li>
-                    <li class='list-group-item'><strong>Zona:</strong> {zona?.NombreZona ?? "No especificado"}</li>
-                    <li class='list-group-item'><strong>Agencia:</strong> {agencia?.NombreAgencia ?? "No especificado"}</li>
-                    <li class='list-group-item'><strong>Centro:</strong> {centro?.NombreCentro ?? "No especificado"}</li>
-                </ul>";
-
-                var html = $@"
-                <div class='row'>
-                    <div class='col-md-6'>
-                        <h5>Información del Equipo</h5>
-                        {htmlInfoEquipo}
-                    </div>
-                    <div class='col-md-6'>
-                        <h5>Información del Mantenimiento</h5>
-                        <ul class='list-group list-group-flush'>
-                            <li class='list-group-item'><strong>Número de Orden:</strong> {mantenimiento.NumOrden}</li>
-                            <li class='list-group-item'><strong>Fecha Programada:</strong> {fechaProgramada}</li>
-                            <li class='list-group-item'><strong>Fecha de Atención:</strong> {mantenimiento.FechaAtencion.ToString("dd/MM/yyyy")}</li>
-                            <li class='list-group-item'><strong>Fecha de Terminación:</strong> {mantenimiento.FechaInsercion.ToString("dd/MM/yyyy HH:mm")}</li>
-                            <li class='list-group-item'><strong>Tipo de Mantenimiento:</strong> {mantenimiento.Agendum.ClaveTipoMttoNavigation?.NombreTipoM}</li>
-                            <li class='list-group-item'><strong>RPE:</strong> {mantenimiento.Rpe}</li>
-                            <li class='list-group-item'><strong>Nombre:</strong> {nombreUsuario}</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class='row mt-3'>
-                    <div class='col-12'>
-                        <h5>Detalles del Mantenimiento</h5>
-                        <div class='card'>
-                            <div class='card-body'>
-                                <p><strong>Problemas reportados:</strong></p>
-                                <p>{mantenimiento.Problemas ?? "No especificado"}</p>
-                                <p><strong>Diagnóstico:</strong></p>
-                                <p>{mantenimiento.Diagnostico ?? "No especificado"}</p>
-                                <p><strong>Observaciones:</strong></p>
-                                <p>{mantenimiento.Observaciones ?? "No especificado"}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>";
-
-                return Content(html);
+                return View("DetallesEquipo", viewModel);
             }
             catch (Exception ex)
             {
-                return Content($"<div class='alert alert-danger'>Error al obtener los detalles: {ex.Message}</div>");
+                return Content($"Error crítico: {ex.Message}");
             }
+        }
+
+        // MÉTODO DETECTIVE: Busca quién subió la foto primero
+        private async Task<MantenimientosTI.Models.ViewModels.InfoOrigenFraude?> BuscarPacienteCero(string? hash, int ordenActual)
+        {
+            if (string.IsNullOrEmpty(hash)) return null;
+
+            var original = await _dbocontext.Fotos
+                .Include(f => f.Mantenimiento).ThenInclude(m => m.RpeNavigation)
+                .Include(f => f.Mantenimiento).ThenInclude(m => m.Agendum).ThenInclude(a => a.NumActFijoNavigation).ThenInclude(e => e.CatCentro).ThenInclude(c => c.CatAgencium).ThenInclude(z => z.CatZona)
+                .Where(f => (f.HashAntes == hash || f.HashDurante == hash || f.HashDespues == hash) && f.NumOrden != ordenActual)
+                .OrderBy(f => f.FechaHora) // La fecha más antigua es la original
+                .FirstOrDefaultAsync();
+
+            if (original == null) return null;
+
+            return new MantenimientosTI.Models.ViewModels.InfoOrigenFraude
+            {
+                NumOrden = original.NumOrden,
+                Rpe = original.Mantenimiento.Rpe,
+                NombreTecnico = $"{original.Mantenimiento.RpeNavigation?.Nombre} {original.Mantenimiento.RpeNavigation?.ApellidoP}",
+                Fecha = original.FechaHora.ToString("dd/MM/yyyy HH:mm"),
+                Zona = original.Mantenimiento.Agendum.NumActFijoNavigation.CatCentro.CatAgencium.CatZona.NombreZona ?? "N/A"
+            };
         }
 
         [HttpGet]
@@ -1027,6 +974,54 @@ namespace MantenimientosTI.Controllers
                 f.HashDurante == hashNuevo ||
                 f.HashDespues == hashNuevo);
         }
+
+        private (decimal? Latitud, decimal? Longitud) ObtenerCoordenadasGPS(IFormFile archivo)
+        {
+            try
+            {
+                using (var stream = archivo.OpenReadStream())
+                using (var image = Image.Load(stream))
+                {
+                    if (image.Metadata?.ExifProfile == null) return (null, null);
+
+                    var exif = image.Metadata.ExifProfile;
+
+                    // CORRECCIÓN: Usamos TryGetValue para evitar el error CS0411
+                    // y verificamos que todos los valores existan
+                    if (exif.TryGetValue(ExifTag.GPSLatitude, out var gpsLat) &&
+                        exif.TryGetValue(ExifTag.GPSLatitudeRef, out var gpsLatRef) &&
+                        exif.TryGetValue(ExifTag.GPSLongitude, out var gpsLon) &&
+                        exif.TryGetValue(ExifTag.GPSLongitudeRef, out var gpsLonRef))
+                    {
+                        // Convertir coordenadas con los valores obtenidos
+                        decimal lat = ConvertirDmsADecimal(gpsLat.Value, gpsLatRef.Value.ToString());
+                        decimal lon = ConvertirDmsADecimal(gpsLon.Value, gpsLonRef.Value.ToString());
+
+                        return (lat, lon);
+                    }
+                }
+                return (null, null);
+            }
+            catch { return (null, null); }
+        }
+
+        // Método auxiliar para conversión matemática de coordenadas
+        private decimal ConvertirDmsADecimal(Rational[] dms, string referencia)
+        {
+            double grados = dms[0].Numerator / (double)dms[0].Denominator;
+            double minutos = dms[1].Numerator / (double)dms[1].Denominator;
+            double segundos = dms[2].Numerator / (double)dms[2].Denominator;
+
+            decimal resultado = (decimal)(grados + (minutos / 60.0) + (segundos / 3600.0));
+
+            if (referencia == "S" || referencia == "W")
+            {
+                resultado *= -1;
+            }
+
+            return resultado;
+        }
+
         private DateTime? ObtenerFechaCaptura(IFormFile archivo)
         {
             try
@@ -1036,15 +1031,16 @@ namespace MantenimientosTI.Controllers
                 {
                     if (image.Metadata?.ExifProfile == null) return null;
 
-                    var valorTag = image.Metadata.ExifProfile.GetValue(ExifTag.DateTimeOriginal);
-
-                    if (valorTag != null && DateTime.TryParseExact(valorTag.ToString(),
-                        "yyyy:MM:dd HH:mm:ss",
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.None,
-                        out DateTime fechaCaptura))
+                    if (image.Metadata.ExifProfile.TryGetValue(ExifTag.DateTimeOriginal, out var valorTag))
                     {
-                        return fechaCaptura;
+                        if (valorTag != null && DateTime.TryParseExact(valorTag.ToString(),
+                            "yyyy:MM:dd HH:mm:ss",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out DateTime fechaCaptura))
+                        {
+                            return fechaCaptura;
+                        }
                     }
                 }
                 return null;

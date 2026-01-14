@@ -19,6 +19,24 @@ public partial class Foto
 
     public string? HashDespues { get; set; }
 
+    public decimal? LatitudAntes { get; set; }
+    public decimal? LongitudAntes { get; set; }
+
+    public decimal? LatitudDurante { get; set; }
+    public decimal? LongitudDurante { get; set; }
+
+    public decimal? LatitudDespues { get; set; }
+    public decimal? LongitudDespues { get; set; }
+
+    public bool EsDuplicadaAntes { get; set; }
+    public bool EsDuplicadaDurante { get; set; }
+    public bool EsDuplicadaDespues { get; set; }
+
+    // Banderas de Fecha (1 = Fecha antigua o inconsistente)
+    public bool AlertaFechaAntes { get; set; }
+    public bool AlertaFechaDurante { get; set; }
+    public bool AlertaFechaDespues { get; set; }
+
     public DateTime FechaHora { get; set; } = DateTime.Now;
 
     public virtual Mantenimiento Mantenimiento { get; set; } = null!;

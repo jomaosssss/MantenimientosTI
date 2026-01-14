@@ -1,0 +1,502 @@
+﻿@model IEnumerable<MantenimientosTI.Models.ViewModels.AuditoriaViewModel>
+@using MantenimientosTI.Models.ViewModels
+
+@{
+    ViewData["Title"] = "Auditoría Forense de Imágenes - Sistema Anti-Fraude";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // Casting seguro con manejo de nulos
+    var estadisticas = ViewBag.Estadisticas as EstadisticasAuditoriaViewModel;
+    var zonas = ViewBag.Zonas as List<dynamic>;
+
+    // Variables para mantener el estado de los filtros
+    var filtroZona = Context.Request.Query["zona"].ToString();
+    var filtroNivel = Context.Request.Query["nivelAlerta"].ToString();
+}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER MEJORADO -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h2 class="text-danger mb-0 fw-bold">
+                        <i class="fas fa-shield-alt me-2"></i> Auditoría de imágenes
+                    </h2>
+                    <p class="text-muted mb-0 small">
+                        <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                        Sistema de detección de duplicidad y validación de integridad de imágenes
+                    </p>
+                </div>
+
+                <div class="d-flex gap-2 bg-white p-2 rounded shadow-sm border">
+                    <form method="get" class="d-flex gap-2 align-items-center flex-wrap" id="filtroForm">
+
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-map-marker-alt text-primary"></i></span>
+                            <select name="zona" class="form-select border-start-0" style="width: 140px;" onchange="this.form.submit()">
+                                <option value="">Todas las Zonas</option>
+                                @if (zonas != null)
+                                {
+                                    foreach (var z in zonas)
+                                    {
+                                        <option value="@z.ClaveZona" selected="@(filtroZona == z.ClaveZona)">@z.NombreZona</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-filter text-warning"></i></span>
+                            <select name="nivelAlerta" class="form-select border-start-0" style="width: 140px;" onchange="this.form.submit()">
+                                <option value="">Todos los Niveles</option>
+                                <option value="Critico" selected="@(filtroNivel == "Critico")">🟥 Crítico</option>
+                                <option value="Alto" selected="@(filtroNivel == "Alto")">🟧 Alto</option>
+                                <option value="Medio" selected="@(filtroNivel == "Medio")">🟨 Medio</option>
+                            </select>
+                        </div>
+
+                        <div class="vr mx-1"></div>
+
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm" title="Limpiar Filtros">
+                            <i class="fas fa-broom"></i> Limpiar
+                        </a>
+
+                        <button type="button" class="btn btn-success btn-sm d-flex align-items-center gap-1" onclick="exportarAExcel()">
+                            <i class="fas fa-file-excel"></i> Exportar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI CARDS CON PROPIEDADES EXISTENTES -->
+    <div class="row mb-4 g-3">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 hover-lift">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0 bg-danger bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-clone text-danger fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small">Evidencias Duplicadas</div>
+                            <div class="h4 fw-bold text-dark">@(estadisticas?.TotalAnomalias ?? 0)</div>
+                            <div class="text-danger small">
+                                <i class="fas fa-chart-line me-1"></i> Análisis activo
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 hover-lift">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0 bg-warning bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-user-times text-warning fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small">Técnicos Implicados</div>
+                            <div class="h4 fw-bold text-dark">@(estadisticas?.TecnicosInvolucrados ?? 0)</div>
+                            <div class="text-warning small">
+                                <i class="fas fa-users-slash me-1"></i> En investigación
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 hover-lift">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0 bg-info bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-map-marked-alt text-info fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small">Zonas Afectadas</div>
+                            <div class="h4 fw-bold text-dark">@(estadisticas?.ZonasAfectadas ?? 0)</div>
+                            <div class="text-info small">
+                                <i class="fas fa-exchange-alt me-1"></i> Multi-zona
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 hover-lift bg-gradient-dark text-white">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0 bg-white bg-opacity-20 p-3 rounded-circle me-3">
+                            <i class="fas fa-skull-crossbones fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="opacity-75 small">Casos Críticos</div>
+                            <div class="h4 fw-bold">@(estadisticas?.Critico ?? 0)</div>
+                            <div class="opacity-75 small">
+                                <i class="fas fa-clock me-1"></i> Atención inmediata
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALERTA DE PATRONES -->
+    @if (Model.Any(m => m.NivelAlerta == NivelAlerta.Critico))
+    {
+        <div class="alert alert-danger border-0 shadow-sm mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                    <i class="fas fa-siren-on fa-2x"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="alert-heading mb-1"><i class="fas fa-exclamation-triangle me-2"></i>ALERTA DE INTEGRIDAD CRÍTICA</h5>
+                    <p class="mb-0">
+                        Se detectaron <strong>@Model.Count(m => m.NivelAlerta == NivelAlerta.Critico) casos críticos</strong>
+                        que requieren investigación inmediata.
+                    </p>
+                </div>
+                <div class="flex-shrink-0">
+                    <a href="@Url.Action("Index", new { nivelAlerta = "Critico" })" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-filter me-1"></i> Ver Solo Críticos
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- TABLA OPTIMIZADA -->
+    <div class="card shadow border-0">
+        <div class="card-header bg-gradient bg-dark text-white d-flex justify-content-between align-items-center py-3">
+            <div>
+                <h6 class="m-0 fw-bold"><i class="fas fa-fingerprint me-2"></i>Detección de Duplicidad - Resumen Consolidado</h6>
+                <small class="opacity-75">Cada registro representa un mantenimiento con al menos una imagen duplicada</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-danger">@Model.Count() registros</span>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="tablaAuditoria" class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-uppercase small">
+                        <tr>
+                            <th class="ps-4">Orden / Fecha</th>
+                            <th>Técnico Reportado</th>
+                            <th>Patrón Detectado</th>
+                            <th>Impacto</th>
+                            <th class="text-end pe-4">Acción Forense</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var grupo in Model.GroupBy(x => x.NumOrden))
+                        {
+                            // Tomamos el primer registro para los datos generales (Fecha, Técnico, etc.)
+                            var item = grupo.First();
+
+                            // Calculamos el nivel de alerta más alto de todo el grupo para colorear la fila
+                            var esCritico = grupo.Any(x => x.NivelAlerta == NivelAlerta.Critico);
+                            var esAlto = grupo.Any(x => x.NivelAlerta == NivelAlerta.Alto);
+
+                            var rowClass = esCritico ? "table-danger" :
+                            esAlto ? "table-warning" : "table-light";
+
+                            <tr class="@rowClass">
+                                <td class="ps-4">
+                                    <div class="d-flex flex-column">
+                                        <div class="fw-bold text-dark">#@item.NumOrden</div>
+                                        <div class="small text-muted">
+                                            <i class="fas fa-calendar me-1"></i>@item.FechaRegistro.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                        <div class="mt-1">
+                                            @{
+                                                // Usamos la alerta más alta del grupo para el badge principal
+                                                var maxAlerta = grupo.OrderByDescending(x => x.NivelAlerta).First();
+                                                var badgeColor = maxAlerta.NivelAlerta switch
+                                                {
+                                                    NivelAlerta.Critico => "bg-danger",
+                                                    NivelAlerta.Alto => "bg-warning text-dark",
+                                                    NivelAlerta.Medio => "bg-info",
+                                                    _ => "bg-secondary"
+                                                };
+                                            }
+                                            <span class="badge @badgeColor rounded-pill">
+                                                <i class="@maxAlerta.NivelAlertaIcono me-1"></i> @maxAlerta.NivelAlerta
+                                            </span>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <div class="fw-bold">@item.NombreTecnico</div>
+                                        <div class="small text-muted">@item.Rpe</div>
+                                        <div class="mt-1">
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-map-marker-alt me-1"></i>@item.Zona
+                                            </span>
+                                            <span class="badge bg-light text-dark border">
+                                                <i class="fas fa-building me-1"></i>@item.Agencia
+                                            </span>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        @if (item.EsMismoTecnico)
+                                        {
+                                            <div class="mb-2">
+                                                <span class="badge bg-dark d-inline-flex align-items-center gap-1">
+                                                    <i class="fas fa-user-secret"></i> AUTO-PLAGIO
+                                                </span>
+                                                <div class="small text-muted mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i> Reutiliza sus propias imágenes
+                                                </div>
+                                            </div>
+                                        }
+                                        else if (item.ExisteOriginal)
+                                        {
+                                            <div class="mb-2">
+                                                <span class="badge bg-danger d-inline-flex align-items-center gap-1">
+                                                    <i class="fas fa-robot"></i> ROBO DE EVIDENCIA
+                                                </span>
+                                                <div class="small text-muted mt-1">
+                                                    <i class="fas fa-user-check me-1"></i> Copia de otro técnico
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="mb-2">
+                                                <span class="badge bg-warning d-inline-flex align-items-center gap-1">
+                                                    <i class="fas fa-question-circle"></i> ANOMALÍA DESCONOCIDA
+                                                </span>
+                                                <div class="small text-muted mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i> @item.ObtenerDescripcionAnomalia()
+                                                </div>
+                                            </div>
+                                        }
+
+                                        <div class="mt-2">
+                                            <div class="small fw-bold text-dark mb-1">Etapas afectadas (@grupo.Count()):</div>
+                                            <div class="d-flex gap-1 flex-wrap">
+                                                @foreach (var etapa in grupo.Select(x => x.Etapa).Distinct())
+                                                {
+                                                    <span class="badge bg-secondary text-uppercase border border-light">@etapa</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        @if (item.ExisteOriginal)
+                                        {
+                                            <div class="mb-2">
+                                                <div class="small fw-bold text-success">
+                                                    <i class="fas fa-history me-1"></i> Origen identificado
+                                                </div>
+                                                <div class="small">
+                                                    Orden #@item.NumOrdenOriginal • @item.DiferenciaTiempo
+                                                </div>
+                                                <div class="small text-muted">
+                                                    <i class="fas fa-user me-1"></i>@item.NombreOriginal
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="mb-2">
+                                                <div class="small fw-bold text-warning">
+                                                    <i class="fas fa-question-circle me-1"></i> Origen desconocido
+                                                </div>
+                                                <div class="small text-muted">
+                                                    Posible manipulación de metadatos
+                                                </div>
+                                            </div>
+                                        }
+
+                                        <div class="mt-2">
+                                            @{
+                                                // Tomamos el impacto más alto del grupo
+                                                var maxNivel = grupo.Max(x => x.NivelAlerta);
+                                                var impactScore = maxNivel switch
+                                                {
+                                                    NivelAlerta.Critico => 95,
+                                                    NivelAlerta.Alto => 75,
+                                                    NivelAlerta.Medio => 50,
+                                                    _ => 25 
+                                                };
+                                            }
+                                            <div class="small fw-bold mb-1">Nivel de riesgo:</div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar @(maxNivel == NivelAlerta.Critico ? "bg-danger" : "bg-warning")"
+                                                     role="progressbar" style="width: @impactScore%"
+                                                     aria-valuenow="@impactScore" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="text-end pe-4">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("ObtenerDetallesEquipo", "Repositorio", new { numOrden = item.NumOrden })"
+                                           class="btn btn-outline-dark" title="Investigación completa">
+                                            <i class="fas fa-microscope me-1"></i> Analizar
+                                        </a>
+
+                                        @if (item.NumOrdenOriginal.HasValue)
+                                        {
+                                            <a href="@Url.Action("ObtenerDetallesEquipo", "Repositorio", new { numOrden = item.NumOrdenOriginal })"
+                                               class="btn btn-outline-primary" title="Ver original">
+                                                <i class="fas fa-columns"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="text-muted opacity-50">
+                                        <i class="fas fa-shield-check fa-4x mb-3 text-success"></i>
+                                        <h4 class="text-success">Sistema Limpio</h4>
+                                        <p>No se detectaron anomalías bajo los criterios actuales.</p>
+                                        <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-success mt-2">
+                                            <i class="fas fa-sync-alt me-1"></i> Ver todas las auditorías
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-footer bg-light d-flex justify-content-between align-items-center py-2">
+            <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Auditoría de imágenes v3.2 • Última actualización: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+            </small>
+            <div>
+                <small class="me-3">
+                    <span class="badge bg-danger">🟥 Crítico</span>
+                    <span class="badge bg-warning text-dark">🟧 Alto</span>
+                    <span class="badge bg-info">🟨 Medio</span>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+    <script>
+        // Exportar a Excel
+        function exportarAExcel() {
+            const table = document.getElementById('tablaAuditoria');
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Auditoria_Forense"});
+            const fecha = new Date().toISOString().slice(0,10);
+            XLSX.writeFile(wb, `Auditoria_Forense_${fecha}.xlsx`);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Exportado',
+                text: 'Reporte generado exitosamente',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        // Inicializar tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+
+    <style>
+        .hover-lift {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+            .hover-lift:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+            }
+
+        .bg-gradient-dark {
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+        }
+
+        .table th {
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+
+        .table-hover tbody tr {
+            transition: background-color 0.15s;
+        }
+
+            .table-hover tbody tr:hover {
+                background-color: rgba(0, 0, 0, 0.03);
+            }
+
+        .badge {
+            font-weight: 500;
+        }
+
+        .progress {
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            border-radius: 10px;
+        }
+
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .card-header .d-flex {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 1rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+                .btn-group .btn {
+                    width: 100%;
+                    margin-bottom: 0.25rem;
+                    border-radius: 0.375rem !important;
+                }
+        }
+    </style>
+}

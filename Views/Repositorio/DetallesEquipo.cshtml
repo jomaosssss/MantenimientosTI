@@ -1,0 +1,324 @@
+﻿@model MantenimientosTI.Models.ViewModels.DetalleReporteViewModel
+
+@{
+    ViewData["Title"] = "Reporte Forense de Mantenimiento";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid px-4 mt-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+        <div>
+            <h3 class="text-dark fw-bold mb-0">
+                <i class="bi bi-clipboard-data me-2"></i>Expediente Técnico #@Model.Mantenimiento.NumOrden
+            </h3>
+            <span class="text-muted small">Fecha de registro del reporte: @Model.Mantenimiento.FechaInsercion.ToString("dd/MM/yyyy HH:mm")</span>
+        </div>
+        <div>
+            <button onclick="window.print()" class="btn btn-outline-dark me-2"><i class="bi bi-printer"></i> Imprimir</button>
+            <button onclick="window.close()" class="btn btn-secondary"><i class="bi bi-x-lg"></i> Cerrar</button>
+        </div>
+    </div>
+
+    @if (Model.FotoInfo != null && (Model.FotoInfo.EsDuplicadaAntes || Model.FotoInfo.EsDuplicadaDurante || Model.FotoInfo.EsDuplicadaDespues))
+    {
+        <div class="card border-danger mb-4 shadow-lg">
+            <div class="card-header bg-gradient bg-danger text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-shield-exclamation me-2"></i> EVIDENCIA DE DUPLICIDAD CONFIRMADA</h5>
+                <span class="badge bg-white text-danger">Fraude Detectado</span>
+            </div>
+            <div class="card-body bg-light">
+                <div class="alert alert-danger border-0 d-flex align-items-center" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                    <div>
+                        <strong>Hallazgo Crítico:</strong> Este mantenimiento contiene imágenes que ya existen en la base de datos asociadas a otros reportes históricos.
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle shadow-sm">
+                        <thead class="text-center text-white">
+                            <tr>
+                                <th class="bg-dark" style="width: 10%;">Etapa</th>
+                                <th class="bg-danger" style="width: 45%;"><i class="bi bi-x-circle me-1"></i> REPORTADO (Copia / Infractor)</th>
+                                <th class="bg-success" style="width: 45%;"><i class="bi bi-check-circle me-1"></i> FUENTE REAL (Original)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @* --- SECCIÓN ANTES --- *@
+                            @if (Model.FotoInfo.EsDuplicadaAntes)
+                            {
+                                <tr>
+                                    <td class="text-center bg-secondary text-white fw-bold">ANTES</td>
+                                    <td class="bg-white p-3">
+                                        <div class="row g-0">
+                                            <div class="col-md-5 text-center">
+                                                <img src="@Url.Action("ObtenerImagen", "Repositorio", new { numOrden = Model.Mantenimiento.NumOrden, tipo = "antes" })"
+                                                     class="img-thumbnail shadow-sm mb-2" style="max-height: 160px; width: auto;">
+                                            </div>
+                                            <div class="col-md-7 ps-3 text-start">
+                                                <h6 class="text-danger fw-bold">Orden Actual: #@Model.Mantenimiento.NumOrden</h6>
+                                                <ul class="list-unstyled small mb-0">
+                                                    <li class="mb-1"><i class="bi bi-person-badge text-muted"></i> <strong>Técnico:</strong> @Model.Mantenimiento.Rpe</li>
+                                                    <li class="mb-1"><i class="bi bi-calendar-event text-danger"></i> <strong>Subido el:</strong> @Model.Mantenimiento.FechaInsercion.ToString("dd/MM/yyyy HH:mm")</li>
+                                                    <li class="mb-1"><i class="bi bi-geo-alt text-muted"></i> <strong>Ubicación:</strong> @Model.Zona / @Model.Agencia</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="bg-success bg-opacity-10 p-3">
+                                        @if (Model.OrigenAntes != null)
+                                        {
+                                            <div class="row g-0">
+                                                <div class="col-md-5 text-center">
+                                                    <img src="@Url.Action("ObtenerImagen", "Repositorio", new { numOrden = Model.OrigenAntes.NumOrden, tipo = "antes" })"
+                                                         class="img-thumbnail border-success shadow-sm mb-2" style="max-height: 160px; width: auto;">
+                                                </div>
+                                                <div class="col-md-7 ps-3 text-start">
+                                                    <h6 class="text-success fw-bold">Orden Original: #@Model.OrigenAntes.NumOrden</h6>
+                                                    <ul class="list-unstyled small mb-0">
+                                                        <li class="mb-1"><i class="bi bi-person-check text-muted"></i> <strong>Autor:</strong> @Model.OrigenAntes.Rpe</li>
+
+                                                        @* ✅ CORREGIDO: No usar .HasValue/.Value en strings *@
+                                                        @if (!string.IsNullOrEmpty(Model.OrigenAntes.Fecha))
+                                                        {
+                                                            <li class="mb-1">
+                                                                <i class="bi bi-calendar-check text-success"></i>
+                                                                <strong>Fecha Real:</strong> @Model.OrigenAntes.Fecha
+                                                            </li>
+                                                        }
+                                                        else
+                                                        {
+                                                            <li class="mb-1">
+                                                                <i class="bi bi-calendar-check text-success"></i>
+                                                                <strong>Fecha Real:</strong> N/D
+                                                            </li>
+                                                        }
+
+                                                        <li class="mb-1">
+                                                            <i class="bi bi-geo-alt text-muted"></i>
+                                                            <strong>Ubicación:</strong> @Model.OrigenAntes.Zona
+                                                        </li>
+                                                    </ul>
+                                                    <a href="@Url.Action("ObtenerDetallesEquipo", "Repositorio", new { numOrden = Model.OrigenAntes.NumOrden })" class="btn btn-sm btn-outline-success mt-2">
+                                                        <i class="bi bi-box-arrow-up-right"></i> Ver Reporte Original
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center text-muted fst-italic py-4">
+                                                <i class="bi bi-hdd-network fs-3 d-block mb-2"></i>
+                                                Fuente original no accesible (Posible copia en misma sesión)
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+
+                            @* --- SECCIÓN DURANTE --- *@
+                            @if (Model.FotoInfo.EsDuplicadaDurante)
+                            {
+                                <tr>
+                                    <td class="text-center bg-secondary text-white fw-bold">DURANTE</td>
+                                    <td class="bg-white p-3">
+                                        <div class="row g-0">
+                                            <div class="col-md-5 text-center">
+                                                <img src="@Url.Action("ObtenerImagen", "Repositorio", new { numOrden = Model.Mantenimiento.NumOrden, tipo = "durante" })"
+                                                     class="img-thumbnail shadow-sm mb-2" style="max-height: 160px;">
+                                            </div>
+                                            <div class="col-md-7 ps-3 text-start">
+                                                <h6 class="text-danger fw-bold">Orden Actual: #@Model.Mantenimiento.NumOrden</h6>
+                                                <small class="d-block text-muted">Subido: @Model.Mantenimiento.FechaInsercion.ToString("dd/MM/yyyy HH:mm")</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="bg-success bg-opacity-10 p-3">
+                                        @if (Model.OrigenDurante != null)
+                                        {
+                                            <div class="row g-0">
+                                                <div class="col-md-5 text-center">
+                                                    <img src="@Url.Action("ObtenerImagen", "Repositorio", new { numOrden = Model.OrigenDurante.NumOrden, tipo = "durante" })"
+                                                         class="img-thumbnail border-success shadow-sm mb-2" style="max-height: 160px;">
+                                                </div>
+                                                <div class="col-md-7 ps-3 text-start">
+                                                    <h6 class="text-success fw-bold">Orden Original: #@Model.OrigenDurante.NumOrden</h6>
+                                                    <small class="d-block text-dark">Autor: @Model.OrigenDurante.Rpe</small>
+
+                                                    @* ✅ CORREGIDO *@
+                                                    @if (!string.IsNullOrEmpty(Model.OrigenDurante.Fecha))
+                                                    {
+                                                        <small class="d-block text-dark">
+                                                            Fecha: @Model.OrigenDurante.Fecha
+                                                        </small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <small class="d-block text-dark">
+                                                            Fecha: N/D
+                                                        </small>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+
+                            @* --- SECCIÓN DESPUES --- *@
+                            @if (Model.FotoInfo.EsDuplicadaDespues)
+                            {
+                                <tr>
+                                    <td class="text-center bg-secondary text-white fw-bold">DESPUÉS</td>
+                                    <td class="bg-white p-3">
+                                        <div class="row g-0">
+                                            <div class="col-md-5 text-center">
+                                                <img src="@Url.Action("ObtenerImagen", "Repositorio", new { numOrden = Model.Mantenimiento.NumOrden, tipo = "despues" })"
+                                                     class="img-thumbnail shadow-sm mb-2" style="max-height: 160px;">
+                                            </div>
+                                            <div class="col-md-7 ps-3 text-start">
+                                                <h6 class="text-danger fw-bold">Orden Actual: #@Model.Mantenimiento.NumOrden</h6>
+                                                <small class="d-block text-muted">Subido: @Model.Mantenimiento.FechaInsercion.ToString("dd/MM/yyyy HH:mm")</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="bg-success bg-opacity-10 p-3">
+                                        @if (Model.OrigenDespues != null)
+                                        {
+                                            <div class="row g-0">
+                                                <div class="col-md-5 text-center">
+                                                    <img src="@Url.Action("ObtenerImagen", "Repositorio", new { numOrden = Model.OrigenDespues.NumOrden, tipo = "despues" })"
+                                                         class="img-thumbnail border-success shadow-sm mb-2" style="max-height: 160px;">
+                                                </div>
+                                                <div class="col-md-7 ps-3 text-start">
+                                                    <h6 class="text-success fw-bold">Orden Original: #@Model.OrigenDespues.NumOrden</h6>
+                                                    <small class="d-block text-dark">Autor: @Model.OrigenDespues.Rpe</small>
+
+                                                    @* ✅ CORREGIDO *@
+                                                    @if (!string.IsNullOrEmpty(Model.OrigenDespues.Fecha))
+                                                    {
+                                                        <small class="d-block text-dark">
+                                                            Fecha: @Model.OrigenDespues.Fecha
+                                                        </small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <small class="d-block text-dark">
+                                                            Fecha: N/D
+                                                        </small>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Datos Generales del Mantenimiento</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6 border-end">
+                            <h6 class="text-uppercase text-muted small fw-bold">Identificación</h6>
+                            <p class="mb-1"><strong>Activo Fijo:</strong> <span class="badge bg-light text-dark border">@Model.Mantenimiento.NumActFijo</span></p>
+                            <p class="mb-1"><strong>Tipo Equipo:</strong> @Model.TipoEquipo</p>
+                            <p class="mb-0"><strong>Ubicación:</strong> @Model.Zona / @Model.Agencia / @Model.Centro</p>
+                        </div>
+                        <div class="col-md-6 ps-md-4">
+                            <h6 class="text-uppercase text-muted small fw-bold">Ejecución</h6>
+                            <p class="mb-1"><strong>Técnico Responsable:</strong> @Model.NombreUsuario (@Model.Mantenimiento.Rpe)</p>
+                            <p class="mb-1">
+                                @* ✅ CORREGIDO: DateOnly no tiene .HasValue/.Value *@
+                                <strong>Fecha de Atención (Reportada):</strong>
+                                @if (Model.Mantenimiento.FechaAtencion != default)
+                                {
+                                    <span>@Model.Mantenimiento.FechaAtencion.ToString("dd/MM/yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span>N/D</span>
+                                }
+                            </p>
+                            <p class="mb-0"><strong>Tipo Mtto:</strong> <span class="badge bg-info text-dark">@Model.Mantenimiento.Agendum?.ClaveTipoMttoNavigation?.NombreTipoM</span></p>
+                        </div>
+                    </div>
+                    <hr class="text-muted">
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-uppercase text-muted small fw-bold">Reporte Técnico</h6>
+                            <div class="mb-2">
+                                <strong>Problema Reportado:</strong>
+                                <p class="text-muted fst-italic bg-light p-2 rounded">"@Model.Mantenimiento.Problemas"</p>
+                            </div>
+                            <div>
+                                <strong>Observaciones Finales:</strong>
+                                <p class="text-muted fst-italic bg-light p-2 rounded">"@Model.Mantenimiento.Observaciones"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            @if (Model.FotoInfo != null && (Model.FotoInfo.AlertaFechaAntes || Model.FotoInfo.AlertaFechaDurante || Model.FotoInfo.AlertaFechaDespues))
+            {
+                <div class="alert alert-warning shadow-sm border-warning mb-3">
+                    <h6 class="alert-heading fw-bold"><i class="bi bi-clock-history"></i> Inconsistencia Temporal</h6>
+                    <p class="mb-0 small">Los metadatos EXIF de las fotos indican una fecha de captura muy antigua en comparación con la fecha del reporte. Posible reciclaje de imágenes propias.</p>
+                </div>
+            }
+
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-geo-alt-fill text-danger me-2"></i>Geolocalización (Metadatos)
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-3">Si las imágenes contienen coordenadas GPS, puede verificar la ubicación exacta de la captura:</p>
+
+                    <div class="d-grid gap-2">
+                        @* ✅ CORREGIDO: Usar != null en lugar de .HasValue *@
+                        @if (Model.FotoInfo?.LatitudAntes != null && Model.FotoInfo.LatitudAntes != 0)
+                        {
+                            <a href="https://www.google.com/maps?q=@Model.FotoInfo.LatitudAntes,@Model.FotoInfo.LongitudAntes"
+                               target="_blank"
+                               class="btn btn-outline-primary text-start">
+                                <i class="bi bi-map me-2"></i> Ver Ubicación 'Antes'
+                            </a>
+                        }
+                        else
+                        {
+                            <button disabled class="btn btn-light text-start text-muted border">
+                                <i class="bi bi-geo-alt-slash me-2"></i> Sin GPS 'Antes'
+                            </button>
+                        }
+
+                        @* ✅ CORREGIDO: Usar != null en lugar de .HasValue *@
+                        @if (Model.FotoInfo?.LatitudDurante != null && Model.FotoInfo.LatitudDurante != 0)
+                        {
+                            <a href="https://www.google.com/maps?q=@Model.FotoInfo.LatitudDurante,@Model.FotoInfo.LongitudDurante"
+                               target="_blank"
+                               class="btn btn-outline-primary text-start">
+                                <i class="bi bi-map me-2"></i> Ver Ubicación 'Durante'
+                            </a>
+                        }
+                    </div>
+                </div>
+                <div class="card-footer bg-light text-center small text-muted">
+                    Sistema de Auditoría Forense v2.0
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -223,12 +223,20 @@
                                 Bitácora de actividad
                             </a>
                         } *@
+
                         @if (User.IsInRole("ADMINISTRADOR"))
                         {
                             <a href="@Url.Action("UnifiedDashboard", "Analytics")" class="nav-link ajax-link text-white">
                                 <div class="sb-nav-link-icon"><i class="fas fa-chart-bar"></i></div>
-                            Bitácora de análisis
+                            Bitácora
                         </a>
+                            @if (User.IsInRole("ADMINISTRADOR"))
+                            {
+                                <a href="@Url.Action("Index", "Auditoria")" class="nav-link ajax-link text-white">
+                                    <div class="sb-nav-link-icon" style="color: #e74c3c;"><i class="fas fa-user-secret"></i></div>
+                                    Auditoría de fotos
+                                </a>
+                            }
                         }
                     </div>
                 </div>

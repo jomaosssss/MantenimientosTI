@@ -545,6 +545,45 @@ public partial class MantenimientosTIContext : DbContext
             entity.Property(e => e.FechaHora)
                 .HasColumnName("fechaHora")
                 .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.HashAntes)
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .HasColumnName("HashAntes");
+
+            entity.Property(e => e.HashDurante)
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .HasColumnName("HashDurante");
+
+            entity.Property(e => e.HashDespues)
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .HasColumnName("HashDespues");
+
+            // --- NUEVO: Mapeo de GPS (Decimal 9,6) ---
+            entity.Property(e => e.LatitudAntes).HasColumnType("decimal(9, 6)").HasColumnName("LatitudAntes");
+            entity.Property(e => e.LongitudAntes).HasColumnType("decimal(9, 6)").HasColumnName("LongitudAntes");
+
+            entity.Property(e => e.LatitudDurante).HasColumnType("decimal(9, 6)").HasColumnName("LatitudDurante");
+            entity.Property(e => e.LongitudDurante).HasColumnType("decimal(9, 6)").HasColumnName("LongitudDurante");
+
+            entity.Property(e => e.LatitudDespues).HasColumnType("decimal(9, 6)").HasColumnName("LatitudDespues");
+            entity.Property(e => e.LongitudDespues).HasColumnType("decimal(9, 6)").HasColumnName("LongitudDespues");
+
+            // --- NUEVO: Banderas de Auditoría (Bit) ---
+            entity.Property(e => e.EsDuplicadaAntes).HasColumnName("EsDuplicadaAntes").HasDefaultValue(false);
+            entity.Property(e => e.EsDuplicadaDurante).HasColumnName("EsDuplicadaDurante").HasDefaultValue(false);
+            entity.Property(e => e.EsDuplicadaDespues).HasColumnName("EsDuplicadaDespues").HasDefaultValue(false);
+
+            entity.Property(e => e.AlertaFechaAntes).HasColumnName("AlertaFechaAntes").HasDefaultValue(false);
+            entity.Property(e => e.AlertaFechaDurante).HasColumnName("AlertaFechaDurante").HasDefaultValue(false);
+            entity.Property(e => e.AlertaFechaDespues).HasColumnName("AlertaFechaDespues").HasDefaultValue(false);
+
+            // --- Relación ---
+            entity.HasOne(d => d.Mantenimiento) // Cambié 'd.Mantenimiento' basándome en tu modelo Foto.cs
+                .WithMany(p => p.Fotos)
+                .HasForeignKey(d => d.NumOrden)
+                .HasConstraintName("FK_Foto_Mantenimiento");
         });
 
         modelBuilder.Entity<Mantenimiento>(entity =>
