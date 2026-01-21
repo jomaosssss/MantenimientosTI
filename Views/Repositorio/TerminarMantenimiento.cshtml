@@ -25,7 +25,6 @@
 
             <div id="form-body" style="display: none;">
 
-                <!-- Sección de Información del Mantenimiento -->
                 <div id="resultadoBusqueda" class="mt-4 mb-4">
                     <div class="card shadow-sm">
                         <div class="card-header bg-light">
@@ -115,7 +114,7 @@
                 </div>
 
                 <div class="row mb-4">
-                    <div class="col-md-9">
+                    <div class="col-md-6">
                         <div class="form-group">
                             <label class="form-label">Hoja de servicio (PDF): <span class="text-danger">*</span></label>
                             <div class="input-group">
@@ -129,62 +128,6 @@
                         <div class="form-group">
                             <label class="form-label">Fecha de atención: <span class="text-danger">*</span></label>
                             <input type="date" id="fechaAtencion" class="form-control">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección de Refacciones (solo para correctivos) -->
-                <div id="contenedor-refacciones" style="display: none;">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">Refacciones utilizadas</h5>
-                        </div>
-                        <div class="card-body">
-                            <!-- Área informativa fija -->
-                            <div id="infoTipoRefaccion" class="alert alert-info mb-3" style="display: none;">
-                                <div id="detallesDisponibilidad" class="mt-1"></div>
-                            </div>
-
-                            <div class="row align-items-end">
-                                <!-- Combobox para seleccionar tipo de refacción -->
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label class="form-label">Tipo de refacción:</label>
-                                        <select id="tipoRefaccion" class="form-select">
-                                            <option value="">Seleccione un tipo de refacción</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- Campo DINÁMICO según el tipo (SOLO el control) -->
-                                <div class="col-md-4" id="campoSeleccionRefaccion">
-                                    <!-- Solo se mostrará el control dinámico, sin texto adicional -->
-                                </div>
-
-                                <!-- Campo para observaciones -->
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label class="form-label">Observaciones:</label>
-                                        <textarea id="observacionesRefaccion" class="form-control" rows="1" placeholder="Observaciones de la refacción"></textarea>
-                                    </div>
-                                </div>
-
-                                <!-- Botón Agregar -->
-                                <div class="col-md-1">
-                                    <div class="form-group">
-                                        <label class="form-label d-block">&nbsp;</label>
-                                        <button type="button" id="btnAgregarRefaccion" class="btn btn-primary w-100">
-                                            <i class="bi bi-plus-circle me-1"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Lista de refacciones agregadas -->
-                            <div id="lista-refacciones" class="mt-4" style="display: none;">
-                                <h6 class="border-bottom pb-2 mb-3">Refacciones agregadas:</h6>
-                                <div id="refacciones-agregadas"></div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -202,22 +145,6 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        select.form-select {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 16px 12px;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            padding-right: 2.5rem;
-        }
-
-            select.form-select:disabled {
-                background-color: #e9ecef;
-                opacity: 0.6;
-            }
-
         .char-counter {
             font-size: 0.8rem;
             color: #6c757d;
@@ -237,87 +164,37 @@
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
         }
 
+        /* Estilo para los asteriscos rojos */
         .text-danger {
             color: #dc3545 !important;
         }
-
-        .refaccion-item {
-            background: #f8f9fa;
-            border-left: 4px solid #28a745;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-
-            .refaccion-item:hover {
-                background: #e9ecef;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            }
-
-            .refaccion-item small {
-                font-size: 0.85rem;
-            }
-
-        .btn-eliminar-refaccion {
-            color: #dc3545;
-            background: none;
-            border: none;
-            padding: 6px 10px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s;
-            margin-left: 10px;
-        }
-
-            .btn-eliminar-refaccion:hover {
-                color: #fff;
-                background: #dc3545;
-            }
-
-        /* Estilos para información del tipo de refacción */
-        #infoTipoRefaccion {
-            font-size: 0.9rem;
-            padding: 10px 15px;
-        }
-
-        /* Estilos para el campo de cantidad */
-        .cantidad-disponible {
-            font-size: 0.85rem;
-            color: #28a745;
-        }
-
-            .cantidad-disponible.agotado {
-                color: #dc3545;
-            }
     </style>
     <script>
-        // =============================================
-        // VARIABLES GLOBALES
-        // =============================================
-        let refacciones = [];
-        let infoTipoActual = null;
-
-        // =============================================
-        // FUNCIONES DE INICIALIZACIÓN
-        // =============================================
-        $(document).ready(function () {
+        // Tu código JavaScript existente permanece igual...
+        $(document).ready(function() {
             inicializarContadoresCaracteres();
-            inicializarEventos();
 
-            // Configurar fecha actual como valor por defecto
-            const hoy = new Date().toISOString().split('T')[0];
-            $('#fechaAtencion').val(hoy);
+            // Eventos de búsqueda
+            $('#btnBuscarOrden').click(buscarMantenimiento);
+            $('#numeroOrden').keypress(function(e) {
+                if (e.which === 13) buscarMantenimiento();
+            });
+
+            // Limpiar campos
+            $('#btnLimpiarPdf').click(() => $('#archivoPdf').val(''));
+            $('#btnLimpiarFotoAntes').click(() => $('#fotoAntes').val(''));
+            $('#btnLimpiarFotoDurante').click(() => $('#fotoDurante').val(''));
+            $('#btnLimpiarFotoDespues').click(() => $('#fotoDespues').val(''));
+
+            // Terminar mantenimiento
+            $('#btnTerminar').click(validarAntesDeConfirmar);
         });
 
         function inicializarContadoresCaracteres() {
             $('#problemas').on('input', () => limitarCaracteres('problemas', 300));
             $('#diagnostico').on('input', () => limitarCaracteres('diagnostico', 300));
             $('#observaciones').on('input', () => limitarCaracteres('observaciones', 300));
-
-            $('#problemas, #diagnostico, #observaciones').on('paste', function (e) {
+            $('#problemas, #diagnostico, #observaciones').on('paste', function(e) {
                 const maxCaracteres = 300;
                 const textoPegado = e.originalEvent.clipboardData.getData('text');
                 const textoActual = $(this).val();
@@ -331,38 +208,26 @@
             });
         }
 
-        function inicializarEventos() {
-            // Eventos de búsqueda
-            $('#btnBuscarOrden').click(buscarMantenimiento);
-            $('#numeroOrden').keypress(function (e) {
-                if (e.which === 13) buscarMantenimiento();
-            });
-
-            // Limpiar campos de archivos
-            $('#btnLimpiarPdf').click(() => $('#archivoPdf').val(''));
-            $('#btnLimpiarFotoAntes').click(() => $('#fotoAntes').val(''));
-            $('#btnLimpiarFotoDurante').click(() => $('#fotoDurante').val(''));
-            $('#btnLimpiarFotoDespues').click(() => $('#fotoDespues').val(''));
-
-            // Eventos principales
-            $('#btnTerminar').click(validarAntesDeConfirmar);
-            $('#btnAgregarRefaccion').click(agregarRefaccion);
-
-            // Eventos de refacciones
-            $('#tipoRefaccion').change(function () {
-                const tipoRefaccionId = $(this).val();
-                if (tipoRefaccionId) {
-                    cargarInfoTipoRefaccion(tipoRefaccionId);
-                } else {
-                    $('#campoSeleccionRefaccion').empty();
-                    $('#infoTipoRefaccion').hide();
-                }
-            });
+        function limitarCaracteres(campoId, maxCaracteres) {
+            const textarea = $('#' + campoId);
+            const contador = $('#contador-' + campoId);
+            let texto = textarea.val();
+            if (texto.length > maxCaracteres) {
+                textarea.val(texto.substring(0, maxCaracteres));
+                texto = textarea.val();
+            }
+            const caracteresRestantes = maxCaracteres - texto.length;
+            contador.text(caracteresRestantes + ' caracteres restantes');
+            contador.removeClass('warning danger');
+            textarea.removeClass('textarea-limit');
+            if (caracteresRestantes <= 0) {
+                contador.addClass('danger');
+                textarea.addClass('textarea-limit');
+            } else if (caracteresRestantes <= 30) {
+                contador.addClass('warning');
+            }
         }
 
-        // =============================================
-        // FUNCIONES DE BUSQUEDA Y CARGA
-        // =============================================
         function buscarMantenimiento() {
             const claveAgenda = $('#numeroOrden').val().trim();
             if (!claveAgenda) {
@@ -371,10 +236,11 @@
             }
 
             $('#btnBuscarOrden').prop('disabled', true).html('<i class="bi bi-hourglass"></i> Buscando...');
+            // Ocultar el formulario si se realiza una nueva búsqueda
             $('#form-body, #footer-form').hide();
 
             $.get('/Repositorio/BuscarPorNumeroOrden', { claveAgenda: claveAgenda })
-                .done(function (response) {
+                .done(function(response) {
                     if (response.success) {
                         // Llenar datos
                         $('#infoNumOrden').text(response.data.numOrden);
@@ -387,7 +253,7 @@
                         $('#infoAgencia').text(response.data.agencia);
                         $('#infoCentro').text(response.data.centro);
 
-                        // Mostrar u ocultar número de cajero
+                        // Mostrar u ocultar número de cajero según el tipo de equipo
                         if (response.data.tipoEquipo === "CFEMÁTICO" && response.data.numCajero && response.data.numCajero !== "N/A") {
                             $('#infoNumCajero').text(response.data.numCajero);
                             $('#filaNumCajero').show();
@@ -395,464 +261,26 @@
                             $('#filaNumCajero').hide();
                         }
 
-                        // Mostrar/ocultar tarjeta de refacciones
-                        if (response.esCorrectivo) {
-                            $('#contenedor-refacciones').show();
-                            cargarTiposRefacciones();
-                        } else {
-                            $('#contenedor-refacciones').hide();
-                        }
+                        // CAMBIO: Dejar fecha de atención vacía
+                        $('#fechaAtencion').val('');
 
-                        // Limpiar datos anteriores
-                        limpiarDatosAnteriores();
-
-                        // Mostrar formulario
+                        // Mostrar el cuerpo del formulario y el footer
                         $('#form-body, #footer-form').show();
 
                     } else {
                         mostrarAlerta('Búsqueda sin resultados', response.message, 'info');
                     }
                 })
-                .fail(function () {
+                .fail(function() {
                     mostrarAlerta('Error de conexión', 'Error al conectar con el servidor', 'error');
                 })
-                .always(function () {
+                .always(function() {
                     $('#btnBuscarOrden').prop('disabled', false).html('<i class="bi bi-search"></i> Buscar');
                 });
         }
 
-        function limpiarDatosAnteriores() {
-            refacciones = [];
-            infoTipoActual = null;
-            $('#refacciones-agregadas').empty();
-            $('#lista-refacciones').hide();
-            $('#tipoRefaccion').val('');
-            $('#observacionesRefaccion').val('');
-            $('#campoSeleccionRefaccion').empty();
-            $('#infoTipoRefaccion').hide();
-            $('#detallesDisponibilidad').empty();
-
-            // ✅ IMPORTANTE: Asegurar que el botón esté habilitado
-            $('#btnAgregarRefaccion').prop('disabled', false);
-        }
-
-        // =============================================
-        // FUNCIONES DE REFACCIONES (3 CASOS)
-        // =============================================
-        function cargarTiposRefacciones() {
-            $.get('/Repositorio/ObtenerTiposRefacciones')
-                .done(function (response) {
-                    if (response.success && response.data.length > 0) {
-                        $('#tipoRefaccion').empty().append('<option value="">Seleccione un tipo de refacción</option>');
-                        $.each(response.data, function (index, tipo) {
-                            $('#tipoRefaccion').append($('<option>', {
-                                value: tipo.claveTipoRefaccion,
-                                text: tipo.nombreTipoRefaccion,
-                                'data-id': tipo.claveTipoRefaccion
-                            }));
-                        });
-                    } else {
-                        $('#tipoRefaccion').empty().append('<option value="">No hay tipos de refacción disponibles</option>');
-                    }
-                })
-                .fail(function () {
-                    $('#tipoRefaccion').empty().append('<option value="">Error al cargar tipos</option>');
-                });
-        }
-
-        function cargarInfoTipoRefaccion(tipoRefaccionId) {
-            $.get('/Repositorio/ObtenerInfoTipoRefaccion', { id: tipoRefaccionId })
-                .done(function (response) {
-                    if (response.success) {
-                        infoTipoActual = response.data;
-                        mostrarCampoSeleccion(infoTipoActual);
-                    } else {
-                        mostrarAlerta('Error', 'No se pudo obtener información del tipo de refacción', 'error');
-                        $('#campoSeleccionRefaccion').empty();
-                        $('#infoTipoRefaccion').hide();
-                    }
-                })
-                .fail(function () {
-                    mostrarAlerta('Error', 'Error de conexión al obtener información', 'error');
-                    $('#campoSeleccionRefaccion').empty();
-                    $('#infoTipoRefaccion').hide();
-                });
-        }
-
-        function mostrarCampoSeleccion(tipoInfo) {
-            const campoSeleccion = $('#campoSeleccionRefaccion');
-            campoSeleccion.empty();
-
-            // Mostrar información del tipo en el área fija
-            let textoInfo = `Tipo: ${tipoInfo.nombreTipoRefaccion}`;
-            if (tipoInfo.numSerieRequerido === 'SI') {
-                textoInfo += ' (Requiere número de serie)';
-            } else {
-                const tipoTexto = tipoInfo.claveTipoUnidadMedida == 2 ? 'Piezas sueltas' :
-                                 tipoInfo.claveTipoUnidadMedida == 3 ? 'Paquete' :
-                                 'Por cantidad';
-                textoInfo += ` (${tipoTexto})`;
-            }
-
-            $('#textoInfoTipo').text(textoInfo);
-            $('#detallesDisponibilidad').empty(); // Limpiar detalles previos
-            $('#infoTipoRefaccion').show();
-
-            // CASO 1: Requiere número de serie
-            if (tipoInfo.numSerieRequerido === 'SI') {
-                campoSeleccion.append(`
-                    <div class="form-group">
-                        <label class="form-label">Número de serie:</label>
-                        <select id="refaccionSeleccionada" class="form-select">
-                            <option value="">Cargando números de serie...</option>
-                        </select>
-                    </div>
-                `);
-
-                // Cargar números de serie disponibles
-                cargarNumerosSerieDisponibles(tipoInfo.claveTipoRefaccion);
-            }
-            // CASO 2 y 3: No requiere número de serie (por cantidad)
-            else {
-                const labelTexto = tipoInfo.claveTipoUnidadMedida == 2 ? 'Cantidad de piezas:' :
-                                  tipoInfo.claveTipoUnidadMedida == 3 ? 'Unidades del paquete:' :
-                                  'Cantidad a usar:';
-
-                // SOLO el input simple, sin input-group ni span de unidad
-                campoSeleccion.append(`
-                    <div class="form-group">
-                        <label class="form-label">${labelTexto}</label>
-                        <input type="number" id="cantidadUsar" class="form-control" min="1" value="1">
-                    </div>
-                `);
-
-                // Cargar cantidad disponible
-                cargarCantidadDisponible(tipoInfo.claveTipoRefaccion, tipoInfo.claveTipoUnidadMedida);
-            }
-        }
-
-        function cargarNumerosSerieDisponibles(tipoRefaccionId) {
-            $.get('/Repositorio/ObtenerRefaccionesDisponiblesPorTipo', { tipoRefaccionId: tipoRefaccionId })
-                .done(function (response) {
-                    if (response.success && response.data.length > 0) {
-                        const select = $('#refaccionSeleccionada');
-                        select.empty().append('<option value="">Seleccione un número de serie</option>');
-
-                        $.each(response.data, function (index, refaccion) {
-                            let texto = refaccion.numeroSerie || 'Sin número de serie';
-                            if (refaccion.marca) texto += ` (${refaccion.marca}`;
-                            if (refaccion.modelo) texto += ` - ${refaccion.modelo})`;
-
-                            select.append(`<option value="${refaccion.claveRefaccion}"
-                                data-serie="${refaccion.numeroSerie || ''}"
-                                data-marca="${refaccion.marca || ''}"
-                                data-modelo="${refaccion.modelo || ''}">
-                                ${texto}
-                            </option>`);
-                        });
-
-                        // Actualizar información de disponibilidad
-                        $('#detallesDisponibilidad').html(`
-                            <div class="cantidad-disponible">
-                                <i class="bi bi-check-circle me-1"></i>
-                                Disponible: <strong>${response.data.length}</strong> unidades
-                            </div>
-                        `);
-                        $('#btnAgregarRefaccion').prop('disabled', false);
-                    } else {
-                        $('#refaccionSeleccionada').empty().append('<option value="">No hay refacciones disponibles</option>');
-                        $('#detallesDisponibilidad').html(`
-                            <div class="cantidad-disponible agotado">
-                                <i class="bi bi-exclamation-triangle me-1"></i>
-                                No hay unidades disponibles
-                            </div>
-                        `);
-                        $('#btnAgregarRefaccion').prop('disabled', true);
-                    }
-                })
-                .fail(function () {
-                    $('#refaccionSeleccionada').empty().append('<option value="">Error al cargar</option>');
-                    $('#detallesDisponibilidad').html(`
-                        <div class="cantidad-disponible agotado">
-                            <i class="bi bi-exclamation-triangle me-1"></i>
-                            Error al cargar disponibilidad
-                        </div>
-                    `);
-                    $('#btnAgregarRefaccion').prop('disabled', true);
-                });
-        }
-
-        function cargarCantidadDisponible(tipoRefaccionId, claveTipoUnidadMedida) {
-            $.get('/Repositorio/ObtenerCantidadDisponiblePorTipo', {
-                tipoRefaccionId: tipoRefaccionId,
-                claveTipoUnidadMedida: claveTipoUnidadMedida
-            })
-            .done(function (response) {
-                if (response.success) {
-                    const info = response.data;
-                    const inputCantidad = $('#cantidadUsar');
-
-                    if (info.cantidadTotal > 0) {
-                        inputCantidad.prop('max', info.cantidadTotal);
-                        inputCantidad.val(1);
-                        inputCantidad.prop('disabled', false);
-                        $('#btnAgregarRefaccion').prop('disabled', false);
-
-                        // Definir el texto de instrucción según el tipo
-                        let textoInstruccion = '';
-                        let textoDisponible = '';
-
-                        if (claveTipoUnidadMedida == 2) {
-                            textoInstruccion = 'Ingrese cuántas piezas va a usar';
-                            textoDisponible = `Disponible: <strong>${info.cantidadTotal}</strong> piezas`;
-                        } else if (claveTipoUnidadMedida == 3) {
-                            textoInstruccion = 'Ingrese cuántas unidades del paquete va a usar';
-                            textoDisponible = `Disponible: <strong>${info.cantidadTotal}</strong> unidades en paquetes`;
-                        } else {
-                            textoInstruccion = 'Ingrese la cantidad a usar';
-                            textoDisponible = `Disponible: <strong>${info.cantidadTotal}</strong> unidades`;
-                        }
-
-                        // Mostrar TODO en el área informativa
-                        $('#detallesDisponibilidad').html(`
-                            <div class="mt-2">
-                                <div class="cantidad-disponible">
-                                    <i class="bi bi-check-circle me-1"></i>
-                                    ${textoDisponible}
-                                </div>
-                            </div>
-                        `);
-                    } else {
-                        inputCantidad.prop('disabled', true);
-                        $('#btnAgregarRefaccion').prop('disabled', true);
-
-                        // Definir el texto de instrucción cuando no hay unidades
-                        let textoInstruccion = '';
-                        if (claveTipoUnidadMedida == 2) {
-                            textoInstruccion = 'Ingrese cuántas piezas va a usar';
-                        } else if (claveTipoUnidadMedida == 3) {
-                            textoInstruccion = 'Ingrese cuántas unidades del paquete va a usar';
-                        } else {
-                            textoInstruccion = 'Ingrese la cantidad a usar';
-                        }
-
-                        $('#detallesDisponibilidad').html(`
-                            <div class="mt-2">
-                                <div class="cantidad-disponible agotado">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>
-                                    No hay unidades disponibles
-                                </div>
-                            </div>
-                        `);
-                    }
-                } else {
-                    $('#detallesDisponibilidad').html(`
-                        <div class="cantidad-disponible agotado">
-                            <i class="bi bi-exclamation-triangle me-1"></i>
-                            Error al cargar cantidad disponible
-                        </div>
-                    `);
-                    $('#btnAgregarRefaccion').prop('disabled', true);
-                }
-            })
-            .fail(function () {
-                $('#detallesDisponibilidad').html(`
-                    <div class="cantidad-disponible agotado">
-                        <i class="bi bi-exclamation-triangle me-1"></i>
-                        Error al cargar cantidad disponible
-                    </div>
-                `);
-                $('#btnAgregarRefaccion').prop('disabled', true);
-            });
-        }
-
-        function agregarRefaccion() {
-            const tipoRefaccionId = $('#tipoRefaccion').val();
-            const tipoRefaccionNombre = $('#tipoRefaccion option:selected').text();
-            const observaciones = $('#observacionesRefaccion').val().trim();
-
-            if (!tipoRefaccionId || !infoTipoActual) {
-                mostrarAlerta('Campo requerido', 'Por favor seleccione un tipo de refacción', 'warning');
-                return;
-            }
-
-            let nuevaRefaccion = {
-                id: Date.now() % 1000000,
-                tipoRefaccionId: parseInt(tipoRefaccionId),
-                tipoRefaccion: tipoRefaccionNombre,
-                observaciones: observaciones || 'Sin observaciones'
-            };
-
-            // CASO 1: Con número de serie
-            if (infoTipoActual.numSerieRequerido === 'SI') {
-                const refaccionSeleccionada = $('#refaccionSeleccionada').val();
-                const serie = $('#refaccionSeleccionada option:selected').data('serie');
-                const marca = $('#refaccionSeleccionada option:selected').data('marca');
-                const modelo = $('#refaccionSeleccionada option:selected').data('modelo');
-
-                if (!refaccionSeleccionada) {
-                    mostrarAlerta('Campo requerido', 'Por favor seleccione un número de serie', 'warning');
-                    return;
-                }
-
-                nuevaRefaccion.refaccionId = parseInt(refaccionSeleccionada);
-                nuevaRefaccion.numeroSerie = serie;
-                nuevaRefaccion.cantidad = 1; // Siempre 1 para refacciones con serie
-                nuevaRefaccion.marca = marca;
-                nuevaRefaccion.modelo = modelo;
-                nuevaRefaccion.esConSerie = true;
-            }
-            // CASOS 2 y 3: Por cantidad
-            else {
-                const cantidad = parseInt($('#cantidadUsar').val()) || 0;
-
-                if (cantidad <= 0) {
-                    mostrarAlerta('Campo requerido', 'Por favor ingrese una cantidad válida', 'warning');
-                    return;
-                }
-
-                const maxCantidad = parseInt($('#cantidadUsar').prop('max')) || 0;
-                if (cantidad > maxCantidad) {
-                    mostrarAlerta('Cantidad excedida', `La cantidad supera lo disponible (máximo: ${maxCantidad})`, 'warning');
-                    return;
-                }
-
-                nuevaRefaccion.cantidad = cantidad;
-                nuevaRefaccion.esConSerie = false;
-                nuevaRefaccion.claveTipoUnidadMedida = infoTipoActual.claveTipoUnidadMedida;
-            }
-
-            // Verificar si ya existe en la lista
-            const yaExiste = refacciones.some(r =>
-                r.esConSerie === nuevaRefaccion.esConSerie &&
-                (
-                    (nuevaRefaccion.esConSerie && r.refaccionId === nuevaRefaccion.refaccionId) ||
-                    (!nuevaRefaccion.esConSerie && r.tipoRefaccionId === nuevaRefaccion.tipoRefaccionId)
-                )
-            );
-
-            if (yaExiste) {
-                mostrarAlerta('Refacción duplicada', 'Esta refacción ya fue agregada', 'warning');
-                return;
-            }
-
-            // Agregar a la lista
-            refacciones.push(nuevaRefaccion);
-            actualizarListaRefacciones();
-
-            // Limpiar campos
-            $('#tipoRefaccion').val('');
-            $('#observacionesRefaccion').val('');
-            $('#campoSeleccionRefaccion').empty();
-            $('#infoTipoRefaccion').hide();
-            $('#btnAgregarRefaccion').prop('disabled', false);
-        }
-
-        function eliminarRefaccion(id) {
-            refacciones = refacciones.filter(r => r.id !== id);
-            actualizarListaRefacciones();
-        }
-
-        function actualizarListaRefacciones() {
-            const $lista = $('#refacciones-agregadas');
-            $lista.empty();
-
-            if (refacciones.length === 0) {
-                $('#lista-refacciones').hide();
-                return;
-            }
-
-            refacciones.forEach(refaccion => {
-                let detalles = '';
-                let icono = '';
-
-                if (refaccion.esConSerie) {
-                    icono = '<i class="bi bi-upc-scan me-1"></i>';
-                    detalles = `
-                        <div class="d-flex flex-wrap gap-2 mt-1">
-                            <small class="badge bg-info"><strong>Número de serie:</strong> ${refaccion.numeroSerie}</small>
-                            ${refaccion.marca ? `<small class="badge bg-secondary"><strong>Marca:</strong> ${refaccion.marca}</small>` : ''}
-                            ${refaccion.modelo ? `<small class="badge bg-secondary"><strong>Modelo:</strong> ${refaccion.modelo}</small>` : ''}
-                            <small class="badge bg-success">Tipo: Pieza individual</small>
-                        </div>
-                    `;
-                } else {
-                    const tipoTexto = refaccion.claveTipoUnidadMedida == 2 ? 'piezas sueltas' :
-                                    refaccion.claveTipoUnidadMedida == 3 ? 'unidades de paquete' : 'unidades';
-                    icono = '<i class="bi bi-box me-1"></i>';
-                    detalles = `
-                        <div class="d-flex flex-wrap gap-2 mt-1">
-                            <small class="badge bg-warning text-dark"><strong>Cantidad:</strong> ${refaccion.cantidad} ${tipoTexto}</small>
-                            <small class="badge bg-success">Tipo: Por cantidad</small>
-                        </div>
-                    `;
-                }
-
-                const $item = $(`
-                    <div class="refaccion-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div style="flex: 1;">
-                                <div class="d-flex flex-column">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            ${icono}
-                                            <strong>${refaccion.tipoRefaccion}</strong>
-                                        </div>
-                                    </div>
-                                    ${detalles}
-                                    ${refaccion.observaciones !== 'Sin observaciones' ?
-                                        `<div class="mt-2"><small><strong>Observaciones:</strong> ${refaccion.observaciones}</small></div>` :
-                                        ''}
-                                </div>
-                            </div>
-                            <button type="button" class="btn-eliminar-refaccion" data-id="${refaccion.id}" title="Eliminar">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `);
-                $lista.append($item);
-            });
-
-            $('.btn-eliminar-refaccion').click(function () {
-                const id = parseInt($(this).data('id'));
-                eliminarRefaccion(id);
-            });
-
-            $('#lista-refacciones').show();
-        }
-
-        // =============================================
-        // FUNCIONES DE VALIDACIÓN Y ENVÍO
-        // =============================================
         function validarAntesDeConfirmar() {
-            const esCorrectivo = $('#contenedor-refacciones').is(':visible');
-            if (esCorrectivo && refacciones.length === 0) {
-                Swal.fire({
-                    title: '¿Continuar sin refacciones?',
-                    text: 'Este mantenimiento es correctivo pero no se han registrado refacciones. ¿Desea continuar?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, continuar',
-                    cancelButtonText: 'Agregar refacciones',
-                    reverseButtons: true,
-                    customClass: {
-                        confirmButton: 'btn btn-warning mx-2',
-                        cancelButton: 'btn btn-primary mx-2'
-                    },
-                    buttonsStyling: false,
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        continuarValidaciones();
-                    }
-                });
-                return;
-            }
-            continuarValidaciones();
-        }
-
-        function continuarValidaciones() {
-            // Validaciones de campos de texto
+            // 1. Validar campos de texto obligatorios - PROBLEMAS
             const problemas = $('#problemas').val().trim();
             if (!problemas) {
                 mostrarAlerta('Campo requerido', 'El campo "Problemas" es obligatorio', 'warning');
@@ -865,6 +293,7 @@
                 return;
             }
 
+            // 2. Validar campos de texto obligatorios - DIAGNÓSTICO
             const diagnostico = $('#diagnostico').val().trim();
             if (!diagnostico) {
                 mostrarAlerta('Campo requerido', 'El campo "Diagnóstico" es obligatorio', 'warning');
@@ -877,6 +306,7 @@
                 return;
             }
 
+            // 3. Validar campos de texto obligatorios - OBSERVACIONES
             const observaciones = $('#observaciones').val().trim();
             if (!observaciones) {
                 mostrarAlerta('Campo requerido', 'El campo "Observaciones" es obligatorio', 'warning');
@@ -889,13 +319,14 @@
                 return;
             }
 
-            // Validar fotos
+            // 4. Validar FOTO ANTES
             const fotoAntes = $('#fotoAntes')[0].files[0];
             if (!fotoAntes) {
                 mostrarAlerta('Archivo requerido', 'La foto "Antes" del mantenimiento es obligatoria', 'warning');
                 $('#fotoAntes').focus();
                 return;
             }
+            // Validar tipo y tamaño de foto antes
             const extensionAntes = fotoAntes.name.split('.').pop().toLowerCase();
             const extensionesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
             if (!extensionesPermitidas.includes(extensionAntes)) {
@@ -907,12 +338,14 @@
                 return;
             }
 
+            // 5. Validar FOTO DURANTE
             const fotoDurante = $('#fotoDurante')[0].files[0];
             if (!fotoDurante) {
                 mostrarAlerta('Archivo requerido', 'La foto "Durante" del mantenimiento es obligatoria', 'warning');
                 $('#fotoDurante').focus();
                 return;
             }
+            // Validar tipo y tamaño de foto durante
             const extensionDurante = fotoDurante.name.split('.').pop().toLowerCase();
             if (!extensionesPermitidas.includes(extensionDurante)) {
                 mostrarAlerta('Formato incorrecto', 'La foto "Durante" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
@@ -923,12 +356,14 @@
                 return;
             }
 
+            // 6. Validar FOTO DESPUÉS
             const fotoDespues = $('#fotoDespues')[0].files[0];
             if (!fotoDespues) {
                 mostrarAlerta('Archivo requerido', 'La foto "Después" del mantenimiento es obligatoria', 'warning');
                 $('#fotoDespues').focus();
                 return;
             }
+            // Validar tipo y tamaño de foto después
             const extensionDespues = fotoDespues.name.split('.').pop().toLowerCase();
             if (!extensionesPermitidas.includes(extensionDespues)) {
                 mostrarAlerta('Formato incorrecto', 'La foto "Después" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
@@ -939,24 +374,26 @@
                 return;
             }
 
-            // Validar PDF
+            // 7. Validar HOJA DE SERVICIO (PDF)
             const archivoPdf = $('#archivoPdf')[0].files[0];
             if (!archivoPdf) {
                 mostrarAlerta('Archivo requerido', 'La hoja de servicio es obligatoria', 'warning');
                 $('#archivoPdf').focus();
                 return;
             }
+            // Validar tipo de archivo PDF
             const extensionPdf = archivoPdf.name.split('.').pop().toLowerCase();
             if (extensionPdf !== 'pdf') {
                 mostrarAlerta('Formato incorrecto', 'Solo se permiten archivos PDF', 'warning');
                 return;
             }
+            // Validar tamaño del PDF
             if (archivoPdf.size > 5 * 1024 * 1024) {
                 mostrarAlerta('Archivo muy grande', 'La hoja de servicio no debe exceder los 5MB', 'warning');
                 return;
             }
 
-            // Validar fecha
+            // 8. Validar FECHA DE ATENCIÓN (último)
             const fechaAtencion = $('#fechaAtencion').val();
             if (!fechaAtencion) {
                 mostrarAlerta('Campo requerido', 'Por favor seleccione la fecha de atención', 'warning');
@@ -964,6 +401,7 @@
                 return;
             }
 
+            // Si todas las validaciones pasan, proceder con la confirmación
             confirmarTerminacion();
         }
 
@@ -992,44 +430,14 @@
             formData.append('problemas', $('#problemas').val());
             formData.append('diagnostico', $('#diagnostico').val());
             formData.append('observaciones', $('#observaciones').val());
-
-            const esCorrectivo = $('#contenedor-refacciones').is(':visible');
-            if (esCorrectivo && refacciones.length > 0) {
-                // Procesar refacciones para enviar - MEJORADO
-                const refaccionesProcesadas = refacciones.map(r => {
-                    const item = {
-                        id: Number(r.id) || 0,
-                        tipoRefaccionId: Number(r.tipoRefaccionId) || 0,
-                        tipoRefaccion: String(r.tipoRefaccion || ''),
-                        refaccionId: r.refaccionId ? Number(r.refaccionId) : null,
-                        // Asegurar que numeroSerie sea string o null, nunca undefined
-                        numeroSerie: r.numeroSerie !== undefined ? String(r.numeroSerie) : null,
-                        cantidad: Number(r.cantidad) || 0,
-                        observaciones: String(r.observaciones || ''),
-                        esConSerie: Boolean(r.esConSerie),
-                        claveTipoUnidadMedida: r.claveTipoUnidadMedida ? Number(r.claveTipoUnidadMedida) : null,
-                        // Asegurar que marca y modelo sean string o null
-                        marca: r.marca !== undefined ? String(r.marca) : null,
-                        modelo: r.modelo !== undefined ? String(r.modelo) : null
-                    };
-
-                    // Log para depuración
-                    console.log('Refacción procesada:', item);
-                    return item;
-                });
-
-                console.log('Todas las refacciones a enviar:', refaccionesProcesadas);
-                formData.append('refacciones', JSON.stringify(refaccionesProcesadas));
-            } else {
-                formData.append('refacciones', '');
-            }
-
-            // Agregar archivos
-            const archivos = ['archivoPdf', 'fotoAntes', 'fotoDurante', 'fotoDespues'];
-            archivos.forEach(nombre => {
-                const archivo = $(`#${nombre}`)[0].files[0];
-                if (archivo) formData.append(nombre, archivo);
-            });
+            const pdf = $('#archivoPdf')[0].files[0];
+            if (pdf) formData.append('archivoPdf', pdf);
+            const fotoAntes = $('#fotoAntes')[0].files[0];
+            if (fotoAntes) formData.append('fotoAntes', fotoAntes);
+            const fotoDurante = $('#fotoDurante')[0].files[0];
+            if (fotoDurante) formData.append('fotoDurante', fotoDurante);
+            const fotoDespues = $('#fotoDespues')[0].files[0];
+            if (fotoDespues) formData.append('fotoDespues', fotoDespues);
 
             $('#btnTerminar').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...');
 
@@ -1039,94 +447,42 @@
                 data: formData,
                 processData: false,
                 contentType: false,
-                success: function (response) {
+                success: function(response) {
                     if (response.success) {
                         mostrarAlertaExito('¡Éxito!', response.message);
                         setTimeout(() => { location.reload(); }, 2000);
                     } else {
-                        let mensajeError = response.message || 'Error desconocido';
-                        if (response.error) {
-                            mensajeError += `\nDetalles: ${response.error}`;
-                        }
-                        if (response.json) {
-                            console.error('JSON que causó el error:', response.json);
-                        }
-                        mostrarAlerta('Error', mensajeError, 'error');
-                        console.error('Error completo del servidor:', response);
+                        mostrarAlerta('Error', response.message, 'error');
                     }
                 },
-                error: function (xhr, status, error) {
-                    let mensaje = 'Error de conexión con el servidor';
-                    let detalles = '';
-
-                    if (xhr.responseJSON) {
-                        mensaje = xhr.responseJSON.message || mensaje;
-                        detalles = xhr.responseJSON.error || '';
-                        if (xhr.responseJSON.json) {
-                            console.error('JSON recibido del servidor:', xhr.responseJSON.json);
-                        }
-                    } else if (xhr.responseText) {
-                        try {
-                            const errorJson = JSON.parse(xhr.responseText);
-                            mensaje = errorJson.message || mensaje;
-                            detalles = errorJson.error || '';
-                        } catch (e) {
-                            mensaje = xhr.responseText.substring(0, 200) + '...';
-                        }
-                    }
-
-                    mostrarAlerta('Error', `${mensaje}\n${detalles}\n${error}`, 'error');
-                    console.error('Error AJAX completo:', xhr.responseText);
+                error: function(xhr) {
+                    mostrarAlerta('Error', xhr.responseJSON?.message || 'Error al terminar el mantenimiento', 'error');
                 },
-                complete: function () {
+                complete: function() {
                     $('#btnTerminar').prop('disabled', false).html('<i class="bi bi-check-circle"></i> Terminar');
                 }
             });
         }
 
-        // =============================================
-        // FUNCIONES UTILITARIAS
-        // =============================================
-        function limitarCaracteres(campoId, maxCaracteres) {
-            const textarea = $('#' + campoId);
-            const contador = $('#contador-' + campoId);
-            let texto = textarea.val();
-            if (texto.length > maxCaracteres) {
-                textarea.val(texto.substring(0, maxCaracteres));
-                texto = textarea.val();
-            }
-            const caracteresRestantes = maxCaracteres - texto.length;
-            contador.text(caracteresRestantes + ' caracteres restantes');
-            contador.removeClass('warning danger');
-            textarea.removeClass('textarea-limit');
-            if (caracteresRestantes <= 0) {
-                contador.addClass('danger');
-                textarea.addClass('textarea-limit');
-            } else if (caracteresRestantes <= 30) {
-                contador.addClass('warning');
-            }
-        }
-
-        function mostrarAlerta(titulo, mensaje, tipo) {
-            Swal.fire({
-                title: titulo,
-                text: mensaje,
-                icon: tipo,
-                confirmButtonText: 'Aceptar',
-                customClass: { confirmButton: 'btn btn-primary' },
-                buttonsStyling: false
-            });
-        }
-
-        function mostrarAlertaExito(titulo, mensaje) {
-            Swal.fire({
-                title: titulo,
-                text: mensaje,
-                icon: 'success',
-                confirmButtonText: 'Aceptar',
-                customClass: { confirmButton: 'btn btn-success' },
-                buttonsStyling: false
-            });
-        }
+         function mostrarAlerta(titulo, mensaje, tipo) {
+             Swal.fire({
+                 title: titulo,
+                 text: mensaje,
+                 icon: tipo,
+                 confirmButtonText: 'Aceptar',
+                 customClass: { confirmButton: 'btn btn-primary' },
+                 buttonsStyling: false
+             });
+         }
+         function mostrarAlertaExito(titulo, mensaje) {
+             Swal.fire({
+                 title: titulo,
+                 text: mensaje,
+                 icon: 'success',
+                 confirmButtonText: 'Aceptar',
+                 customClass: { confirmButton: 'btn btn-success' },
+                 buttonsStyling: false
+             });
+         }
     </script>
 }
