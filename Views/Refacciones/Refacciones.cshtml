@@ -1,0 +1,1012 @@
+﻿@model List<MantenimientosTI.Models.Refaccion>
+@{
+    ViewData["Title"] = "Refacciones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    @@media (max-width: 576px) {
+        .table-responsive table {
+            min-width: 800px;
+        }
+
+        .container {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+    }
+
+    .table th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="card mt-4 shadow-sm rounded">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-0">Gestión de refacciones</h1>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        Zona: @ViewBag.NombreZona
+                    </p>
+                </div>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgregarRefaccion">
+                    <i class="fas fa-plus me-2"></i> Agregar refacción
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-cogs me-1"></i> Refacciones registradas en mi zona
+                        <span class="badge bg-light text-success ms-2">
+                            @(Model != null ? Model.Count : 0) registros
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="tablaRefacciones" class="table table-striped table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Tipo de refacción</th>
+                                        <th>Número de serie</th>
+                                        <th>Modelo</th>
+                                        <th>Marca</th>
+                                        <th>Fecha de adquisición</th>
+                                        <th>Número de contrato</th>
+                                        <th>Estado</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model != null && Model.Any())
+                                    {
+                                        @foreach (var refaccion in Model)
+                                        {
+                                            <tr>
+                                                <td>@refaccion.ClaveRefaccion</td>
+                                                <td>@refaccion.CatTipoRefaccion?.NombreTipoRefaccion</td>
+                                                <td>@refaccion.NumeroSerie</td>
+                                                <td>@refaccion.Modelo</td>
+                                                <td>@refaccion.Marca</td>
+                                                <td>@refaccion.FechaAdquisicion.ToString("dd/MM/yyyy")</td>
+                                                <td>@refaccion.NumContratoAdquisicion</td>
+                                                <td>
+                                                    <span class="badge @(refaccion.Ocupado == "SI" ? "bg-danger" : "bg-success")">
+                                                        @(refaccion.Ocupado == "SI" ? "OCUPADO" : "DISPONIBLE")
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#modalEditarRefaccion"
+                                                            onclick="cargarDatosEdicionRefaccion(@refaccion.ClaveRefaccion)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" onclick="eliminarRefaccion(@refaccion.ClaveRefaccion, '@refaccion.CatTipoRefaccion?.NombreTipoRefaccion?.Replace("'", "\\'")')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="9" class="text-center text-muted py-4">
+                                                <i class="fas fa-box-open fa-2x mb-3"></i>
+                                                <p>No hay refacciones registradas en tu zona</p>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar una nueva refacción - MODIFICADO -->
+<div class="modal fade" id="modalAgregarRefaccion" tabindex="-1" aria-labelledby="tituloModalAgregarRefaccion" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalAgregarRefaccion">NUEVA REFACCIÓN</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNuevaRefaccion">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ClaveTipoRefaccionNuevo" class="form-label">Tipo de refacción *</label>
+                            <select class="form-select" id="ClaveTipoRefaccionNuevo" name="ClaveTipoRefaccion" required>
+                                <option value="">Seleccione un tipo de refacción</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Por favor seleccione un tipo de refacción
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <!-- Campo dinámico -->
+                            <div id="campoDinamicoNuevo">
+                                <!-- Aquí se mostrará el campo según el tipo de refacción -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="MarcaNuevo" class="form-label">Marca *</label>
+                            <input type="text" class="form-control text-uppercase" id="MarcaNuevo" name="Marca" required
+                                   oninput="this.value = this.value.toUpperCase()" maxlength="20">
+                            <div class="invalid-feedback">
+                                La marca es requerida
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ModeloNuevo" class="form-label">Modelo *</label>
+                            <input type="text" class="form-control text-uppercase" id="ModeloNuevo" name="Modelo" required
+                                   oninput="this.value = this.value.toUpperCase()" maxlength="20">
+                            <div class="invalid-feedback">
+                                El modelo es requerido
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="FechaAdquisicionNuevo" class="form-label">Fecha de adquisición *</label>
+                            <input type="date" class="form-control" id="FechaAdquisicionNuevo" name="FechaAdquisicion" required
+                                   value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                            <div class="invalid-feedback">
+                                La fecha de adquisición es requerida
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NumContratoAdquisicionNuevo" class="form-label">Número de contrato *</label>
+                            <input type="number" class="form-control" id="NumContratoAdquisicionNuevo" name="NumContratoAdquisicion" required
+                                   min="1">
+                            <div class="invalid-feedback">
+                                El número de contrato debe ser un número válido mayor a 0
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="crearRefaccion()">
+                    <i class="fas fa-save me-1"></i> Guardar
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar una refacción -->
+<div class="modal fade" id="modalEditarRefaccion" tabindex="-1" aria-labelledby="tituloModalEditarRefaccion" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalEditarRefaccion">EDITAR REFACCIÓN</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarRefaccion">
+                    <input type="hidden" id="ClaveRefaccionEditar" name="ClaveRefaccion">
+                    <input type="hidden" id="TipoUnidadMedidaEditar" name="TipoUnidadMedida">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ClaveTipoRefaccionEditar" class="form-label">Tipo de refacción *</label>
+                            <select class="form-select" id="ClaveTipoRefaccionEditar" name="ClaveTipoRefaccion" required>
+                                <option value="">Seleccionar tipo...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <!-- Campo dinámico para edición -->
+                            <div id="campoDinamicoEditar">
+                                <!-- Aquí se mostrará el campo según el tipo de refacción -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="MarcaEditar" class="form-label">Marca *</label>
+                            <input type="text" class="form-control text-uppercase" id="MarcaEditar" name="Marca" required
+                                   oninput="this.value = this.value.toUpperCase()" maxlength="20">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ModeloEditar" class="form-label">Modelo *</label>
+                            <input type="text" class="form-control text-uppercase" id="ModeloEditar" name="Modelo" required
+                                   oninput="this.value = this.value.toUpperCase()" maxlength="20">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="FechaAdquisicionEditar" class="form-label">Fecha de adquisición *</label>
+                            <input type="date" class="form-control" id="FechaAdquisicionEditar" name="FechaAdquisicion" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NumContratoAdquisicionEditar" class="form-label">Número de contrato *</label>
+                            <input type="number" class="form-control" id="NumContratoAdquisicionEditar" name="NumContratoAdquisicion" required min="1">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="guardarCambiosRefaccion()">
+                    <i class="fas fa-save me-1"></i> Guardar cambios
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* <!-- Modal para editar una refacción -->
+<div class="modal fade" id="modalEditarRefaccion" tabindex="-1" aria-labelledby="tituloModalEditarRefaccion" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalEditarRefaccion">EDITAR REFACCIÓN</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarRefaccion">
+                    <input type="hidden" id="ClaveRefaccionEditar" name="ClaveRefaccion">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ClaveTipoRefaccionEditar" class="form-label">Tipo de refacción *</label>
+                            <select class="form-select" id="ClaveTipoRefaccionEditar" name="ClaveTipoRefaccion" required>
+                                <option value="">Seleccionar tipo...</option>
+                                <!-- Las opciones se llenarán con JavaScript -->
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NumeroSerieEditar" class="form-label">Número de serie</label>
+                            <input type="text" class="form-control text-uppercase" id="NumeroSerieEditar" name="NumeroSerie"
+                                   oninput="this.value = this.value.toUpperCase()" maxlength="20">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="MarcaEditar" class="form-label">Marca *</label>
+                            <input type="text" class="form-control text-uppercase" id="MarcaEditar" name="Marca" required
+                                   oninput="this.value = this.value.toUpperCase()" maxlength="20">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ModeloEditar" class="form-label">Modelo *</label>
+                            <input type="text" class="form-control text-uppercase" id="ModeloEditar" name="Modelo" required
+                                   oninput="this.value = this.value.toUpperCase()" maxlength="20">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="FechaAdquisicionEditar" class="form-label">Fecha de adquisición *</label>
+                            <input type="date" class="form-control" id="FechaAdquisicionEditar" name="FechaAdquisicion" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="NumContratoAdquisicionEditar" class="form-label">Número de contrato *</label>
+                            <input type="number" class="form-control" id="NumContratoAdquisicionEditar" name="NumContratoAdquisicion" required min="1">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="guardarCambiosRefaccion()">
+                    <i class="fas fa-save me-1"></i> Guardar cambios
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div> *@
+
+@section Scripts {
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        // Variable global para almacenar datos de refacción durante edición
+        let datosRefaccion = {};
+
+        $(document).ready(function () {
+            // Cargar tipos de refacción en los combobox
+            cargarTiposRefaccion();
+
+            // Configuración de DataTable para refacciones
+            if ($('#tablaRefacciones tbody tr').length > 0 && !$('#tablaRefacciones tbody tr:first-child td').hasClass('text-center')) {
+                $('#tablaRefacciones').DataTable({
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                    },
+                    responsive: true,
+                    autoWidth: false,
+                    scrollX: true,
+                    dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                    pageLength: 10,
+                    lengthMenu: [5, 10, 25, 50],
+                    order: [[0, 'desc']],
+                    columnDefs: [
+                        { targets: [8], className: 'dt-center' }
+                    ]
+                });
+            }
+
+            // Convertir a mayúsculas al escribir en campos de texto
+            $('.text-uppercase').on('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+
+            // Validación de formularios
+            $('#formNuevaRefaccion, #formEditarRefaccion').on('submit', function(e) {
+                e.preventDefault();
+                if (this.id === 'formNuevaRefaccion') {
+                    crearRefaccion();
+                } else {
+                    guardarCambiosRefaccion();
+                }
+            });
+
+            // Evento cuando cambia el tipo de refacción en el modal nuevo
+            $('#ClaveTipoRefaccionNuevo').change(function() {
+                var tipoId = $(this).val();
+                if (tipoId) {
+                    cargarCampoDinamicoNuevo(tipoId);
+                } else {
+                    $('#campoDinamicoNuevo').empty();
+                }
+            });
+
+            // Evento cuando cambia el tipo de refacción en el modal de edición
+            $('#ClaveTipoRefaccionEditar').change(function() {
+                var tipoId = $(this).val();
+                if (tipoId) {
+                    cargarCampoDinamicoEditar(tipoId, true);
+                } else {
+                    $('#campoDinamicoEditar').empty();
+                }
+            });
+
+            // Configurar eventos para campos dinámicos cuando se crean
+            $(document).on('input', '#campoDinamicoNuevo .text-uppercase', function() {
+                this.value = this.value.toUpperCase();
+            });
+
+            $(document).on('input', '#campoDinamicoEditar .text-uppercase', function() {
+                this.value = this.value.toUpperCase();
+            });
+        });
+
+        // Función para cargar tipos de refacción en los combobox
+        function cargarTiposRefaccion() {
+            $.get('/Refacciones/ObtenerTiposRefaccion')
+                .done(function(response) {
+                    if(response.success && response.data) {
+                        var tipos = response.data;
+                        var selectNuevo = $('#ClaveTipoRefaccionNuevo');
+                        var selectEditar = $('#ClaveTipoRefaccionEditar');
+
+                        // Limpiar y agregar opción por defecto
+                        selectNuevo.empty().append('<option value="">Seleccione un tipo de refacción</option>');
+                        selectEditar.empty().append('<option value="">Seleccione un tipo de refacción</option>');
+
+                        // Agregar opciones
+                        $.each(tipos, function(index, tipo) {
+                            selectNuevo.append('<option value="' + tipo.claveTipoRefaccion + '">' + tipo.nombreTipoRefaccion + '</option>');
+                            selectEditar.append('<option value="' + tipo.claveTipoRefaccion + '">' + tipo.nombreTipoRefaccion + '</option>');
+                        });
+                    } else {
+                        mostrarAlerta('Error al cargar tipos de refacción', 'danger');
+                    }
+                })
+                .fail(function() {
+                    mostrarAlerta('Error de conexión al cargar tipos de refacción', 'danger');
+                });
+        }
+
+        // Función para cargar el campo dinámico en modal nuevo
+        function cargarCampoDinamicoNuevo(tipoId) {
+            $.get('/Refacciones/ObtenerInfoTipoRefaccion', { id: tipoId })
+                .done(function(response) {
+                    if(response.success) {
+                        var tipo = response.data;
+                        var campoDinamico = $('#campoDinamicoNuevo');
+                        campoDinamico.empty();
+
+                        if (tipo.numSerieRequerido === 'SI') {
+                            // Caso 1: PIEZA con número de serie
+                            campoDinamico.append(`
+                                <label for="NumeroSerieNuevo" class="form-label">Número de serie *</label>
+                                <input type="text" class="form-control text-uppercase" id="NumeroSerieNuevo" name="NumeroSerie" required
+                                       oninput="this.value = this.value.toUpperCase()" maxlength="20">
+                                <div class="invalid-feedback">
+                                    El número de serie es requerido
+                                </div>
+                                <div class="form-text">Para refacciones individuales que requieren seguimiento por serie</div>
+                            `);
+                        } else if (tipo.claveTipoUnidadMedida == 2) {
+                            // Caso 2: PIEZA sin número de serie
+                            campoDinamico.append(`
+                                <label for="CantidadNuevo" class="form-label">Cantidad *</label>
+                                <input type="number" class="form-control" id="CantidadNuevo" name="Cantidad" required
+                                       min="1" value="1">
+                                <div class="invalid-feedback">
+                                    La cantidad es requerida
+                                </div>
+                                <div class="form-text">Para refacciones que se manejan por piezas sin número de serie</div>
+                            `);
+                        } else if (tipo.claveTipoUnidadMedida == 3) {
+                            // Caso 3: PAQUETE sin número de serie
+                            campoDinamico.append(`
+                                <label for="CantidadNuevo" class="form-label">Cantidad del paquete *</label>
+                                <input type="number" class="form-control" id="CantidadNuevo" name="Cantidad" required
+                                       min="1" value="1">
+                                <div class="invalid-feedback">
+                                    La cantidad del paquete es requerida
+                                </div>
+                                <div class="form-text">Para refacciones que vienen en paquetes (ejemplo: tornillos, cables)</div>
+                            `);
+                        } else {
+                            campoDinamico.append(`
+                                <div class="alert alert-warning">
+                                    Tipo de unidad de medida no configurado correctamente
+                                </div>
+                            `);
+                        }
+                    } else {
+                        mostrarAlerta('No se pudo obtener información del tipo de refacción', 'warning');
+                        $('#campoDinamicoNuevo').empty();
+                    }
+                })
+                .fail(function() {
+                    mostrarAlerta('Error al cargar información del tipo de refacción', 'danger');
+                    $('#campoDinamicoNuevo').empty();
+                });
+        }
+
+        // Función para cargar el campo dinámico en modal de edición
+        function cargarCampoDinamicoEditar(tipoId, esCambioTipo = false) {
+            $.get('/Refacciones/ObtenerInfoTipoRefaccion', { id: tipoId })
+                .done(function(response) {
+                    if(response.success) {
+                        var tipo = response.data;
+                        var campoDinamico = $('#campoDinamicoEditar');
+                        campoDinamico.empty();
+
+                        if (tipo.numSerieRequerido === 'SI') {
+                            // Caso 1: PIEZA con número de serie
+                            campoDinamico.append(`
+                                <label for="NumeroSerieEditar" class="form-label">Número de serie *</label>
+                                <input type="text" class="form-control text-uppercase" id="NumeroSerieEditar" name="NumeroSerie" required
+                                       oninput="this.value = this.value.toUpperCase()" maxlength="20">
+                                <div class="form-text">Para refacciones individuales que requieren seguimiento por serie</div>
+                            `);
+                        } else if (tipo.claveTipoUnidadMedida == 2) {
+                            // Caso 2: PIEZA sin número de serie
+                            campoDinamico.append(`
+                                <label for="CantidadEditar" class="form-label">Cantidad *</label>
+                                <input type="number" class="form-control" id="CantidadEditar" name="Cantidad" required
+                                       min="1" value="1">
+                                <div class="form-text">Para refacciones que se manejan por piezas sin número de serie</div>
+                            `);
+                        } else if (tipo.claveTipoUnidadMedida == 3) {
+                            // Caso 3: PAQUETE sin número de serie
+                            campoDinamico.append(`
+                                <label for="CantidadEditar" class="form-label">Cantidad del paquete *</label>
+                                <input type="number" class="form-control" id="CantidadEditar" name="Cantidad" required
+                                       min="1" value="1">
+                                <div class="form-text">Para refacciones que vienen en paquetes (ejemplo: tornillos, cables)</div>
+                            `);
+                        } else {
+                            campoDinamico.append(`
+                                <div class="alert alert-warning">
+                                    Tipo de unidad de medida no configurado correctamente
+                                </div>
+                            `);
+                        }
+
+                        // Si no es cambio de tipo, cargar el valor actual
+                        if (!esCambioTipo && datosRefaccion) {
+                            cargarValorCampoDinamico(tipo.numSerieRequerido, tipo.claveTipoUnidadMedida);
+                        }
+                    } else {
+                        mostrarAlerta('No se pudo obtener información del tipo de refacción', 'warning');
+                        $('#campoDinamicoEditar').empty();
+                    }
+                })
+                .fail(function() {
+                    mostrarAlerta('Error al cargar información del tipo de refacción', 'danger');
+                    $('#campoDinamicoEditar').empty();
+                });
+        }
+
+        // Función para cargar valor en campo dinámico durante edición
+        function cargarValorCampoDinamico(numSerieRequerido, claveTipoUnidadMedida) {
+            if (numSerieRequerido === 'SI' && datosRefaccion) {
+                $('#NumeroSerieEditar').val(datosRefaccion.numeroSerie || '');
+            } else if ((claveTipoUnidadMedida == 2 || claveTipoUnidadMedida == 3) && datosRefaccion) {
+                $('#CantidadEditar').val(datosRefaccion.cantidad || 1);
+            }
+        }
+
+        // Función para cargar datos de refacción para edición
+        function cargarDatosEdicionRefaccion(id) {
+            $.get('/Refacciones/ObtenerRefaccionPorId', { id: id })
+                .done(function(response) {
+                    if(response.success) {
+                        datosRefaccion = response.data;
+
+                        $('#ClaveRefaccionEditar').val(datosRefaccion.claveRefaccion);
+
+                        // Cargar primero el campo dinámico según el tipo
+                        cargarCampoDinamicoEditar(datosRefaccion.claveTipoRefaccion, false);
+
+                        // Seleccionar el tipo de refacción
+                        $('#ClaveTipoRefaccionEditar').val(datosRefaccion.claveTipoRefaccion);
+
+                        // Llenar otros campos
+                        $('#MarcaEditar').val(datosRefaccion.marca);
+                        $('#ModeloEditar').val(datosRefaccion.modelo);
+
+                        // Formatear fecha para el input date
+                        if (datosRefaccion.fechaAdquisicion) {
+                            var fecha = new Date(datosRefaccion.fechaAdquisicion);
+                            var fechaFormateada = fecha.toISOString().split('T')[0];
+                            $('#FechaAdquisicionEditar').val(fechaFormateada);
+                        }
+
+                        $('#NumContratoAdquisicionEditar').val(datosRefaccion.numContratoAdquisicion);
+                    } else {
+                        mostrarAlerta(response.message || 'Error al cargar datos de la refacción', 'danger');
+                    }
+                })
+                .fail(function() {
+                    mostrarAlerta('Error al cargar datos de la refacción', 'danger');
+                });
+        }
+
+        // Función para crear nueva refacción
+        function crearRefaccion() {
+            const form = $('#formNuevaRefaccion')[0];
+
+            if(!form.checkValidity()) {
+                // Mostrar validaciones
+                form.classList.add('was-validated');
+
+                // Validar campo dinámico si existe
+                if ($('#NumeroSerieNuevo').length > 0 && !$('#NumeroSerieNuevo').val().trim()) {
+                    $('#NumeroSerieNuevo').addClass('is-invalid');
+                    mostrarAlerta('El número de serie es requerido', 'warning');
+                    return;
+                }
+
+                if ($('#CantidadNuevo').length > 0 && (!$('#CantidadNuevo').val() || parseInt($('#CantidadNuevo').val()) <= 0)) {
+                    $('#CantidadNuevo').addClass('is-invalid');
+                    mostrarAlerta('La cantidad debe ser mayor a 0', 'warning');
+                    return;
+                }
+
+                return;
+            }
+
+            const tipoId = parseInt($('#ClaveTipoRefaccionNuevo').val()) || 0;
+            if (tipoId <= 0) {
+                mostrarAlerta('Por favor seleccione un tipo de refacción', 'warning');
+                $('#ClaveTipoRefaccionNuevo').focus();
+                return;
+            }
+
+            // Preparar datos base
+            const datos = {
+                ClaveTipoRefaccion: tipoId,
+                Modelo: $('#ModeloNuevo').val().trim(),
+                Marca: $('#MarcaNuevo').val().trim(),
+                FechaAdquisicion: $('#FechaAdquisicionNuevo').val(),
+                NumContratoAdquisicion: parseInt($('#NumContratoAdquisicionNuevo').val()) || 0
+            };
+
+            // Validar campos base
+            if (!datos.Modelo) {
+                mostrarAlerta('El modelo es requerido', 'warning');
+                $('#ModeloNuevo').focus();
+                return;
+            }
+
+            if (!datos.Marca) {
+                mostrarAlerta('La marca es requerida', 'warning');
+                $('#MarcaNuevo').focus();
+                return;
+            }
+
+            if (!datos.FechaAdquisicion) {
+                mostrarAlerta('La fecha de adquisición es requerida', 'warning');
+                $('#FechaAdquisicionNuevo').focus();
+                return;
+            }
+
+            // Obtener valor del campo dinámico
+            if ($('#NumeroSerieNuevo').length > 0) {
+                datos.NumeroSerie = $('#NumeroSerieNuevo').val().trim();
+                datos.Cantidad = null;
+
+                if (!datos.NumeroSerie) {
+                    mostrarAlerta('El número de serie es requerido', 'warning');
+                    $('#NumeroSerieNuevo').focus();
+                    return;
+                }
+            } else if ($('#CantidadNuevo').length > 0) {
+                datos.Cantidad = parseInt($('#CantidadNuevo').val()) || 0;
+                datos.NumeroSerie = null;
+
+                if (datos.Cantidad <= 0) {
+                    mostrarAlerta('La cantidad debe ser mayor a 0', 'warning');
+                    $('#CantidadNuevo').focus();
+                    return;
+                }
+            } else {
+                mostrarAlerta('Por favor complete el campo dinámico según el tipo de refacción', 'warning');
+                return;
+            }
+
+            // Validar número de contrato
+            if (datos.NumContratoAdquisicion <= 0) {
+                mostrarAlerta('El número de contrato debe ser mayor a 0', 'warning');
+                $('#NumContratoAdquisicionNuevo').focus();
+                return;
+            }
+
+            console.log('Enviando datos para crear:', datos);
+
+            $.ajax({
+                url: '/Refacciones/CrearRefaccion',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(datos),
+                success: function(response) {
+                    console.log('Respuesta del servidor:', response);
+                    if(response.success) {
+                        mostrarAlerta(response.message, 'success');
+                        $('#modalAgregarRefaccion').modal('hide');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        mostrarAlerta(response.message, 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error en AJAX:', xhr.responseText);
+                    mostrarAlerta('Error de conexión: ' + error, 'danger');
+                }
+            });
+        }
+
+        // Función para guardar cambios en refacción
+        function guardarCambiosRefaccion() {
+            const form = $('#formEditarRefaccion')[0];
+
+            if(!form.checkValidity()) {
+                form.classList.add('was-validated');
+
+                // Validar campo dinámico si existe
+                if ($('#NumeroSerieEditar').length > 0 && !$('#NumeroSerieEditar').val().trim()) {
+                    $('#NumeroSerieEditar').addClass('is-invalid');
+                    mostrarAlerta('El número de serie es requerido', 'warning');
+                    return;
+                }
+
+                if ($('#CantidadEditar').length > 0 && (!$('#CantidadEditar').val() || parseInt($('#CantidadEditar').val()) <= 0)) {
+                    $('#CantidadEditar').addClass('is-invalid');
+                    mostrarAlerta('La cantidad debe ser mayor a 0', 'warning');
+                    return;
+                }
+
+                return;
+            }
+
+            const datos = {
+                ClaveRefaccion: parseInt($('#ClaveRefaccionEditar').val()),
+                ClaveTipoRefaccion: parseInt($('#ClaveTipoRefaccionEditar').val()) || 0,
+                Modelo: $('#ModeloEditar').val().trim(),
+                Marca: $('#MarcaEditar').val().trim(),
+                FechaAdquisicion: $('#FechaAdquisicionEditar').val(),
+                NumContratoAdquisicion: parseInt($('#NumContratoAdquisicionEditar').val()) || 0
+            };
+
+            if (datos.ClaveTipoRefaccion <= 0) {
+                mostrarAlerta('Por favor seleccione un tipo de refacción', 'warning');
+                $('#ClaveTipoRefaccionEditar').focus();
+                return;
+            }
+
+            // Validar campos base
+            if (!datos.Modelo) {
+                mostrarAlerta('El modelo es requerido', 'warning');
+                $('#ModeloEditar').focus();
+                return;
+            }
+
+            if (!datos.Marca) {
+                mostrarAlerta('La marca es requerida', 'warning');
+                $('#MarcaEditar').focus();
+                return;
+            }
+
+            if (!datos.FechaAdquisicion) {
+                mostrarAlerta('La fecha de adquisición es requerida', 'warning');
+                $('#FechaAdquisicionEditar').focus();
+                return;
+            }
+
+            // Obtener valor del campo dinámico
+            if ($('#NumeroSerieEditar').length > 0) {
+                datos.NumeroSerie = $('#NumeroSerieEditar').val().trim();
+                datos.Cantidad = null;
+
+                if (!datos.NumeroSerie) {
+                    mostrarAlerta('El número de serie es requerido', 'warning');
+                    $('#NumeroSerieEditar').focus();
+                    return;
+                }
+            } else if ($('#CantidadEditar').length > 0) {
+                datos.Cantidad = parseInt($('#CantidadEditar').val()) || 0;
+                datos.NumeroSerie = null;
+
+                if (datos.Cantidad <= 0) {
+                    mostrarAlerta('La cantidad debe ser mayor a 0', 'warning');
+                    $('#CantidadEditar').focus();
+                    return;
+                }
+            } else {
+                mostrarAlerta('Por favor complete el campo dinámico según el tipo de refacción', 'warning');
+                return;
+            }
+
+            // Validar número de contrato
+            if (datos.NumContratoAdquisicion <= 0) {
+                mostrarAlerta('El número de contrato debe ser mayor a 0', 'warning');
+                $('#NumContratoAdquisicionEditar').focus();
+                return;
+            }
+
+            console.log('Enviando datos para actualizar:', datos);
+
+            $.ajax({
+                url: '/Refacciones/ActualizarRefaccion',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(datos),
+                success: function(response) {
+                    if(response.success) {
+                        mostrarAlerta(response.message, 'success');
+                        $('#modalEditarRefaccion').modal('hide');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        mostrarAlerta(response.message, 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error en AJAX:', xhr.responseText);
+                    mostrarAlerta('Error de conexión: ' + error, 'danger');
+                }
+            });
+        }
+
+        // Función para eliminar refacción
+        function eliminarRefaccion(id, nombreTipo) {
+            if(confirm(`¿Está seguro de eliminar la refacción de tipo "${nombreTipo}"?\n\nEsta acción no se puede deshacer.`)) {
+                $.ajax({
+                    url: '/Refacciones/EliminarRefaccion',
+                    type: 'POST',
+                    data: { id: id },
+                    success: function(response) {
+                        if(response.success) {
+                            mostrarAlerta(response.message, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            mostrarAlerta(response.message, 'danger');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error en AJAX:', error);
+                        mostrarAlerta('Error de conexión: ' + error, 'danger');
+                    }
+                });
+            }
+        }
+
+        // Función para mostrar alertas
+        function mostrarAlerta(mensaje, tipo) {
+            // Cerrar alertas anteriores
+            $('.alert-dismissible').alert('close');
+
+            const icono = tipo === 'success' ? 'fa-check-circle' :
+                         tipo === 'warning' ? 'fa-exclamation-triangle' :
+                         tipo === 'info' ? 'fa-info-circle' :
+                         'fa-exclamation-circle';
+
+            const alerta = $(`
+                <div class="alert alert-${tipo} alert-dismissible fade show position-fixed top-0 end-0 m-3" role="alert" style="z-index: 1100; min-width: 300px;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas ${icono} me-2"></i>
+                        <div>${mensaje}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `);
+
+            $('body').append(alerta);
+
+            // Auto cerrar después de 5 segundos (excepto errores graves)
+            if (tipo !== 'danger') {
+                setTimeout(() => {
+                    alerta.alert('close');
+                }, 5000);
+            }
+        }
+
+        // Limpiar formulario cuando se cierra el modal de nueva refacción
+        $('#modalAgregarRefaccion').on('hidden.bs.modal', function () {
+            $('#formNuevaRefaccion')[0].reset();
+            $('#FechaAdquisicionNuevo').val('@DateTime.Now.ToString("yyyy-MM-dd")');
+            $('#formNuevaRefaccion').removeClass('was-validated');
+
+            // Remover clases de validación de campos dinámicos
+            $('#NumeroSerieNuevo, #CantidadNuevo').removeClass('is-invalid');
+
+            // Restablecer combobox y campo dinámico
+            $('#ClaveTipoRefaccionNuevo').val('');
+            $('#campoDinamicoNuevo').empty();
+
+            console.log('Modal de nueva refacción cerrado y limpiado');
+        });
+
+        // Limpiar formulario cuando se cierra el modal de edición
+        $('#modalEditarRefaccion').on('hidden.bs.modal', function () {
+            $('#formEditarRefaccion')[0].reset();
+            $('#formEditarRefaccion').removeClass('was-validated');
+
+            // Remover clases de validación de campos dinámicos
+            $('#NumeroSerieEditar, #CantidadEditar').removeClass('is-invalid');
+
+            // Restablecer combobox y campo dinámico
+            $('#ClaveTipoRefaccionEditar').val('');
+            $('#campoDinamicoEditar').empty();
+
+            // Limpiar datos globales
+            datosRefaccion = {};
+
+            console.log('Modal de edición cerrado y limpiado');
+        });
+
+        // Función para formatear campos numéricos
+        function formatearCampoNumerico(input) {
+            $(input).on('input', function() {
+                var value = $(this).val();
+                // Remover caracteres no numéricos excepto el signo negativo al inicio
+                value = value.replace(/[^0-9-]/g, '');
+                // Solo permitir un signo negativo al inicio
+                if (value.indexOf('-') > 0) {
+                    value = value.replace('-', '');
+                }
+                $(this).val(value);
+            });
+        }
+
+        // Aplicar formateo a campos numéricos
+        $(document).ready(function() {
+            formatearCampoNumerico('#CantidadNuevo');
+            formatearCampoNumerico('#CantidadEditar');
+            formatearCampoNumerico('#NumContratoAdquisicionNuevo');
+            formatearCampoNumerico('#NumContratoAdquisicionEditar');
+        });
+
+        // Función para prevenir envío con Enter en campos que no son formularios
+        $(document).ready(function() {
+            $('input, select, textarea').on('keydown', function(e) {
+                if (e.key === 'Enter' && !$(this).is('textarea')) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        // Función para registrar errores en consola
+        function registrarError(contexto, error) {
+            console.error(`[${new Date().toISOString()}] Error en ${contexto}:`, error);
+        }
+
+        // Función para registrar eventos exitosos
+        function registrarExito(contexto, mensaje) {
+            console.log(`[${new Date().toISOString()}] Éxito en ${contexto}: ${mensaje}`);
+        }
+
+        // Sobrescribir funciones principales para incluir logs
+        const crearRefaccionOriginal = crearRefaccion;
+        crearRefaccion = function() {
+            console.log('Iniciando creación de refacción...');
+            try {
+                crearRefaccionOriginal();
+            } catch (error) {
+                registrarError('crearRefaccion', error);
+                mostrarAlerta('Error inesperado al crear refacción', 'danger');
+            }
+        };
+
+        const guardarCambiosRefaccionOriginal = guardarCambiosRefaccion;
+        guardarCambiosRefaccion = function() {
+            console.log('Iniciando actualización de refacción...');
+            try {
+                guardarCambiosRefaccionOriginal();
+            } catch (error) {
+                registrarError('guardarCambiosRefaccion', error);
+                mostrarAlerta('Error inesperado al actualizar refacción', 'danger');
+            }
+        };
+
+        const eliminarRefaccionOriginal = eliminarRefaccion;
+        eliminarRefaccion = function(id, nombreTipo) {
+            console.log('Iniciando eliminación de refacción ID:', id);
+            try {
+                eliminarRefaccionOriginal(id, nombreTipo);
+            } catch (error) {
+                registrarError('eliminarRefaccion', error);
+                mostrarAlerta('Error inesperado al eliminar refacción', 'danger');
+            }
+        };
+
+        // Verificar que todos los elementos necesarios estén cargados
+        $(window).on('load', function() {
+            console.log('Página de refacciones completamente cargada');
+
+            // Verificar DataTable
+            if ($.fn.DataTable.isDataTable('#tablaRefacciones')) {
+                console.log('DataTable inicializado correctamente');
+            }
+
+            // Verificar modales
+            if ($('#modalAgregarRefaccion').length) {
+                console.log('Modal de agregar refacción disponible');
+            }
+
+            if ($('#modalEditarRefaccion').length) {
+                console.log('Modal de editar refacción disponible');
+            }
+        });
+
+        // Manejar errores globales de AJAX
+        $(document).ajaxError(function(event, jqxhr, settings, thrownError) {
+            if (settings.url.includes('/Refacciones/')) {
+                registrarError('AJAX ' + settings.type + ' ' + settings.url, thrownError);
+
+                // No mostrar alerta si es un error de validación del servidor (400)
+                if (jqxhr.status !== 400) {
+                    mostrarAlerta('Error en la comunicación con el servidor. Código: ' + jqxhr.status, 'danger');
+                }
+            }
+        });
+
+        // Manejar éxito global de AJAX
+        $(document).ajaxSuccess(function(event, xhr, settings) {
+            if (settings.url.includes('/Refacciones/')) {
+                registrarExito('AJAX ' + settings.type + ' ' + settings.url, 'Petición completada');
+            }
+        });
+    </script>
+
+}

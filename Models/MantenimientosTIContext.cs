@@ -61,6 +61,14 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<CatMotivoCancelacion> CatMotivosCancelacion { get; set; }
 
+    public virtual DbSet<Refaccion> Refacciones { get; set; }
+
+    public virtual DbSet<MantenimientoRefacciones> MantenimientoRefacciones { get; set; }
+
+    public virtual DbSet<CatTipoRefaccion> CatTipoRefacciones { get; set; }
+    public virtual DbSet<CatTipoUnidadMedida> CatTipoUnidadMedidas { get; set; }
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Agendum>(entity =>
@@ -630,6 +638,159 @@ public partial class MantenimientosTIContext : DbContext
                 .HasConstraintName("FK_Foto_Mantenimiento");
         });
 
+        modelBuilder.Entity<CatTipoRefaccion>(entity =>
+        {
+            entity.ToTable("catTipoRefaccion");
+
+            entity.HasKey(e => e.ClaveTipoRefaccion);
+
+            entity.Property(e => e.ClaveTipoRefaccion)
+                .HasColumnName("claveTipoRefaccion")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.ClaveTipoUnidadMedida)
+                .HasColumnName("claveTipoUnidadMedida")
+                .IsRequired();
+
+            entity.Property(e => e.NombreTipoRefaccion)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombreTipoRefaccion")
+                .IsRequired();
+
+            // Relación con CatTipoUnidadMedida
+            entity.HasOne(d => d.CatTipoUnidadMedida)
+                .WithMany(p => p.CatTipoRefacciones)
+                .HasForeignKey(d => d.ClaveTipoUnidadMedida)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_catTipoRefaccion_catTipoUnidadMedida");
+        });
+
+        modelBuilder.Entity<CatTipoRefaccion>(entity =>
+        {
+            entity.ToTable("catTipoRefaccion");
+
+            entity.HasKey(e => e.ClaveTipoRefaccion);
+
+            entity.Property(e => e.ClaveTipoRefaccion)
+                .HasColumnName("claveTipoRefaccion")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.NombreTipoRefaccion)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombreTipoRefaccion")
+                .IsRequired();
+        });
+
+        modelBuilder.Entity<MantenimientoRefacciones>(entity =>
+        {
+            entity.ToTable("MantenimientoRefacciones");
+
+            entity.HasKey(e => new { e.NumOrden, e.ClaveRefaccion });
+
+            entity.Property(e => e.NumOrden)
+                .HasColumnName("numOrden");
+
+            entity.Property(e => e.ClaveRefaccion)
+                .HasColumnName("claveRefaccion");
+
+            entity.Property(e => e.Observaciones)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("observaciones");
+
+            entity.HasOne(d => d.NumOrdenNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.NumOrden)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Mantenimi__numOr__540C7B00");
+
+            entity.HasOne(d => d.ClaveRefaccionNavigation)
+                .WithMany(p => p.MantenimientoRefacciones)
+                .HasForeignKey(d => d.ClaveRefaccion)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Mantenimi__clave__55009F39");
+        });
+
+        modelBuilder.Entity<Refaccion>(entity =>
+        {
+            entity.ToTable("Refaccion");
+
+            entity.HasKey(e => e.ClaveRefaccion);
+
+            entity.Property(e => e.ClaveRefaccion)
+                .HasColumnName("claveRefaccion")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.ClaveDivision)
+                .HasMaxLength(2)
+                .IsUnicode(false)
+                .IsFixedLength()
+                .HasColumnName("claveDivision")
+                .IsRequired();
+
+            entity.Property(e => e.ClaveZona)
+                .HasMaxLength(2)
+                .IsUnicode(false)
+                .IsFixedLength()
+                .HasColumnName("claveZona")
+                .IsRequired();
+
+            entity.Property(e => e.ClaveTipoRefaccion)
+                .HasColumnName("claveTipoRefaccion")
+                .IsRequired();
+
+            entity.Property(e => e.NumeroSerie)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("numeroSerie")
+                .IsRequired(false);
+
+            entity.Property(e => e.Modelo)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("modelo")
+                .IsRequired();
+
+            entity.Property(e => e.Marca)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("marca")
+                .IsRequired();
+
+            entity.Property(e => e.FechaAdquisicion)
+                .HasColumnName("fechaAdquisicion")
+                .HasColumnType("date");
+
+            entity.Property(e => e.NumContratoAdquisicion)
+                .HasColumnName("numContratoAdquisicion");
+
+            entity.Property(e => e.Ocupado)
+                .HasMaxLength(2)
+                .IsUnicode(false)
+                .HasColumnName("ocupado")
+                .IsRequired(false);
+
+            // Nueva propiedad Cantidad
+            entity.Property(e => e.Cantidad)
+                .HasColumnName("cantidad")
+                .IsRequired(false);
+
+            // Relaciones
+            entity.HasOne(d => d.CatZona)
+                .WithMany(p => p.Refacciones)
+                .HasForeignKey(d => new { d.ClaveDivision, d.ClaveZona })
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Refaccion__3C34F16F");
+
+            entity.HasOne(d => d.CatTipoRefaccion)
+                .WithMany(p => p.Refacciones)
+                .HasForeignKey(d => d.ClaveTipoRefaccion)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Refaccion_catTipoRefaccion");
+        });
+
         modelBuilder.Entity<RegistroActividad>(entity =>
         {
             entity.ToTable("RegistroActividad");
@@ -638,7 +799,7 @@ public partial class MantenimientosTIContext : DbContext
 
             entity.Property(e => e.IdRegistroActividad)
                 .HasColumnName("IdRegistroActividad")
-                .ValueGeneratedOnAdd(); // Importante para indicar que es autoincremental (IDENTITY)
+                .ValueGeneratedOnAdd();
 
             entity.Property(e => e.FechaHora)
                 .HasColumnName("FechaHora")

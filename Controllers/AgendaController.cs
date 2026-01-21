@@ -1127,7 +1127,7 @@ namespace MantenimientosTI.Controllers
                 return Json(new
                 {
                     success = true,
-                    message = $"Mantenimiento correctivo agendado exitosamente para {tipoEquipoMensaje}",
+                    message = $"Mantenimiento correctivo agendado exitosamente.",
                     data = new
                     {
                         numActFijo = nuevoCorrectivo.NumActFijo,

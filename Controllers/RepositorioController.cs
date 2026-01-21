@@ -1,5 +1,4 @@
 ﻿using ClosedXML.Excel;
-using ClosedXML.Excel;
 using MantenimientosTI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,9 +7,8 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 using System.Globalization;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Formats.Jpeg;
 using MantenimientosTI.Services;
+using System.Text.Json;
 
 namespace MantenimientosTI.Controllers
 {
@@ -18,7 +16,6 @@ namespace MantenimientosTI.Controllers
     {
         private readonly MantenimientosTIContext _dbocontext;
         private readonly BitacoraService _bitacora;
-
 
         public RepositorioController(MantenimientosTIContext context, BitacoraService bitacora)
         {
@@ -148,35 +145,47 @@ namespace MantenimientosTI.Controllers
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         [HttpPost]
         public async Task<IActionResult> TerminarMantenimiento(
-            [FromForm] int numOrden,
-            [FromForm] string fechaAtencion,
-            [FromForm] string problemas,
-            [FromForm] string diagnostico,
-            [FromForm] string observaciones,
-            [FromForm] IFormFile archivoPdf,
-            [FromForm] IFormFile? fotoAntes,
-            [FromForm] IFormFile? fotoDurante,
-            [FromForm] IFormFile? fotoDespues)
+    [FromForm] int numOrden,
+    [FromForm] string fechaAtencion,
+    [FromForm] string problemas,
+    [FromForm] string diagnostico,
+    [FromForm] string observaciones,
+    [FromForm] IFormFile archivoPdf,
+    [FromForm] IFormFile? fotoAntes,
+    [FromForm] IFormFile? fotoDurante,
+    [FromForm] IFormFile? fotoDespues,
+    [FromForm] string? refacciones)
         {
             using (var transaction = await _dbocontext.Database.BeginTransactionAsync())
             {
                 try
                 {
+                    // Validar fecha
                     if (!DateOnly.TryParseExact(fechaAtencion, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly fechaAtencionParsed))
                     {
                         return Json(new { success = false, message = "Formato de fecha inválida" });
                     }
 
+                    // Obtener agenda
                     var agendaItem = await _dbocontext.Agenda
                         .FirstOrDefaultAsync(a => a.ClaveAgenda == numOrden);
 
                     if (agendaItem == null)
                         return Json(new { success = false, message = "Registro no encontrado en la Agenda" });
 
+                    // Obtener RPE de sesión
                     var rpe = HttpContext.Session.GetString("Rpe");
                     if (string.IsNullOrEmpty(rpe))
                         return Json(new { success = false, message = "Sesión inválida, RPE no encontrado" });
 
+                    // Obtener clave de zona del usuario
+                    var claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+                    if (string.IsNullOrEmpty(claveZonaUsuario))
+                    {
+                        return Json(new { success = false, message = "No se pudo determinar la zona del usuario" });
+                    }
+
+                    // Crear mantenimiento
                     var mantenimiento = new Mantenimiento
                     {
                         NumOrden = agendaItem.ClaveAgenda,
@@ -191,6 +200,7 @@ namespace MantenimientosTI.Controllers
                         FechaAtencion = fechaAtencionParsed
                     };
 
+                    // Procesar archivo PDF
                     if (archivoPdf != null && archivoPdf.Length > 0)
                     {
                         if (archivoPdf.Length > 5 * 1024 * 1024)
@@ -209,6 +219,163 @@ namespace MantenimientosTI.Controllers
                     _dbocontext.Mantenimientos.Add(mantenimiento);
                     await _dbocontext.SaveChangesAsync();
 
+                    // Procesar refacciones si existen
+                    if (!string.IsNullOrEmpty(refacciones) && refacciones != "undefined" && refacciones != "null")
+                    {
+                        try
+                        {
+                            // Configurar opciones de deserialización
+                            var options = new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true,
+                                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
+                                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                            };
+
+                            // Registrar el JSON recibido para depuración
+                            Console.WriteLine($"JSON recibido: {refacciones}");
+
+                            var refaccionesList = JsonSerializer.Deserialize<List<RefaccionTerminarViewModel>>(refacciones, options);
+
+                            if (refaccionesList != null && refaccionesList.Any())
+                            {
+                                Console.WriteLine($"Se deserializaron {refaccionesList.Count} refacciones");
+
+                                foreach (var refaccionItem in refaccionesList)
+                                {
+                                    Console.WriteLine($"Procesando refacción: TipoId={refaccionItem.TipoRefaccionId}, EsConSerie={refaccionItem.EsConSerie}, RefaccionId={refaccionItem.RefaccionId}, Cantidad={refaccionItem.Cantidad}");
+
+                                    // CASO 1: Refacción con número de serie
+                                    if (refaccionItem.EsConSerie && refaccionItem.RefaccionId.HasValue)
+                                    {
+                                        var refaccionDb = await _dbocontext.Refacciones
+                                            .FirstOrDefaultAsync(r => r.ClaveRefaccion == refaccionItem.RefaccionId);
+
+                                        if (refaccionDb != null)
+                                        {
+                                            if (refaccionDb.Ocupado == "SI")
+                                            {
+                                                await transaction.RollbackAsync();
+                                                return Json(new
+                                                {
+                                                    success = false,
+                                                    message = $"La refacción con serie {refaccionDb.NumeroSerie} ya no está disponible"
+                                                });
+                                            }
+
+                                            // Marcar como ocupado
+                                            refaccionDb.Ocupado = "SI";
+
+                                            // Registrar en MantenimientoRefacciones
+                                            var mantenimientoRefaccion = new MantenimientoRefacciones
+                                            {
+                                                NumOrden = mantenimiento.NumOrden,
+                                                ClaveRefaccion = refaccionDb.ClaveRefaccion,
+                                                Observaciones = refaccionItem.Observaciones ?? string.Empty
+                                            };
+                                            _dbocontext.MantenimientoRefacciones.Add(mantenimientoRefaccion);
+                                        }
+                                        else
+                                        {
+                                            await transaction.RollbackAsync();
+                                            return Json(new
+                                            {
+                                                success = false,
+                                                message = $"No se encontró la refacción con ID {refaccionItem.RefaccionId}"
+                                            });
+                                        }
+                                    }
+                                    // CASOS 2 y 3: Refacciones sin número de serie (por cantidad)
+                                    else if (!refaccionItem.EsConSerie)
+                                    {
+                                        // Obtener refacciones disponibles de este tipo en la zona del usuario
+                                        var refaccionesDisponibles = await _dbocontext.Refacciones
+                                            .Where(r => r.ClaveTipoRefaccion == refaccionItem.TipoRefaccionId &&
+                                                       r.ClaveZona == claveZonaUsuario &&
+                                                       r.Ocupado == "NO" &&
+                                                       r.NumeroSerie == null)
+                                            .OrderBy(r => r.ClaveRefaccion)
+                                            .ToListAsync();
+
+                                        if (!refaccionesDisponibles.Any())
+                                        {
+                                            await transaction.RollbackAsync();
+                                            return Json(new
+                                            {
+                                                success = false,
+                                                message = $"No hay refacciones disponibles del tipo seleccionado"
+                                            });
+                                        }
+
+                                        int cantidadRestante = refaccionItem.Cantidad;
+                                        Console.WriteLine($"Cantidad solicitada: {cantidadRestante}, disponibles: {refaccionesDisponibles.Sum(r => r.Cantidad ?? 0)}");
+
+                                        foreach (var refaccionDb in refaccionesDisponibles)
+                                        {
+                                            if (cantidadRestante <= 0) break;
+
+                                            int cantidadEnEstaRefaccion = refaccionDb.Cantidad ?? 0;
+                                            int cantidadAUsar = Math.Min(cantidadRestante, cantidadEnEstaRefaccion);
+
+                                            Console.WriteLine($"Refacción {refaccionDb.ClaveRefaccion}: cantidad={cantidadEnEstaRefaccion}, usar={cantidadAUsar}, restante={cantidadRestante}");
+
+                                            // Actualizar cantidad en la tabla Refaccion
+                                            refaccionDb.Cantidad -= cantidadAUsar;
+                                            cantidadRestante -= cantidadAUsar;
+
+                                            // Si la cantidad llega a 0, marcar como ocupado
+                                            if (refaccionDb.Cantidad <= 0)
+                                            {
+                                                refaccionDb.Ocupado = "SI";
+                                            }
+
+                                            // Registrar en MantenimientoRefacciones
+                                            var mantenimientoRefaccion = new MantenimientoRefacciones
+                                            {
+                                                NumOrden = mantenimiento.NumOrden,
+                                                ClaveRefaccion = refaccionDb.ClaveRefaccion,
+                                                Observaciones = refaccionItem.Observaciones ?? string.Empty
+                                            };
+                                            _dbocontext.MantenimientoRefacciones.Add(mantenimientoRefaccion);
+                                        }
+
+                                        if (cantidadRestante > 0)
+                                        {
+                                            await transaction.RollbackAsync();
+                                            return Json(new
+                                            {
+                                                success = false,
+                                                message = $"Cantidad insuficiente. Solo se dispone de {refaccionItem.Cantidad - cantidadRestante} unidades del total solicitado"
+                                            });
+                                        }
+                                    }
+                                    else
+                                    {
+                                        await transaction.RollbackAsync();
+                                        return Json(new
+                                        {
+                                            success = false,
+                                            message = "Formato de refacción no válido"
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            await transaction.RollbackAsync();
+                            return Json(new
+                            {
+                                success = false,
+                                message = $"Error al procesar refacciones: {ex.Message}",
+                                error = ex.InnerException?.Message,
+                                stackTrace = ex.StackTrace
+                            });
+                        }
+                    }
+
+                    // Procesar fotos
                     var foto = new Foto
                     {
                         NumOrden = mantenimiento.NumOrden,
@@ -244,7 +411,6 @@ namespace MantenimientosTI.Controllers
                         seAgregoAlgunaFoto = true;
                     }
 
-                    // Solo se guarda la entidad Foto si se subió al menos una imagen
                     if (seAgregoAlgunaFoto)
                     {
                         _dbocontext.Fotos.Add(foto);
@@ -253,7 +419,7 @@ namespace MantenimientosTI.Controllers
                     // Actualizar agenda
                     agendaItem.Estatus = "TERMINADO";
 
-                    // ✅ REGISTRO EN BITÁCORA - AGREGADO
+                    // Registrar en bitácora
                     var usuario = HttpContext.Session.GetString("NombreUsuario") ?? "Usuario no identificado";
                     var rol = HttpContext.Session.GetString("NombreRol") ?? "N/A";
                     var zona = HttpContext.Session.GetString("NombreZona") ?? "N/A";
@@ -281,12 +447,12 @@ namespace MantenimientosTI.Controllers
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    // Devuelve un mensaje de error más detallado para depuración
                     return Json(new
                     {
                         success = false,
                         message = "Error inesperado al procesar la solicitud.",
-                        error = ex.Message
+                        error = ex.Message,
+                        stackTrace = ex.StackTrace
                     });
                 }
             }
@@ -320,21 +486,92 @@ namespace MantenimientosTI.Controllers
             return nombreArchivo;
         }
 
-        private async Task<string> ConvertirImagenAHex(IFormFile imagen)
+        [HttpGet]
+        public async Task<IActionResult> ObtenerTiposRefacciones()
         {
-            using (var memoryStream = new MemoryStream())
+            try
             {
-                await imagen.CopyToAsync(memoryStream);
-                byte[] imageBytes = memoryStream.ToArray();
+                var tiposRefacciones = await _dbocontext.CatTipoRefacciones
+                    .Select(t => new
+                    {
+                        t.ClaveTipoRefaccion,
+                        t.NombreTipoRefaccion
+                    })
+                    .OrderBy(t => t.NombreTipoRefaccion)
+                    .ToListAsync();
 
-                // Convertir a hexadecimal y asegurar formato válido
-                var hexString = BitConverter.ToString(imageBytes).Replace("-", "");
-                if (!hexString.StartsWith("0x"))
+                return Json(new { success = true, data = tiposRefacciones });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al obtener tipos de refacción: {ex.Message}" });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> VerificarRefaccion(string serie)
+        {
+            try
+            {
+                var refaccion = await _dbocontext.Refacciones
+                    .Include(r => r.CatTipoRefaccion)
+                    .FirstOrDefaultAsync(r => r.NumeroSerie.Trim().ToUpper() == serie.Trim().ToUpper());
+
+                if (refaccion == null)
                 {
-                    hexString = "0x" + hexString;
+                    return Json(new
+                    {
+                        success = false,
+                        message = "No existe",
+                        serieBuscada = serie,
+                        serieBD = "No encontrada"
+                    });
                 }
 
-                return hexString;
+                return Json(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        id = refaccion.ClaveRefaccion,
+                        tipoRefaccionId = refaccion.ClaveTipoRefaccion,
+                        tipoRefaccion = refaccion.CatTipoRefaccion?.NombreTipoRefaccion,
+                        serie = refaccion.NumeroSerie,
+                        ocupado = refaccion.Ocupado,
+                        marca = refaccion.Marca,
+                        modelo = refaccion.Modelo
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerNumerosSeriePorTipo(int tipoRefaccionId)
+        {
+            try
+            {
+                // ✅ CAMBIO: Obtener números de serie para un TIPO específico de refacción
+                var numerosSerie = await _dbocontext.Refacciones
+                    .Where(r => r.ClaveTipoRefaccion == tipoRefaccionId && r.Ocupado == "NO")
+                    .Select(r => new {
+                        r.NumeroSerie,
+                        r.ClaveRefaccion,
+                        r.Modelo,
+                        r.Marca,
+                        TipoRefaccion = r.CatTipoRefaccion.NombreTipoRefaccion
+                    })
+                    .OrderBy(r => r.NumeroSerie)
+                    .ToListAsync();
+
+                return Json(new { success = true, data = numerosSerie });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al obtener números de serie: {ex.Message}" });
             }
         }
 
@@ -689,17 +926,17 @@ namespace MantenimientosTI.Controllers
                 var fechaProgramada = mantenimiento.Agendum?.FechaProgramada.ToString("dd/MM/yyyy") ?? "No especificada";
                 var nombreUsuario = $"{mantenimiento.RpeNavigation?.Nombre ?? ""} {mantenimiento.RpeNavigation?.ApellidoP ?? ""} {mantenimiento.RpeNavigation?.ApellidoM ?? ""}".Trim();
 
-                // Construir el HTML con los detalles (num de cajero primero
+                // Construir el HTML con los detalles
                 var htmlInfoEquipo = @"
                 <ul class='list-group list-group-flush'>";
 
-                    // Mostrar número de cajero primero si es CFEMÁTICO y tiene valor
-                    if (tipoEquipo == "CFEMÁTICO" && numCajero != "N/A")
-                    {
-                        htmlInfoEquipo += $@"<li class='list-group-item'><strong>Número de Cajero:</strong> {numCajero}</li>";
-                    }
+                // Mostrar número de cajero primero si es CFEMÁTICO y tiene valor
+                if (tipoEquipo == "CFEMÁTICO" && numCajero != "N/A")
+                {
+                    htmlInfoEquipo += $@"<li class='list-group-item'><strong>Número de Cajero:</strong> {numCajero}</li>";
+                }
 
-                    htmlInfoEquipo += $@"
+                htmlInfoEquipo += $@"
                     <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {mantenimiento.NumActFijo}</li>
                     <li class='list-group-item'><strong>Tipo de Equipo:</strong> {tipoEquipo}</li>
                     <li class='list-group-item'><strong>Zona:</strong> {zona?.NombreZona ?? "No especificado"}</li>
@@ -747,6 +984,122 @@ namespace MantenimientosTI.Controllers
             catch (Exception ex)
             {
                 return Content($"<div class='alert alert-danger'>Error al obtener los detalles: {ex.Message}</div>");
+            }
+        }
+
+        // Nuevos métodos para manejar los 3 casos
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerInfoTipoRefaccion(int id)
+        {
+            try
+            {
+                var tipoRefaccion = await _dbocontext.CatTipoRefacciones
+                    .Include(t => t.CatTipoUnidadMedida)
+                    .Select(t => new
+                    {
+                        t.ClaveTipoRefaccion,
+                        t.NombreTipoRefaccion,
+                        t.ClaveTipoUnidadMedida,
+                        NombreUnidadMedida = t.CatTipoUnidadMedida.NombreUnidadMedida,
+                        NumSerieRequerido = t.CatTipoUnidadMedida.NumSerieRequerido
+                    })
+                    .FirstOrDefaultAsync(t => t.ClaveTipoRefaccion == id);
+
+                if (tipoRefaccion == null)
+                {
+                    return Json(new { success = false, message = "Tipo de refacción no encontrado" });
+                }
+
+                return Json(new { success = true, data = tipoRefaccion });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerRefaccionesDisponiblesPorTipo(int tipoRefaccionId)
+        {
+            try
+            {
+                var claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+                if (string.IsNullOrEmpty(claveZonaUsuario))
+                {
+                    return Json(new { success = false, message = "No se pudo determinar la zona del usuario" });
+                }
+
+                // Solo refacciones con número de serie disponibles (CASO 1)
+                var refacciones = await _dbocontext.Refacciones
+                    .Where(r => r.ClaveTipoRefaccion == tipoRefaccionId &&
+                               r.ClaveZona == claveZonaUsuario &&
+                               r.Ocupado == "NO" &&
+                               r.NumeroSerie != null) // Solo las que tienen número de serie
+                    .Select(r => new
+                    {
+                        r.ClaveRefaccion,
+                        r.NumeroSerie,
+                        r.Marca,
+                        r.Modelo
+                    })
+                    .OrderBy(r => r.NumeroSerie)
+                    .ToListAsync();
+
+                return Json(new { success = true, data = refacciones });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al obtener refacciones: {ex.Message}" });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerCantidadDisponiblePorTipo(int tipoRefaccionId, int claveTipoUnidadMedida)
+        {
+            try
+            {
+                var claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+                if (string.IsNullOrEmpty(claveZonaUsuario))
+                {
+                    return Json(new { success = false, message = "No se pudo determinar la zona del usuario" });
+                }
+
+                // Para CASOS 2 y 3: refacciones sin número de serie
+                var refacciones = await _dbocontext.Refacciones
+                    .Where(r => r.ClaveTipoRefaccion == tipoRefaccionId &&
+                               r.ClaveZona == claveZonaUsuario &&
+                               r.Ocupado == "NO" &&
+                               r.NumeroSerie == null) // Sin número de serie
+                    .ToListAsync();
+
+                int cantidadTotal = 0;
+
+                if (refacciones.Any())
+                {
+                    cantidadTotal = refacciones.Sum(r => r.Cantidad ?? 0);
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        cantidadTotal,
+                        cantidadRefacciones = refacciones.Count,
+                        refacciones = refacciones.Select(r => new
+                        {
+                            r.ClaveRefaccion,
+                            r.Cantidad,
+                            r.Marca,
+                            r.Modelo
+                        }).ToList()
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al obtener cantidad disponible: {ex.Message}" });
             }
         }
 
@@ -920,5 +1273,32 @@ namespace MantenimientosTI.Controllers
                 return Json(new { success = false, message = $"Error al generar el Excel: {ex.Message}" });
             }
         }
+    }
+
+    public class RefaccionTerminarViewModel
+    {
+        public long Id { get; set; }
+        public int TipoRefaccionId { get; set; }
+        public string TipoRefaccion { get; set; } = string.Empty;
+        public int? RefaccionId { get; set; } // Para CASO 1 (con número de serie)
+        public string? NumeroSerie { get; set; } // Hacer nullable
+        public int Cantidad { get; set; } // Para CASOS 2 y 3 (sin número de serie)
+        public string Observaciones { get; set; } = string.Empty;
+        public bool EsConSerie { get; set; }
+        public int? ClaveTipoUnidadMedida { get; set; }
+        public string? Marca { get; set; } // Hacer nullable
+        public string? Modelo { get; set; } // Hacer nullable
+    }
+
+
+    public class RefaccionViewModel
+    {
+        public long Id { get; set; }
+        public int TipoRefaccionId { get; set; }
+        public string TipoRefaccion { get; set; }
+        public string Serie { get; set; }
+        public string Observaciones { get; set; }
+        public string Marca { get; set; }
+        public string Modelo { get; set; }
     }
 }

@@ -150,7 +150,7 @@ namespace MantenimientosTI.Controllers
 
                 var estatusExcluidos = new List<string> { "CANCELADO" };
 
-                // Base query SIMPLIFICADA
+                // Base query con filtro de fechas
                 var baseQuery = _context.Agenda
                     .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
                                a.FechaProgramada >= primerDia &&
@@ -159,12 +159,13 @@ namespace MantenimientosTI.Controllers
                 // Determinar si mostramos por zona o por tipo de equipo
                 if (model.ZonaSeleccionada == "TODAS")
                 {
-                    // Mostrar gráficas por ZONA
+                    // Mostrar gráficas por ZONA - CORREGIDO: No aplicar filtro de zona específica
                     var graficasZonas = new List<object>();
                     var zonas = await _context.CatZonas.ToListAsync();
 
                     foreach (var zona in zonas)
                     {
+                        // CONSULTA CORREGIDA: Solo filtramos por zona sin restricción adicional
                         var queryZona = baseQuery
                             .Where(a => a.NumActFijoNavigation != null &&
                                        a.NumActFijoNavigation.ClaveZona == zona.ClaveZona);
@@ -186,6 +187,8 @@ namespace MantenimientosTI.Controllers
                         });
                     }
 
+                    _logger.LogInformation($"Gráficas por zona TODAS: {graficasZonas.Count} zonas procesadas, {graficasZonas.Count(z => ((dynamic)z).tieneDatos)} con datos");
+
                     return Json(new { success = true, datosGraficas = graficasZonas, tipo = "zonas" });
                 }
                 else
@@ -193,11 +196,14 @@ namespace MantenimientosTI.Controllers
                     // Mostrar gráficas por TIPO DE EQUIPO para la zona seleccionada
                     var graficasTipos = new List<object>();
 
-                    // 1. CFEMÁTICOS
-                    var cfematicosQuery = baseQuery
+                    // CORREGIDO: Aplicar filtro de zona específica
+                    var baseQueryConZona = baseQuery
                         .Where(a => a.NumActFijoNavigation != null &&
-                                   a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada &&
-                                   _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo));
+                                   a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada);
+
+                    // 1. CFEMÁTICOS
+                    var cfematicosQuery = baseQueryConZona
+                        .Where(a => _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo));
 
                     var cfematicosProgramados = await cfematicosQuery.CountAsync();
                     var cfematicosTerminados = await cfematicosQuery.CountAsync(a => a.Estatus == "TERMINADO");
@@ -213,11 +219,9 @@ namespace MantenimientosTI.Controllers
                         otros = cfematicosOtros > 0 ? cfematicosOtros : 0
                     });
 
-                    // 2. EQUIPOS DE ATENCIÓN A CLIENTES (EquipoAcs) - CORREGIDO
-                    var equiposACQuery = baseQuery
-                        .Where(a => a.NumActFijoNavigation != null &&
-                                   a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada &&
-                                   _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo));
+                    // 2. EQUIPOS DE ATENCIÓN A CLIENTES
+                    var equiposACQuery = baseQueryConZona
+                        .Where(a => _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo));
 
                     var equiposACProgramados = await equiposACQuery.CountAsync();
                     var equiposACTerminados = await equiposACQuery.CountAsync(a => a.Estatus == "TERMINADO");
@@ -233,11 +237,9 @@ namespace MantenimientosTI.Controllers
                         otros = equiposACOtros > 0 ? equiposACOtros : 0
                     });
 
-                    // 3. EQUIPOS DE CÓMPUTO (EquipoComputos) - CORREGIDO
-                    var equiposComputoQuery = baseQuery
-                        .Where(a => a.NumActFijoNavigation != null &&
-                                   a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada &&
-                                   _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo));
+                    // 3. EQUIPOS DE CÓMPUTO
+                    var equiposComputoQuery = baseQueryConZona
+                        .Where(a => _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo));
 
                     var equiposComputoProgramados = await equiposComputoQuery.CountAsync();
                     var equiposComputoTerminados = await equiposComputoQuery.CountAsync(a => a.Estatus == "TERMINADO");
@@ -253,16 +255,10 @@ namespace MantenimientosTI.Controllers
                         otros = equiposComputoOtros > 0 ? equiposComputoOtros : 0
                     });
 
-                    // NUEVO: Agregar logging detallado para debug
-                    _logger.LogInformation($"Datos tipos equipo - Zona: {model.ZonaSeleccionada}");
+                    _logger.LogInformation($"Gráficas por tipo equipo - Zona: {model.ZonaSeleccionada}");
                     _logger.LogInformation($"CFEMÁTICOS: Programados={cfematicosProgramados}, Terminados={cfematicosTerminados}, Pendientes={cfematicosPendientes}");
                     _logger.LogInformation($"EQUIPOS_AC: Programados={equiposACProgramados}, Terminados={equiposACTerminados}, Pendientes={equiposACPendientes}");
                     _logger.LogInformation($"EQUIPOS_COMPUTO: Programados={equiposComputoProgramados}, Terminados={equiposComputoTerminados}, Pendientes={equiposComputoPendientes}");
-
-                    // NUEVO: Verificar si hay registros en las tablas para debug
-                    var totalEquiposAC = await _context.EquipoAcs.CountAsync();
-                    var totalEquiposComputo = await _context.EquipoComputos.CountAsync();
-                    _logger.LogInformation($"Total registros en BD - EquipoAcs: {totalEquiposAC}, EquipoComputos: {totalEquiposComputo}");
 
                     return Json(new { success = true, datosGraficas = graficasTipos, tipo = "tiposEquipo" });
                 }

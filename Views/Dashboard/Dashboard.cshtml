@@ -960,6 +960,9 @@
             let chartEquiposAC = null;
             let chartEquiposComputo = null;
 
+            // Variables para control de timeout
+            let filtroTimeout = null;
+
             function mostrarAlerta(mensaje, tipo, contenedor = '#mensajeGraficas') {
                 $(contenedor).empty();
                 const icono = (tipo === 'success') ? 'fa-check-circle' : 'fa-exclamation-circle';
@@ -1191,7 +1194,7 @@
                         const inicio = new Date(fechaInicio + 'T00:00:00');
                         const fin = new Date(fechaFin + 'T00:00:00');
                         if (inicio > fin) {
-                            $('#infoFiltroGraficas').text('La fecha de inicio no puede ser mayor a la fecha fin.');
+                            $('#infoFiltroGraficas').html('<span class="text-danger">La fecha de inicio no puede ser mayor a la fecha fin</span>');
                             return;
                         }
                         const diffTime = Math.abs(fin - inicio);
@@ -1203,11 +1206,11 @@
                             $('#infoFiltroGraficas').text(`Mostrando datos del ${inicio.toLocaleDateString('es-ES')} al ${fin.toLocaleDateString('es-ES')} (${diffDays} días) para la zona: ${zonaTexto}`);
                         }
                     } catch (e) {
-                        $('#infoFiltroGraficas').text('Fechas inválidas.');
+                        $('#infoFiltroGraficas').html('<span class="text-danger">Fechas inválidas</span>');
                     }
                 } else {
                     if (zonaSeleccionada === 'TODAS') {
-                        $('#infoFiltroGraficas').text(`Mostrando datos del mes actual para TODAS las zonas`);
+                        $('#infoFiltroGraficas').text('Mostrando datos del mes actual para TODAS las zonas');
                     } else {
                         $('#infoFiltroGraficas').text(`Mostrando datos del mes actual para la zona: ${zonaTexto}`);
                     }
@@ -1216,10 +1219,17 @@
 
             function cargarGraficasConFiltroCompleto(fechaInicio, fechaFin, zonaSeleccionada) {
                 const btn = $('#btnFiltrarGraficas');
+                const btnOriginalHtml = btn.html();
                 btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>');
 
                 // Limpiar mensajes anteriores
                 $('#mensajeGraficas').empty();
+
+                // Debug: mostrar lo que se está enviando
+                console.log('=== Enviando filtro ===');
+                console.log('Fecha inicio:', fechaInicio);
+                console.log('Fecha fin:', fechaFin);
+                console.log('Zona seleccionada:', zonaSeleccionada);
 
                 const url = '@Url.Action("ObtenerDatosGraficasFiltroCompleto", "Dashboard")';
                 const data = {
@@ -1235,6 +1245,11 @@
                     contentType: 'application/json',
                     data: JSON.stringify(data),
                     success: function(response) {
+                        console.log('=== Respuesta del servidor ===');
+                        console.log('Éxito:', response.success);
+                        console.log('Tipo:', response.tipo);
+                        console.log('Datos recibidos:', response.datosGraficas);
+
                         if (response.success) {
                             if (zonaSeleccionada === 'TODAS') {
                                 // Mostrar gráficas por zona
@@ -1263,104 +1278,116 @@
                             mostrarAlerta(response.message || 'Error al cargar las gráficas.', 'danger', '#mensajeGraficas');
                         }
                     },
-                    error: function(xhr) {
+                    error: function(xhr, status, error) {
+                        console.error('=== Error en la petición AJAX ===');
+                        console.error('Status:', status);
+                        console.error('Error:', error);
+                        console.error('Response:', xhr.responseText);
+
                         const errorMsg = xhr.responseJSON?.message || 'Error de conexión al cargar las gráficas.';
                         mostrarAlerta(errorMsg, 'danger', '#mensajeGraficas');
                     },
                     complete: function() {
-                        btn.prop('disabled', false).html('<i class="fas fa-search me-1"></i>');
+                        btn.prop('disabled', false).html(btnOriginalHtml);
                     }
                 });
             }
 
-        function actualizarGraficasPorTipoEquipo(datosGraficas, zonaSeleccionada) {
-            // Destruir gráficas existentes
-            if (chartCfematicos) chartCfematicos.destroy();
-            if (chartEquiposAC) chartEquiposAC.destroy();
-            if (chartEquiposComputo) chartEquiposComputo.destroy();
+            function actualizarGraficasPorTipoEquipo(datosGraficas, zonaSeleccionada) {
+                console.log('=== Actualizando gráficas por tipo de equipo ===');
+                console.log('Datos recibidos:', datosGraficas);
+                console.log('Zona:', zonaSeleccionada);
 
-            // Procesar datos para cada tipo de equipo
-            const datosCfematicos = datosGraficas.find(d => d.tipoEquipo === 'CFEMÁTICOS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
-            const datosEquiposAC = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_AC') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
-            const datosEquiposComputo = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_COMPUTO') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+                // Destruir gráficas existentes
+                if (chartCfematicos) chartCfematicos.destroy();
+                if (chartEquiposAC) chartEquiposAC.destroy();
+                if (chartEquiposComputo) chartEquiposComputo.destroy();
 
-            // Actualizar estadísticas de las tarjetas
-            actualizarEstadisticas('cfematicos', datosCfematicos);
-            actualizarEstadisticas('equipos-ac', datosEquiposAC);
-            actualizarEstadisticas('equipos-computo', datosEquiposComputo);
+                // Procesar datos para cada tipo de equipo
+                const datosCfematicos = datosGraficas.find(d => d.tipoEquipo === 'CFEMÁTICOS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+                const datosEquiposAC = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_AC') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+                const datosEquiposComputo = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_COMPUTO') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
 
-            // Actualizar tabla de resumen
-            actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo);
+                console.log('Datos CFEMÁTICOS:', datosCfematicos);
+                console.log('Datos EQUIPOS_AC:', datosEquiposAC);
+                console.log('Datos EQUIPOS_COMPUTO:', datosEquiposComputo);
 
-            // Crear nuevas gráficas con animación escalonada
-            setTimeout(() => {
-                chartCfematicos = crearGraficaPastel('chart-cfematicos', datosCfematicos, ['#28a745', '#ffc107', '#6c757d'], 'CFEMÁTICOS', zonaSeleccionada);
-            }, 100);
+                // Actualizar estadísticas de las tarjetas
+                actualizarEstadisticas('cfematicos', datosCfematicos);
+                actualizarEstadisticas('equipos-ac', datosEquiposAC);
+                actualizarEstadisticas('equipos-computo', datosEquiposComputo);
 
-            setTimeout(() => {
-                chartEquiposAC = crearGraficaPastel('chart-equipos-ac', datosEquiposAC, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_AC', zonaSeleccionada);
-            }, 300);
+                // Actualizar tabla de resumen
+                actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo);
 
-            setTimeout(() => {
-                chartEquiposComputo = crearGraficaPastel('chart-equipos-computo', datosEquiposComputo, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_COMPUTO', zonaSeleccionada);
-            }, 500);
-        }
+                // Crear nuevas gráficas con animación escalonada
+                setTimeout(() => {
+                    chartCfematicos = crearGraficaPastel('chart-cfematicos', datosCfematicos, ['#28a745', '#ffc107', '#6c757d'], 'CFEMÁTICOS', zonaSeleccionada);
+                }, 100);
 
-                // Nueva función para actualizar la tabla de resumen
-        function actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo) {
-            // CFEMÁTICOS
-            const cfematicosProgramados = datosCfematicos.programados || 0;
-            const cfematicosTerminados = datosCfematicos.terminados || 0;
-            const cfematicosPendientes = datosCfematicos.pendientes || 0;
-            const cfematicosPorcentaje = cfematicosProgramados > 0 ? Math.round((cfematicosTerminados / cfematicosProgramados) * 100) : 0;
+                setTimeout(() => {
+                    chartEquiposAC = crearGraficaPastel('chart-equipos-ac', datosEquiposAC, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_AC', zonaSeleccionada);
+                }, 300);
 
-            $('#tabla-cfematicos-programados').text(cfematicosProgramados);
-            $('#tabla-cfematicos-terminados').text(cfematicosTerminados);
-            $('#tabla-cfematicos-pendientes').text(cfematicosPendientes);
-            $('#tabla-cfematicos-porcentaje').text(cfematicosPorcentaje + '%');
+                setTimeout(() => {
+                    chartEquiposComputo = crearGraficaPastel('chart-equipos-computo', datosEquiposComputo, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_COMPUTO', zonaSeleccionada);
+                }, 500);
+            }
 
-            // EQUIPOS DE ATENCIÓN A CLIENTES
-            const equiposACProgramados = datosEquiposAC.programados || 0;
-            const equiposACTerminados = datosEquiposAC.terminados || 0;
-            const equiposACPendientes = datosEquiposAC.pendientes || 0;
-            const equiposACPorcentaje = equiposACProgramados > 0 ? Math.round((equiposACTerminados / equiposACProgramados) * 100) : 0;
+            function actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo) {
+                // CFEMÁTICOS
+                const cfematicosProgramados = datosCfematicos.programados || 0;
+                const cfematicosTerminados = datosCfematicos.terminados || 0;
+                const cfematicosPendientes = datosCfematicos.pendientes || 0;
+                const cfematicosPorcentaje = cfematicosProgramados > 0 ? Math.round((cfematicosTerminados / cfematicosProgramados) * 100) : 0;
 
-            $('#tabla-equipos-ac-programados').text(equiposACProgramados);
-            $('#tabla-equipos-ac-terminados').text(equiposACTerminados);
-            $('#tabla-equipos-ac-pendientes').text(equiposACPendientes);
-            $('#tabla-equipos-ac-porcentaje').text(equiposACPorcentaje + '%');
+                $('#tabla-cfematicos-programados').text(cfematicosProgramados);
+                $('#tabla-cfematicos-terminados').text(cfematicosTerminados);
+                $('#tabla-cfematicos-pendientes').text(cfematicosPendientes);
+                $('#tabla-cfematicos-porcentaje').text(cfematicosPorcentaje + '%');
 
-            // EQUIPOS DE CÓMPUTO
-            const equiposComputoProgramados = datosEquiposComputo.programados || 0;
-            const equiposComputoTerminados = datosEquiposComputo.terminados || 0;
-            const equiposComputoPendientes = datosEquiposComputo.pendientes || 0;
-            const equiposComputoPorcentaje = equiposComputoProgramados > 0 ? Math.round((equiposComputoTerminados / equiposComputoProgramados) * 100) : 0;
+                // EQUIPOS DE ATENCIÓN A CLIENTES
+                const equiposACProgramados = datosEquiposAC.programados || 0;
+                const equiposACTerminados = datosEquiposAC.terminados || 0;
+                const equiposACPendientes = datosEquiposAC.pendientes || 0;
+                const equiposACPorcentaje = equiposACProgramados > 0 ? Math.round((equiposACTerminados / equiposACProgramados) * 100) : 0;
 
-            $('#tabla-equipos-computo-programados').text(equiposComputoProgramados);
-            $('#tabla-equipos-computo-terminados').text(equiposComputoTerminados);
-            $('#tabla-equipos-computo-pendientes').text(equiposComputoPendientes);
-            $('#tabla-equipos-computo-porcentaje').text(equiposComputoPorcentaje + '%');
+                $('#tabla-equipos-ac-programados').text(equiposACProgramados);
+                $('#tabla-equipos-ac-terminados').text(equiposACTerminados);
+                $('#tabla-equipos-ac-pendientes').text(equiposACPendientes);
+                $('#tabla-equipos-ac-porcentaje').text(equiposACPorcentaje + '%');
 
-            // TOTALES
-            const totalProgramados = cfematicosProgramados + equiposACProgramados + equiposComputoProgramados;
-            const totalTerminados = cfematicosTerminados + equiposACTerminados + equiposComputoTerminados;
-            const totalPendientes = cfematicosPendientes + equiposACPendientes + equiposComputoPendientes;
-            const totalPorcentaje = totalProgramados > 0 ? Math.round((totalTerminados / totalProgramados) * 100) : 0;
+                // EQUIPOS DE CÓMPUTO
+                const equiposComputoProgramados = datosEquiposComputo.programados || 0;
+                const equiposComputoTerminados = datosEquiposComputo.terminados || 0;
+                const equiposComputoPendientes = datosEquiposComputo.pendientes || 0;
+                const equiposComputoPorcentaje = equiposComputoProgramados > 0 ? Math.round((equiposComputoTerminados / equiposComputoProgramados) * 100) : 0;
 
-            $('#tabla-total-programados').text(totalProgramados);
-            $('#tabla-total-terminados').text(totalTerminados);
-            $('#tabla-total-pendientes').text(totalPendientes);
-            $('#tabla-total-porcentaje').text(totalPorcentaje + '%');
-        }
+                $('#tabla-equipos-computo-programados').text(equiposComputoProgramados);
+                $('#tabla-equipos-computo-terminados').text(equiposComputoTerminados);
+                $('#tabla-equipos-computo-pendientes').text(equiposComputoPendientes);
+                $('#tabla-equipos-computo-porcentaje').text(equiposComputoPorcentaje + '%');
 
-        function actualizarEstadisticas(prefijo, datos) {
-            const terminados = datos.terminados || 0;
-            const pendientes = datos.pendientes || 0;
+                // TOTALES
+                const totalProgramados = cfematicosProgramados + equiposACProgramados + equiposComputoProgramados;
+                const totalTerminados = cfematicosTerminados + equiposACTerminados + equiposComputoTerminados;
+                const totalPendientes = cfematicosPendientes + equiposACPendientes + equiposComputoPendientes;
+                const totalPorcentaje = totalProgramados > 0 ? Math.round((totalTerminados / totalProgramados) * 100) : 0;
 
-            // Actualizar elementos HTML de las tarjetas
-            $(`#${prefijo}-terminados`).text(terminados);
-            $(`#${prefijo}-pendientes`).text(pendientes);
-        }
+                $('#tabla-total-programados').text(totalProgramados);
+                $('#tabla-total-terminados').text(totalTerminados);
+                $('#tabla-total-pendientes').text(totalPendientes);
+                $('#tabla-total-porcentaje').text(totalPorcentaje + '%');
+            }
+
+            function actualizarEstadisticas(prefijo, datos) {
+                const terminados = datos.terminados || 0;
+                const pendientes = datos.pendientes || 0;
+
+                // Actualizar elementos HTML de las tarjetas
+                $(`#${prefijo}-terminados`).text(terminados);
+                $(`#${prefijo}-pendientes`).text(pendientes);
+            }
 
             function crearGraficaPastel(canvasId, datos, colores, tipoEquipo, zonaSeleccionada) {
                 const ctx = document.getElementById(canvasId);
@@ -1410,7 +1437,6 @@
                             animateScale: true,
                             animateRotate: true
                         },
-                        // NUEVO: Evento para hacer clic en los segmentos (SOLO PARA GRÁFICAS DE TIPO DE EQUIPO)
                         onClick: (evt, elements, chart) => {
                             if (elements.length > 0) {
                                 const segmentIndex = elements[0].index;
@@ -1439,7 +1465,7 @@
                                     fechaInicio: $('#filtroFechaInicio').val(),
                                     fechaFin: $('#filtroFechaFin').val(),
                                     zonaSeleccionada: zonaSeleccionada,
-                                    nombreZona: nombreZona, // Agregar el nombre de la zona
+                                    nombreZona: nombreZona,
                                     tipoEquipo: "TODOS"
                                 });
                             }
@@ -1450,95 +1476,93 @@
                 return new Chart(ctx, config);
             }
 
-            // NUEVA FUNCIÓN: Mostrar modal con registros
-        function mostrarRegistrosModal(datos) {
-            const modal = new bootstrap.Modal(document.getElementById('registrosModal'));
-            const tituloModal = document.getElementById('registrosModalLabel');
-            const subtituloModal = document.getElementById('modalSubtitulo');
-            const cuerpoTabla = document.getElementById('cuerpoTablaRegistros');
-            const sinRegistros = document.getElementById('modalSinRegistros');
-            const cargando = document.getElementById('modalCargando');
+            function mostrarRegistrosModal(datos) {
+                const modal = new bootstrap.Modal(document.getElementById('registrosModal'));
+                const tituloModal = document.getElementById('registrosModalLabel');
+                const subtituloModal = document.getElementById('modalSubtitulo');
+                const cuerpoTabla = document.getElementById('cuerpoTablaRegistros');
+                const sinRegistros = document.getElementById('modalSinRegistros');
+                const cargando = document.getElementById('modalCargando');
 
-            // Obtener el nombre de la zona desde el dropdown
-            const zonaSeleccionada = datos.zonaSeleccionada;
-            let nombreZona = zonaSeleccionada;
+                // Obtener el nombre de la zona desde el dropdown
+                const zonaSeleccionada = datos.zonaSeleccionada;
+                let nombreZona = zonaSeleccionada;
 
-            // Buscar el nombre de la zona en el dropdown
-            if (zonaSeleccionada !== 'TODAS') {
-                const option = $(`#filtroZona option[value="${zonaSeleccionada}"]`);
-                if (option.length > 0) {
-                    nombreZona = option.text();
+                // Buscar el nombre de la zona en el dropdown
+                if (zonaSeleccionada !== 'TODAS') {
+                    const option = $(`#filtroZona option[value="${zonaSeleccionada}"]`);
+                    if (option.length > 0) {
+                        nombreZona = option.text();
+                    }
+                } else {
+                    nombreZona = 'TODAS LAS ZONAS';
                 }
-            } else {
-                nombreZona = 'TODAS LAS ZONAS';
-            }
 
-            // Configurar título y subtítulo del modal
-            tituloModal.textContent = `ZONA ${nombreZona}`;
-            subtituloModal.textContent = `${datos.estado}: ${datos.cantidad} mantenimientos`;
+                // Configurar título y subtítulo del modal
+                tituloModal.textContent = `ZONA ${nombreZona}`;
+                subtituloModal.textContent = `${datos.estado}: ${datos.cantidad} mantenimientos`;
 
-            // Mostrar estado de carga
-            cargando.style.display = 'block';
-            sinRegistros.style.display = 'none';
-            cuerpoTabla.innerHTML = '';
+                // Mostrar estado de carga
+                cargando.style.display = 'block';
+                sinRegistros.style.display = 'none';
+                cuerpoTabla.innerHTML = '';
 
-            // Mostrar modal
-            modal.show();
+                // Mostrar modal
+                modal.show();
 
-            // Obtener registros del servidor
-            $.ajax({
-                url: '@Url.Action("ObtenerRegistrosPorEstado", "Dashboard")',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    tipo: datos.tipo,
-                    clave: datos.clave,
-                    estado: datos.estado,
-                    fechaInicio: datos.fechaInicio,
-                    fechaFin: datos.fechaFin,
-                    zonaSeleccionada: datos.zonaSeleccionada,
-                    tipoEquipo: datos.tipoEquipo
-                }),
-                success: function(response) {
-                    cargando.style.display = 'none';
+                // Obtener registros del servidor
+                $.ajax({
+                    url: '@Url.Action("ObtenerRegistrosPorEstado", "Dashboard")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        tipo: datos.tipo,
+                        clave: datos.clave,
+                        estado: datos.estado,
+                        fechaInicio: datos.fechaInicio,
+                        fechaFin: datos.fechaFin,
+                        zonaSeleccionada: datos.zonaSeleccionada,
+                        tipoEquipo: datos.tipoEquipo
+                    }),
+                    success: function(response) {
+                        cargando.style.display = 'none';
 
-                    if (response.success && response.registros && response.registros.length > 0) {
-                        // Construir tabla con registros
-                        let html = '';
-                        response.registros.forEach(registro => {
-                            html += `
-                                <tr>
-                                    <td>${registro.numActFijo || 'N/A'}</td>
-                                    <td>${registro.nombreAgencia || 'N/A'}</td>
-                                    <td>${registro.nombreCentro || 'N/A'}</td>
-                                    <td>${registro.fechaProgramada || 'N/A'}</td>
-                                    <td>${registro.fechaTerminada || 'N/A'}</td>
-                                    <td>
-                                        <span class="badge ${obtenerClaseEstatus(registro.estatus)}">
-                                            ${registro.estatus || 'N/A'}
-                                        </span>
-                                    </td>
-                                    <td>${registro.tipoEquipo || 'N/A'}</td>
-                                </tr>
-                            `;
-                        });
-                        cuerpoTabla.innerHTML = html;
-                        sinRegistros.style.display = 'none';
-                    } else {
+                        if (response.success && response.registros && response.registros.length > 0) {
+                            // Construir tabla con registros
+                            let html = '';
+                            response.registros.forEach(registro => {
+                                html += `
+                                    <tr>
+                                        <td>${registro.numActFijo || 'N/A'}</td>
+                                        <td>${registro.nombreAgencia || 'N/A'}</td>
+                                        <td>${registro.nombreCentro || 'N/A'}</td>
+                                        <td>${registro.fechaProgramada || 'N/A'}</td>
+                                        <td>${registro.fechaTerminada || 'N/A'}</td>
+                                        <td>
+                                            <span class="badge ${obtenerClaseEstatus(registro.estatus)}">
+                                                ${registro.estatus || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td>${registro.tipoEquipo || 'N/A'}</td>
+                                    </tr>
+                                `;
+                            });
+                            cuerpoTabla.innerHTML = html;
+                            sinRegistros.style.display = 'none';
+                        } else {
+                            cuerpoTabla.innerHTML = '';
+                            sinRegistros.style.display = 'block';
+                        }
+                    },
+                    error: function(xhr) {
+                        cargando.style.display = 'none';
                         cuerpoTabla.innerHTML = '';
                         sinRegistros.style.display = 'block';
+                        console.error('Error al cargar registros:', xhr);
                     }
-                },
-                error: function(xhr) {
-                    cargando.style.display = 'none';
-                    cuerpoTabla.innerHTML = '';
-                    sinRegistros.style.display = 'block';
-                    console.error('Error al cargar registros:', xhr);
-                }
-            });
-        }
+                });
+            }
 
-            // Función auxiliar para determinar clase CSS del estatus
             function obtenerClaseEstatus(estatus) {
                 if (!estatus) return 'bg-secondary';
 
@@ -1549,8 +1573,11 @@
                 return 'bg-secondary';
             }
 
-            // --- FUNCIONES ORIGINALES PARA GRÁFICAS POR ZONA ---
             function actualizarGraficas(datosGraficas, tipo) {
+                console.log('=== Actualizando gráficas ===');
+                console.log('Tipo:', tipo);
+                console.log('Datos recibidos:', datosGraficas);
+
                 // Destruir gráficas existentes
                 $('canvas[id^="chart-"]').each(function() {
                     const chart = Chart.getChart(this);
@@ -1563,8 +1590,22 @@
                 const contenedorGraficas = $('#contenedorGraficas');
                 contenedorGraficas.empty();
 
+                // Verificar si hay datos
+                if (!datosGraficas || datosGraficas.length === 0) {
+                    contenedorGraficas.html(`
+                        <div class="col-12">
+                            <div class="text-center py-4">
+                                <span class="text-muted fst-italic">No hay datos disponibles para mostrar con los filtros seleccionados.</span>
+                            </div>
+                        </div>
+                    `);
+                    return;
+                }
+
                 // Filtrar solo elementos con datos
                 const datosConGraficas = datosGraficas.filter(item => item.tieneDatos);
+
+                console.log('Datos con gráficas:', datosConGraficas);
 
                 // Crear nuevas gráficas según el tipo
                 if (datosConGraficas.length === 0) {
@@ -1677,6 +1718,39 @@
                                 easing: 'easeOutQuart',
                                 animateScale: true,
                                 animateRotate: true
+                            },
+                            onClick: (evt, elements, chart) => {
+                                if (elements.length > 0) {
+                                    const segmentIndex = elements[0].index;
+                                    const estado = chart.data.labels[segmentIndex];
+                                    const cantidad = chart.data.datasets[0].data[segmentIndex];
+
+                                    // Obtener el nombre de la zona desde el dropdown
+                                    const zonaSeleccionada = $('#filtroZona').val();
+                                    let nombreZona = zonaSeleccionada;
+                                    if (zonaSeleccionada !== 'TODAS') {
+                                        const option = $(`#filtroZona option[value="${zonaSeleccionada}"]`);
+                                        if (option.length > 0) {
+                                            nombreZona = option.text();
+                                        }
+                                    } else {
+                                        nombreZona = 'TODAS LAS ZONAS';
+                                    }
+
+                                    // Mostrar modal con los registros
+                                    mostrarRegistrosModal({
+                                        tipo: tipo,
+                                        clave: item.zona || item.agencia,
+                                        nombre: item.nombreZona || item.nombreAgencia,
+                                        estado: estado,
+                                        cantidad: cantidad,
+                                        fechaInicio: $('#filtroFechaInicio').val(),
+                                        fechaFin: $('#filtroFechaFin').val(),
+                                        zonaSeleccionada: zonaSeleccionada,
+                                        nombreZona: nombreZona,
+                                        tipoEquipo: "TODOS"
+                                    });
+                                }
                             }
                         }
                     };
@@ -1716,7 +1790,6 @@
                 actualizarInfoProgramacion();
             }
 
-
             // Eventos para el selector de usuarios
             $('#btnSeleccionarUsuarios').click(function() {
                 const contenedor = $('#contenedorUsuarios');
@@ -1750,7 +1823,11 @@
             // Eventos para fechas y programación
             $('#fechaInicio, #fechaFin').change(actualizarInfoReporte);
             $('#diaSemanaProgramado, #horaProgramadaHoras1, #horaProgramadaMinutos1, #horaProgramadaPeriodo1, #horaProgramadaHoras2, #horaProgramadaMinutos2, #horaProgramadaPeriodo2').change(actualizarInfoProgramacion);
-            $('#filtroFechaInicio, #filtroFechaFin, #filtroZona').change(actualizarInfoFiltroGraficas);
+
+            // Evento para actualizar información de filtros de gráficas
+            $('#filtroFechaInicio, #filtroFechaFin, #filtroZona').change(function() {
+                actualizarInfoFiltroGraficas();
+            });
 
             // Botón Enviar Manual
             $('#btnEnviarCorreo').click(function() {
@@ -1887,18 +1964,30 @@
                 });
             });
 
-            // Botón Filtrar Gráficas
+            // Botón Filtrar Gráficas - CON DEBUG MEJORADO
             $('#btnFiltrarGraficas').click(function() {
+                console.log('=== Botón Filtrar Gráficas Click ===');
+
                 const fechaInicio = $('#filtroFechaInicio').val();
                 const fechaFin = $('#filtroFechaFin').val();
                 const zonaSeleccionada = $('#filtroZona').val();
+
+                console.log('Fecha inicio:', fechaInicio);
+                console.log('Fecha fin:', fechaFin);
+                console.log('Zona seleccionada:', zonaSeleccionada);
 
                 if (!fechaInicio || !fechaFin) {
                     mostrarAlerta('Por favor, selecciona el rango de fechas.', 'warning', '#mensajeGraficas');
                     return;
                 }
 
-                if (new Date(fechaInicio) > new Date(fechaFin)) {
+                const inicio = new Date(fechaInicio + 'T00:00:00');
+                const fin = new Date(fechaFin + 'T00:00:00');
+
+                console.log('Fecha inicio (Date):', inicio);
+                console.log('Fecha fin (Date):', fin);
+
+                if (inicio > fin) {
                     mostrarAlerta('La fecha de inicio no puede ser mayor a la fecha fin.', 'warning', '#mensajeGraficas');
                     return;
                 }
@@ -1915,11 +2004,21 @@
             setTimeout(inicializarGraficas, 800);
 
             // Cargar gráficas iniciales
-            cargarGraficasConFiltroCompleto(
-                $('#filtroFechaInicio').val(),
-                $('#filtroFechaFin').val(),
-                $('#filtroZona').val()
-            );
+            setTimeout(function() {
+                console.log('=== Cargando gráficas iniciales ===');
+                const fechaInicio = $('#filtroFechaInicio').val();
+                const fechaFin = $('#filtroFechaFin').val();
+                const zonaSeleccionada = $('#filtroZona').val();
+
+                console.log('Fecha inicio inicial:', fechaInicio);
+                console.log('Fecha fin inicial:', fechaFin);
+                console.log('Zona seleccionada inicial:', zonaSeleccionada);
+
+                cargarGraficasConFiltroCompleto(fechaInicio, fechaFin, zonaSeleccionada);
+            }, 1000);
+
+            // Cargar usuarios administradores inicialmente
+            setTimeout(cargarUsuariosAdministradores, 1500);
         });
     </script>
 }

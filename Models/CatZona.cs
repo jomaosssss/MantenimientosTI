@@ -16,4 +16,5 @@ public partial class CatZona
     public virtual CatDivision ClaveDivisionNavigation { get; set; } = null!;
 
     public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
+    public virtual ICollection<Refaccion> Refacciones { get; set; }
 }
