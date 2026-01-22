@@ -7,16 +7,14 @@
     <div class="card shadow-sm">
         <div class="card-header bg-white">
             <h1 class="mb-0">Registro de mantenimiento de impresora</h1>
-            <div class="alert alert-secondary mt-3">
-                <i class="fas fa-info-circle"></i> Complete el siguiente formulario para agendar un mantenimiento de impresora.
-            </div>
+            <!-- Se eliminó el alert con el mensaje -->
         </div>
 
         <div class="card-body">
-            <!-- Sección de selección de ubicación -->
+            <!-- Sección de selección de ubicación - TODOS EN UNA MISMA FILA -->
             <div class="row mb-4">
                 <!-- Zona (solo lectura) -->
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label class="form-label">Zona:</label>
                         <input type="text" class="form-control" value="@ViewBag.ZonaUsuario" readonly>
@@ -24,7 +22,7 @@
                 </div>
 
                 <!-- Agencia (combobox) -->
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label class="form-label">Agencia:</label>
                         <select id="selectAgencia" class="form-select">
@@ -42,7 +40,7 @@
                 </div>
 
                 <!-- Centro (combobox - dependiente de agencia) -->
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label class="form-label">Centro:</label>
                         <select id="selectCentro" class="form-select" disabled>
@@ -52,7 +50,7 @@
                 </div>
 
                 <!-- Impresora (combobox - dependiente de centro) -->
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label class="form-label">Impresora:</label>
                         <select id="selectImpresora" class="form-select" disabled>
@@ -65,10 +63,10 @@
             <!-- Línea divisoria -->
             <hr class="my-4">
 
-            <!-- Sección de información del reporte -->
+            <!-- Sección de información del reporte - NUEVA DISPOSICIÓN -->
             <div class="row mb-4">
                 <!-- Folio de atención -->
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label class="form-label">Folio de atención:</label>
                         <input type="text"
@@ -76,7 +74,18 @@
                                class="form-control"
                                placeholder="Ingrese el folio de atención"
                                maxlength="20">
-                        <small class="form-text text-muted">Solo letras y números</small>
+@*                         <small class="form-text text-muted">Solo letras y números</small>
+ *@                    </div>
+                </div>
+
+                <!-- Fecha de reporte -->
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label class="form-label">Fecha de reporte:</label>
+                        <input type="date"
+                               id="fechaReporte"
+                               class="form-control"
+                               min="@DateTime.Now.ToString("yyyy-MM-dd")">
                     </div>
                 </div>
 
@@ -88,13 +97,14 @@
                                   class="form-control"
                                   rows="3"
                                   placeholder="Describa la problemática"
-                                  maxlength="300"></textarea>
-                        <small class="form-text text-muted">Máximo 300 caracteres</small>
-                    </div>
+                                  maxlength="300" 
+                                  style="height: 17px;"></textarea>
+@*                         <small class="form-text text-muted">Máximo 300 caracteres</small>
+ *@                    </div>
                 </div>
             </div>
 
-            <!-- Sección de información del reportante -->
+            <!-- Sección de información del reportante - MANTIENE DISPOSICIÓN ORIGINAL -->
             <div class="row mb-4">
                 <!-- RPE -->
                 <div class="col-md-4">
@@ -105,20 +115,20 @@
                                class="form-control"
                                placeholder="Ingrese el RPE"
                                maxlength="5">
-                        <small class="form-text text-muted">Máximo 5 caracteres (solo letras y números)</small>
+                         <small class="form-text text-muted">Ingrese el RPE del usuario que reporta</small>
                     </div>
                 </div>
 
                 <!-- Usuario que reporta -->
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label class="form-label">Usuario que reporta:</label>
+                        <label class="form-label">Usuario:</label>
                         <input type="text"
                                id="usuarioReporta"
                                class="form-control"
                                placeholder="Ingrese el nombre del usuario"
                                maxlength="30">
-                        <small class="form-text text-muted">Solo letras, máximo 30 caracteres</small>
+                         <small class="form-text text-muted">Ingrese el nombre del usuario que reporta</small>
                     </div>
                 </div>
 
@@ -129,14 +139,14 @@
                         <input type="email"
                                id="correo"
                                class="form-control"
-                               placeholder="ejemplo@dominio.com"
+                               placeholder="ejemplo@cfe.mx"
                                maxlength="20">
-                        <small class="form-text text-muted">Máximo 20 caracteres</small>
+                          <small class="form-text text-muted">Ingrese el correo del usuario que reporta</small>
                     </div>
                 </div>
             </div>
 
-            <!-- Sección de soporte y observaciones -->
+            <!-- Sección de soporte y observaciones - MANTIENE DISPOSICIÓN ORIGINAL -->
             <div class="row mb-4">
                 <!-- Soporte documental -->
                 <div class="col-md-6">
@@ -146,8 +156,8 @@
                                id="soporteDocumental"
                                class="form-control"
                                accept=".pdf">
-                        <small class="form-text text-muted">Solo archivos PDF, máximo 5MB</small>
-                    </div>
+@*                         <small class="form-text text-muted">Solo archivos PDF (máximo 5MB)</small>
+ *@                    </div>
                 </div>
 
                 <!-- Observaciones -->
@@ -158,23 +168,10 @@
                                   class="form-control"
                                   rows="3"
                                   placeholder="Ingrese observaciones adicionales"
-                                  maxlength="300"></textarea>
-                        <small class="form-text text-muted">Máximo 300 caracteres</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sección de fecha -->
-            <div class="row mb-4">
-                <!-- Fecha de reporte -->
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label class="form-label">Fecha de reporte:</label>
-                        <input type="date"
-                               id="fechaReporte"
-                               class="form-control"
-                               min="@DateTime.Now.ToString("yyyy-MM-dd")">
-                    </div>
+                                  maxlength="300"
+                                  style="height: 17px;"></textarea>
+@*                         <small class="form-text text-muted">Máximo 300 caracteres</small>
+ *@                    </div>
                 </div>
             </div>
         </div>
