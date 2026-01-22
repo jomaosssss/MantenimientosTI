@@ -53,7 +53,12 @@ namespace MantenimientosTI.Models
         [Column(TypeName = "datetime")]
         public DateTime FechaCaptura { get; set; }
 
-        // Propiedades de navegación
+        // NUEVA COLUMNA RPE - SOLO COLUMNA NORMAL
+        [Required]
+        [StringLength(5)]
+        public string Rpe { get; set; } = null!;
+
+        // Propiedades de navegación (SOLO para las FK que existen)
         [ForeignKey("ClaveAgenda")]
         public virtual Agendum Agendum { get; set; } = null!;
 
@@ -62,5 +67,7 @@ namespace MantenimientosTI.Models
 
         [ForeignKey("ClaveTipoMtto")]
         public virtual CatTipoMantenimiento CatTipoMantenimiento { get; set; } = null!;
+
+        // NO hay propiedad Usuario porque RPE NO es llave foránea
     }
 }

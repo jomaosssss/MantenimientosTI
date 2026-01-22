@@ -490,10 +490,11 @@ public partial class MantenimientosTIContext : DbContext
         });
 
         // Configuración para ImpresoraMantenimiento
+        // Configuración para ImpresoraMantenimiento (actualizada con RPE)
         modelBuilder.Entity<ImpresoraMantenimiento>(entity =>
         {
             entity.HasKey(e => e.FolioAtencion)
-                .HasName("PK__Impresor__A78A6D19E1D5F1E5"); // Asegúrate que este sea el nombre correcto
+                .HasName("PK__Impresor__A78A6D19E1D5F1E5");
 
             entity.Property(e => e.FolioAtencion)
                 .HasMaxLength(10)
@@ -546,21 +547,29 @@ public partial class MantenimientosTIContext : DbContext
                 .HasColumnName("fechaCaptura")
                 .HasDefaultValueSql("(getdate())");
 
-            // Relaciones con los nombres exactos de las FK que me proporcionaste
+            // NUEVA COLUMNA RPE - SOLO COLUMNA NORMAL
+            entity.Property(e => e.Rpe)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .HasColumnName("RPE");
+
+            // Relaciones existentes
             entity.HasOne(d => d.Agendum)
-                .WithMany()
+                .WithMany(p => p.ImpresoraMantenimientos)
                 .HasForeignKey(d => d.ClaveAgenda)
                 .HasConstraintName("FK_Impresora_clave__1A9EF37A");
 
             entity.HasOne(d => d.Equipo)
-                .WithMany()
+                .WithMany(p => p.ImpresoraMantenimientos)
                 .HasForeignKey(d => d.NumActFijo)
                 .HasConstraintName("FK_Impresora_numAc__1B9317B3");
 
             entity.HasOne(d => d.CatTipoMantenimiento)
-                .WithMany()
+                .WithMany(p => p.ImpresoraMantenimientos)
                 .HasForeignKey(d => d.ClaveTipoMtto)
                 .HasConstraintName("FK_Impresora_clave__1C873BEC");
+
+            // NO hay relación para RPE porque NO es llave foránea
         });
 
         // Configuración para Impresora
