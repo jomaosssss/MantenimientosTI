@@ -419,9 +419,14 @@ public partial class MantenimientosTIContext : DbContext
                 .HasColumnName("claveZona");
 
             entity.HasOne(d => d.CatCentro).WithMany(p => p.Equipos)
-                .HasForeignKey(d => new { d.ClaveDivision, d.ClaveZona, d.ClaveAgencia, d.ClaveCentro })
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Equipo__36B12243");
+            .HasForeignKey(d => new { d.ClaveDivision, d.ClaveZona, d.ClaveAgencia, d.ClaveCentro })
+            .OnDelete(DeleteBehavior.ClientSetNull)
+            .HasConstraintName("FK__Equipo__36B12243");
+
+            entity.HasOne(e => e.Impresora)
+               .WithOne(i => i.Equipo)
+               .HasForeignKey<Impresora>(i => i.NumActFijo)
+               .IsRequired(false);
         });
 
         modelBuilder.Entity<EquipoAc>(entity =>

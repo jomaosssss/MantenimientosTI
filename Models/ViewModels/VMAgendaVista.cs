@@ -15,6 +15,9 @@ namespace MantenimientosTI.Models.ViewModels
         public string NumCajero { get; set; }
         public string TipoMantenimiento { get; set; }
         public string UsuarioAsignado { get; set; }
+        public string NumSerie { get; set; } // Para impresoras
+        public string UsuarioReporta { get; set; } // Para impresoras
+        public string FolioAtencion { get; set; } // Para impresoras
         public int ClaveAgenda { get; set; }
 
         // NUEVO: Para referencia interna

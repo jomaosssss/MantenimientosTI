@@ -1,4 +1,6 @@
-﻿@{
+﻿inicio
+
+@{
     ViewData["Title"] = "Inicio";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -616,7 +618,103 @@
                     </div>
                 </div>
             </div>
-
+            <!-- Agrega esta sección después de la tabla de Equipos de cómputo -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-table me-1"></i> Impresoras
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="tablaImpresoras" class="table table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Fecha reporte</th>
+                                    <th>Zona</th>
+                                    <th>Agencia</th>
+                                    <th>Centro</th>
+                                    <th>Número de serie</th>
+                                    <th>Usuario que reporta</th>
+                                    <th>Núm. de orden</th>
+                                    <th>Folio de atención</th>
+                                    <th>Estatus</th>
+                                    <th>Inf. del equipo</th>
+                                    <th>Cancelaciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Impresoras)
+                                {
+                                    <tr data-num-act-fijo="@item.NumActFijo" data-clave-agenda="@item.ClaveAgenda" class="@(item.TipoMantenimiento == "CORRECTIVO" ? "table-danger" : "")">
+                                        <td data-order="@item.FechaProgramada.ToDateTime(TimeOnly.MinValue).Ticks">
+                                            @item.FechaProgramada.ToString("dd/MM/yyyy")
+                                        </td>
+                                        <td>@item.Zona</td>
+                                        <td>@item.Agencia</td>
+                                        <td>@item.Centro</td>
+                                        <td>@item.NumSerie</td>
+                                        <td>@item.UsuarioReporta</td>
+                                        <td>@item.ClaveAgenda</td>
+                                        <td>@item.FolioAtencion</td>
+                                        <td>
+                                            <span class="badge bg-info estatus-agenda">@item.Estatus</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalInfo">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (item.Estatus == "PENDIENTE")
+                                            {
+                                                @if (User.IsInRole("ADMINISTRADOR"))
+                                                {
+                                                    <button class="btn btn-danger btn-sm btn-cancelar-directo" data-id="@item.ClaveAgenda">
+                                                        CANCELAR
+                                                    </button>
+                                                }
+                                                else if (User.IsInRole("TÉCNICO DE ZONA"))
+                                                {
+                                                    <button class="btn btn-warning btn-sm btn-precancelar" data-id="@item.ClaveAgenda">
+                                                        CANCELAR
+                                                    </button>
+                                                }
+                                                else if (User.IsInRole("CONSULTOR"))
+                                                {
+                                                    <span class="text-muted fst-italic">No disponible</span>
+                                                }
+                                            }
+                                            else if (item.Estatus == "PRE-CANCELADO")
+                                            {
+                                                @if (User.IsInRole("ADMINISTRADOR"))
+                                                {
+                                                    <button class="btn btn-success btn-sm btn-confirmar-cancelacion" data-id="@item.ClaveAgenda" title="Confirmar Cancelación">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </button>
+                                                    <button class="btn btn-danger btn-sm btn-rechazar-cancelacion" data-id="@item.ClaveAgenda" title="Rechazar Cancelación">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                }
+                                                else if (User.IsInRole("TÉCNICO DE ZONA"))
+                                                {
+                                                    <span class="text-muted fst-italic">En espera de aprobación</span>
+                                                }
+                                                else if (User.IsInRole("CONSULTOR"))
+                                                {
+                                                    <span class="text-muted fst-italic">No disponible</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">N/A</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -726,7 +824,7 @@
             var esAdmin = @User.IsInRole("ADMINISTRADOR").ToString().ToLower();
 
             // Configuración para las tablas
-            $('#tablaCFEmaticos, #tablaAC, #tablaEC').DataTable({
+            $('#tablaCFEmaticos, #tablaAC, #tablaEC, #tablaImpresoras').DataTable({
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                 }

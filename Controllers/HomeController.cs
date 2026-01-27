@@ -195,10 +195,18 @@ namespace ProyectoMantenimientos.Controllers
             var cfematicos = new List<VMAgendaVista>();
             var atencionClientes = new List<VMAgendaVista>();
             var computo = new List<VMAgendaVista>();
+            var impresoras = new List<VMAgendaVista>();
 
             foreach (var item in agenda)
             {
                 string tipo = "CFEMÁTICO";
+
+                // Obtener datos de ubicación
+                var centro = item.NumActFijoNavigation?.CatCentro;
+                var nombreCentro = item.NumActFijoNavigation?.CatCentro?.NombreCentro ?? "Sin centro";
+                var nombreAgencia = centro?.CatAgencium?.NombreAgencia ?? "Sin agencia";
+                var nombreZona = centro?.CatAgencium?.CatZona?.NombreZona ?? "Sin zona";
+
 
                 // Determinar el tipo de equipo
                 var equipoAc = _dbocontext.EquipoAcs
@@ -209,11 +217,41 @@ namespace ProyectoMantenimientos.Controllers
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
 
+
                 EquipoCfematico? equipoCfematico = null;
                 if (equipoAc == null && equipoComputo == null)
                 {
                     equipoCfematico = _dbocontext.EquipoCfematicos
                         .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
+                }
+
+                var impresoraMantenimiento = _dbocontext.ImpresoraMantenimientos
+                        .FirstOrDefault(e => e.ClaveAgenda == item.ClaveAgenda);
+
+                if (impresoraMantenimiento != null)
+                {
+                    var equipoImpresora = _dbocontext.Impresoras
+                        .FirstOrDefault(e => e.NumActFijo == item.NumActFijo);
+
+                    // Crear ViewModel específico para impresoras
+                    var viewModelImpresora = new VMAgendaVista
+                    {
+                        NumActFijo = item.NumActFijo,
+                        FechaProgramada = item.FechaProgramada,
+                        Zona = nombreZona,
+                        Agencia = nombreAgencia,
+                        Centro = nombreCentro,
+                        Tipo = "IMPRESORA",
+                        Estatus = item.Estatus,
+                        NumSerie = equipoImpresora?.NumSerie ?? "N/A",
+                        UsuarioReporta = impresoraMantenimiento.UsuarioReporta,
+                        FolioAtencion = impresoraMantenimiento.FolioAtencion,
+                        TipoMantenimiento = item.ClaveTipoMttoNavigation?.NombreTipoM ?? "PREVENTIVO",
+                        ClaveAgenda = item.ClaveAgenda
+                    };
+
+                    impresoras.Add(viewModelImpresora);
+                    continue; // Saltar al siguiente item, ya clasificamos esta como impresora
                 }
 
                 // Actualizar tipo según el equipo encontrado
@@ -222,11 +260,6 @@ namespace ProyectoMantenimientos.Controllers
                 else if (equipoComputo?.ClaveTipoEquipoNavigation != null)
                     tipo = equipoComputo.ClaveTipoEquipoNavigation.NombreTipoEquipo;
 
-                // Obtener datos de ubicación
-                var centro = item.NumActFijoNavigation?.CatCentro;
-                var nombreCentro = item.NumActFijoNavigation?.CatCentro?.NombreCentro ?? "Sin centro";
-                var nombreAgencia = centro?.CatAgencium?.NombreAgencia ?? "Sin agencia";
-                var nombreZona = centro?.CatAgencium?.CatZona?.NombreZona ?? "Sin zona";
 
                 // Crear ViewModel
                 var viewModel = new VMAgendaVista
@@ -274,6 +307,7 @@ namespace ProyectoMantenimientos.Controllers
                 Cfematicos = cfematicos.OrderBy(vm => vm.FechaProgramada).ToList(),
                 AtencionClientes = atencionClientes.OrderBy(vm => vm.FechaProgramada).ToList(),
                 Computo = computo.OrderBy(vm => vm.FechaProgramada).ToList(),
+                Impresoras = impresoras.OrderBy(vm => vm.FechaProgramada).ToList(), // NUEVA LISTA
                 TerminadosCount = terminadosCount,
                 PendientesCount = pendientesCount,
                 ProgramadosCount = programadosCount,
@@ -326,6 +360,20 @@ namespace ProyectoMantenimientos.Controllers
             {
                 return PartialView("_DetallesEquipoComputo", equipoComputo);
             }
+
+            var impresora = _dbocontext.Impresoras
+                .Include(e => e.Equipo)  // <-- CAMBIADO
+                    .ThenInclude(e => e.CatCentro)
+                        .ThenInclude(c => c.CatAgencium)
+                            .ThenInclude(a => a.CatZona)
+                .Include(e => e.CatTipoEquipo)  // <-- CAMBIADO (en lugar de ClaveTipoEquipoNavigation)
+                .FirstOrDefault(e => e.NumActFijo == numActFijo);
+
+            if (impresora != null)
+            {
+                return PartialView("_DetallesImpresora", impresora);
+            }
+
 
             return NotFound();
         }

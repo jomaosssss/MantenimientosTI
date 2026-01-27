@@ -23,7 +23,7 @@ public partial class Equipo
     // AGREGAR ESTAS PROPIEDADES PARA LAS NUEVAS RELACIONES:
 
     // Relación uno a uno con Impresora (una impresora por equipo)
-    public virtual Impresora Impresora { get; set; } = null!;
+    public virtual Impresora? Impresora { get; set; }
 
     // Relación uno a muchos con ImpresoraMantenimiento (un equipo puede tener múltiples mantenimientos)
     public virtual ICollection<ImpresoraMantenimiento> ImpresoraMantenimientos { get; set; } = new List<ImpresoraMantenimiento>();

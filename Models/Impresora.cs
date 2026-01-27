@@ -42,8 +42,9 @@ namespace MantenimientosTI.Models
 
         [Required]
         [StringLength(30)]
-        [Column("coordincacionGerencia")]
+        [Column("coordinacionGerencia")] // <-- CAMBIADO: coordinacion (con "ción")
         public string CoordinacionGerencia { get; set; } = null!;
+
 
         [Required]
         [StringLength(50)]
