@@ -226,6 +226,7 @@ namespace ProyectoMantenimientos.Controllers
                 }
 
                 var impresoraMantenimiento = _dbocontext.ImpresoraMantenimientos
+                        .Include(im => im.CatTipoMantenimiento)
                         .FirstOrDefault(e => e.ClaveAgenda == item.ClaveAgenda);
 
                 if (impresoraMantenimiento != null)
@@ -246,7 +247,9 @@ namespace ProyectoMantenimientos.Controllers
                         NumSerie = equipoImpresora?.NumSerie ?? "N/A",
                         UsuarioReporta = impresoraMantenimiento.UsuarioReporta,
                         FolioAtencion = impresoraMantenimiento.FolioAtencion,
-                        TipoMantenimiento = item.ClaveTipoMttoNavigation?.NombreTipoM ?? "PREVENTIVO",
+                        FechaReporte = DateOnly.FromDateTime(impresoraMantenimiento.FechaReporte), // NUEVO
+                        FechaGeneracion = DateOnly.FromDateTime(impresoraMantenimiento.FechaGeneracion), // NUEVO
+                        TipoMantenimiento = impresoraMantenimiento.CatTipoMantenimiento?.NombreTipoM ?? "PREVENTIVO",
                         ClaveAgenda = item.ClaveAgenda
                     };
 
@@ -371,9 +374,13 @@ namespace ProyectoMantenimientos.Controllers
 
             if (impresora != null)
             {
+                // También obtener información del mantenimiento de impresora
+                var impresoraMantenimiento = _dbocontext.ImpresoraMantenimientos
+                    .FirstOrDefault(im => im.ClaveAgenda == claveAgenda);
+
+                ViewBag.ImpresoraMantenimiento = impresoraMantenimiento;
                 return PartialView("_DetallesImpresora", impresora);
             }
-
 
             return NotFound();
         }

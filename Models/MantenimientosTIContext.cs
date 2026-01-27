@@ -628,7 +628,7 @@ public partial class MantenimientosTIContext : DbContext
             entity.Property(e => e.CoordinacionGerencia)
                 .HasMaxLength(30)
                 .IsUnicode(false)
-                .HasColumnName("coordincacionGerencia");
+                .HasColumnName("coordinacionGerencia");
 
             entity.Property(e => e.Responsable)
                 .HasMaxLength(50)
@@ -647,7 +647,7 @@ public partial class MantenimientosTIContext : DbContext
 
             // Relaciones con los nombres exactos de las FK que me proporcionaste
             entity.HasOne(d => d.Equipo)
-                .WithOne()
+                .WithOne(e => e.Impresora)
                 .HasForeignKey<Impresora>(d => d.NumActFijo)
                 .HasConstraintName("FK_Impresora_numAc__078C1F06");
 

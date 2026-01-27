@@ -7,7 +7,6 @@
     <div class="card shadow-sm">
         <div class="card-header bg-white">
             <h1 class="mb-0">Registro de mantenimiento de impresora</h1>
-            <!-- Se eliminó el alert con el mensaje -->
         </div>
 
         <div class="card-body">
@@ -74,8 +73,7 @@
                                class="form-control"
                                placeholder="Ingrese el folio de atención"
                                maxlength="20">
-@*                         <small class="form-text text-muted">Solo letras y números</small>
- *@                    </div>
+                    </div>
                 </div>
 
                 <!-- Fecha de reporte -->
@@ -99,8 +97,7 @@
                                   placeholder="Describa la problemática"
                                   maxlength="300" 
                                   style="height: 17px;"></textarea>
-@*                         <small class="form-text text-muted">Máximo 300 caracteres</small>
- *@                    </div>
+                    </div>
                 </div>
             </div>
 
@@ -140,7 +137,7 @@
                                id="correo"
                                class="form-control"
                                placeholder="ejemplo@cfe.mx"
-                               maxlength="20">
+                               maxlength="50">
                           <small class="form-text text-muted">Ingrese el correo del usuario que reporta</small>
                     </div>
                 </div>
@@ -156,8 +153,7 @@
                                id="soporteDocumental"
                                class="form-control"
                                accept=".pdf">
-@*                         <small class="form-text text-muted">Solo archivos PDF (máximo 5MB)</small>
- *@                    </div>
+                    </div>
                 </div>
 
                 <!-- Observaciones -->
@@ -170,8 +166,7 @@
                                   placeholder="Ingrese observaciones adicionales"
                                   maxlength="300"
                                   style="height: 17px;"></textarea>
-@*                         <small class="form-text text-muted">Máximo 300 caracteres</small>
- *@                    </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -191,6 +186,15 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function() {
+            // Variable para almacenar los datos de ubicación de la impresora seleccionada
+            var datosImpresora = {
+                division: '',
+                zona: '',
+                agencia: '',
+                centro: '',
+                numActFijo: ''
+            };
+
             // 1. Manejo del cambio en Agencia
             $('#selectAgencia').change(function() {
                 var selectedAgencia = $(this).find('option:selected');
@@ -250,7 +254,12 @@
                         if (response.success) {
                             var options = '<option value="">Seleccione una impresora</option>';
                             $.each(response.data, function(index, impresora) {
-                                options += '<option value="' + impresora.value + '">' + impresora.text + '</option>';
+                                options += '<option value="' + impresora.value + '" ' +
+                                          'data-division="' + impresora.division + '" ' +
+                                          'data-zona="' + impresora.zona + '" ' +
+                                          'data-agencia="' + impresora.agencia + '" ' +
+                                          'data-centro="' + impresora.centro + '">' + 
+                                          impresora.text + '</option>';
                             });
                             $('#selectImpresora').html(options).prop('disabled', false);
                         } else {
@@ -266,21 +275,179 @@
                 }
             });
 
-            // 3. Configuración mínima del datepicker para fecha de reporte
+            // 3. Capturar los datos de la impresora seleccionada
+            $('#selectImpresora').change(function() {
+                var selectedOption = $(this).find('option:selected');
+                datosImpresora.division = selectedOption.data('division') || '';
+                datosImpresora.zona = selectedOption.data('zona') || '';
+                datosImpresora.agencia = selectedOption.data('agencia') || '';
+                datosImpresora.centro = selectedOption.data('centro') || '';
+                datosImpresora.numActFijo = selectedOption.val() || '';
+            });
+
+            // 4. Configuración mínima del datepicker para fecha de reporte
             var today = new Date().toISOString().split('T')[0];
             $('#fechaReporte').attr('min', today);
 
-            // 4. Botón Agendar (sin funcionalidad por ahora)
+            // 5. Botón Agendar - FUNCIONALIDAD COMPLETA
             $('#btnAgendar').click(function() {
+                // Validar campos requeridos
+                if (!datosImpresora.numActFijo) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos incompletos',
+                        text: 'Debe seleccionar una impresora',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
+
+                if (!$('#folioAtencion').val().trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos incompletos',
+                        text: 'El folio de atención es requerido',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
+
+                if (!$('#fechaReporte').val()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos incompletos',
+                        text: 'La fecha de reporte es requerida',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
+
+                if (!$('#problematica').val().trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos incompletos',
+                        text: 'La problemática es requerida',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
+
+                if (!$('#rpe').val().trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos incompletos',
+                        text: 'El RPE es requerido',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
+
+                if (!$('#usuarioReporta').val().trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos incompletos',
+                        text: 'El usuario que reporta es requerido',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
+
+                if (!$('#correo').val().trim()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos incompletos',
+                        text: 'El correo es requerido',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
+
+                // Validar formato de correo
+                var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test($('#correo').val())) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Correo inválido',
+                        text: 'Por favor ingrese un correo electrónico válido',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
+
+                // Crear FormData para enviar el archivo
+                var formData = new FormData();
+                formData.append('Division', datosImpresora.division);
+                formData.append('Zona', datosImpresora.zona);
+                formData.append('Agencia', datosImpresora.agencia);
+                formData.append('Centro', datosImpresora.centro);
+                formData.append('NumActFijo', datosImpresora.numActFijo);
+                formData.append('FolioAtencion', $('#folioAtencion').val());
+                formData.append('FechaReporte', $('#fechaReporte').val());
+                formData.append('Problematica', $('#problematica').val());
+                formData.append('Rpe', $('#rpe').val());
+                formData.append('UsuarioReporta', $('#usuarioReporta').val());
+                formData.append('Correo', $('#correo').val());
+                formData.append('Observaciones', $('#observaciones').val() || '');
+
+                // Agregar archivo si existe
+                var fileInput = $('#soporteDocumental')[0];
+                if (fileInput.files.length > 0) {
+                    formData.append('SoporteDocumental', fileInput.files[0]);
+                }
+
+                // Mostrar loader
                 Swal.fire({
-                    icon: 'info',
-                    title: 'En desarrollo',
-                    text: 'La funcionalidad de agendar está pendiente de implementar',
-                    confirmButtonText: 'Entendido'
+                    title: 'Procesando...',
+                    text: 'Por favor espere mientras se guarda la información',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Enviar datos al servidor
+                $.ajax({
+                    url: '/Impresora/AgendarMantenimiento',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Éxito!',
+                                text: response.message,
+                                confirmButtonText: 'Aceptar'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    // Limpiar el formulario
+                                    limpiarFormulario();
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message || 'Ocurrió un error al guardar los datos',
+                                confirmButtonText: 'Entendido'
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Ocurrió un error en la comunicación con el servidor',
+                            confirmButtonText: 'Entendido'
+                        });
+                        console.error('Error:', error);
+                    }
                 });
             });
 
-            // 5. Botón Cancelar (sin funcionalidad por ahora)
+            // 6. Botón Cancelar
             $('#btnCancelar').click(function() {
                 Swal.fire({
                     title: '¿Limpiar formulario?',
@@ -293,21 +460,7 @@
                     cancelButtonText: 'Cancelar'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Limpiar el formulario
-                        $('#selectAgencia').val('');
-                        $('#selectCentro').prop('disabled', true)
-                                         .html('<option value="">Seleccione primero una agencia</option>');
-                        $('#selectImpresora').prop('disabled', true)
-                                            .html('<option value="">Seleccione primero un centro</option>');
-                        $('#folioAtencion').val('');
-                        $('#problematica').val('');
-                        $('#rpe').val('');
-                        $('#usuarioReporta').val('');
-                        $('#correo').val('');
-                        $('#soporteDocumental').val('');
-                        $('#observaciones').val('');
-                        $('#fechaReporte').val('');
-
+                        limpiarFormulario();
                         Swal.fire(
                             '¡Formulario limpiado!',
                             'Todos los campos han sido limpiados.',
@@ -317,7 +470,33 @@
                 });
             });
 
-            // 6. Validación en tiempo real para campos de texto
+            // Función para limpiar el formulario
+            function limpiarFormulario() {
+                $('#selectAgencia').val('');
+                $('#selectCentro').prop('disabled', true)
+                                 .html('<option value="">Seleccione primero una agencia</option>');
+                $('#selectImpresora').prop('disabled', true)
+                                    .html('<option value="">Seleccione primero un centro</option>');
+                $('#folioAtencion').val('');
+                $('#problematica').val('');
+                $('#rpe').val('');
+                $('#usuarioReporta').val('');
+                $('#correo').val('');
+                $('#soporteDocumental').val('');
+                $('#observaciones').val('');
+                $('#fechaReporte').val('');
+                
+                // Limpiar datos de impresora
+                datosImpresora = {
+                    division: '',
+                    zona: '',
+                    agencia: '',
+                    centro: '',
+                    numActFijo: ''
+                };
+            }
+
+            // 7. Validación en tiempo real para campos de texto
             $('#folioAtencion').on('input', function() {
                 this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
                 if (this.value.length > 20) {
@@ -340,8 +519,8 @@
             });
 
             $('#correo').on('input', function() {
-                if (this.value.length > 20) {
-                    this.value = this.value.substring(0, 20);
+                if (this.value.length > 50) {
+                    this.value = this.value.substring(0, 50);
                 }
             });
 
@@ -351,7 +530,7 @@
                 }
             });
 
-            // 7. Validación de archivo PDF
+            // 8. Validación de archivo PDF
             $('#soporteDocumental').change(function() {
                 var file = this.files[0];
                 if (file) {

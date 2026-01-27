@@ -18,6 +18,8 @@ namespace MantenimientosTI.Models.ViewModels
         public string NumSerie { get; set; } // Para impresoras
         public string UsuarioReporta { get; set; } // Para impresoras
         public string FolioAtencion { get; set; } // Para impresoras
+        public DateOnly FechaReporte { get; set; } // NUEVO
+        public DateOnly FechaGeneracion { get; set; }
         public int ClaveAgenda { get; set; }
 
         // NUEVO: Para referencia interna
