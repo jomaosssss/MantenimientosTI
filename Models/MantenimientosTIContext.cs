@@ -61,6 +61,10 @@ public partial class MantenimientosTIContext : DbContext
 
     public virtual DbSet<CatMotivoCancelacion> CatMotivosCancelacion { get; set; }
 
+    public virtual DbSet<Impresora> Impresoras { get; set; }
+
+    public virtual DbSet<ImpresoraMantenimiento> ImpresoraMantenimientos { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Agendum>(entity =>
@@ -383,6 +387,142 @@ public partial class MantenimientosTIContext : DbContext
                 .IsRequired(false);
         });
 
+        // Configuración para Impresora
+        modelBuilder.Entity<Impresora>(entity =>
+        {
+            entity.HasKey(e => e.NumActFijo);
+
+            entity.ToTable("Impresora");
+
+            entity.Property(e => e.NumActFijo)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("numActFijo");
+
+            entity.Property(e => e.ClaveTipoEquipo)
+                .HasColumnName("claveTipoEquipo");
+
+            entity.Property(e => e.IdEquipo)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("idEquipo");
+
+            entity.Property(e => e.FolioLlave)
+                .HasMaxLength(10)
+                .IsUnicode(false)
+                .HasColumnName("folioLlave");
+
+            entity.Property(e => e.NumSerie)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("numSerie");
+
+            entity.Property(e => e.Modelo)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("modelo");
+
+            entity.Property(e => e.TipoImpresion)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .HasColumnName("tipoImpresion");
+
+            entity.Property(e => e.IpImpresora)
+                .HasMaxLength(15)
+                .IsUnicode(false)
+                .HasColumnName("ipImpresora");
+
+            entity.Property(e => e.Responsable)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("responsable");
+
+            entity.Property(e => e.Telefono)
+                .HasMaxLength(10)
+                .IsUnicode(false)
+                .HasColumnName("telefono");
+
+            entity.Property(e => e.Extension)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .HasColumnName("extension");
+
+            entity.Property(e => e.Correo)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("correo");
+
+            // Relaciones
+            entity.HasOne(d => d.NumActFijoNavigation)
+                .WithMany(p => p.Impresoras)
+                .HasForeignKey(d => d.NumActFijo)
+                .HasConstraintName("FK_Impresora_Equipo");
+
+            entity.HasOne(d => d.ClaveTipoEquipoNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.ClaveTipoEquipo)
+                .HasConstraintName("FK_Impresora_catTipoEquipo");
+        });
+
+        // Configuración para ImpresoraMantenimiento
+        modelBuilder.Entity<ImpresoraMantenimiento>(entity =>
+        {
+            entity.HasKey(e => e.FolioAtencion);
+
+            entity.ToTable("ImpresoraMantenimiento");
+
+            entity.Property(e => e.FolioAtencion)
+                .HasMaxLength(10)
+                .IsUnicode(false)
+                .HasColumnName("folioAtencion");
+
+            entity.Property(e => e.ClaveAgenda)
+                .HasColumnName("claveAgenda");
+
+            entity.Property(e => e.Rpe)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .HasColumnName("rpe");
+
+            entity.Property(e => e.UsuarioReporta)
+                .HasMaxLength(30)
+                .IsUnicode(false)
+                .HasColumnName("usuarioReporta");
+
+            entity.Property(e => e.Correo)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("correo");
+
+            entity.Property(e => e.PdfQueja)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("pdfQueja");
+
+            entity.Property(e => e.Problematica)
+                .HasMaxLength(300)
+                .IsUnicode(false)
+                .HasColumnName("problematica");
+
+            entity.Property(e => e.Observaciones)
+                .HasMaxLength(300)
+                .IsUnicode(false)
+                .HasColumnName("observaciones");
+
+            entity.Property(e => e.FechaReporte)
+                .HasColumnType("date")
+                .HasColumnName("fechaReporte");
+
+            entity.Property(e => e.FechaCaptura)
+                .HasColumnName("fechaCaptura")
+                .HasDefaultValueSql("(getdate())");
+
+            // Relación con Agenda
+            entity.HasOne(d => d.ClaveAgendaNavigation)
+                .WithMany(p => p.ImpresoraMantenimientos)
+                .HasForeignKey(d => d.ClaveAgenda)
+                .HasConstraintName("FK_ImpresoraMantenimiento_Agenda");
+        });
         modelBuilder.Entity<Equipo>(entity =>
         {
             entity.HasKey(e => e.NumActFijo).HasName("PK__Equipo__CE6D8AC9B3623CFF");

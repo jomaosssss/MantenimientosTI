@@ -183,15 +183,12 @@
                                         Mantenimiento correctivo
                                     </a>
 
+                                    <a href="/Impresora/AgendarImpresoras" class="nav-link ajax-link text-white">
+                                        <div class="sb-nav-link-icon"><i class="fas fa-print"></i></div>
+                                        Mantenimiento a impresora
+                                    </a>
                                 </nav>
                             </div>
-                        }
-                        @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA"))
-                        {
-                            <a href="/Repositorio/TerminarMantenimiento" class="nav-link ajax-link text-white">
-                                <div class="sb-nav-link-icon"><i class="fas fa-upload"></i></div>
-                                Impresoras
-                            </a>
                         }
                         @if (User.IsInRole("ADMINISTRADOR") || User.IsInRole("TÉCNICO DE ZONA"))
                         {

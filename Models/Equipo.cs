@@ -20,6 +20,7 @@ public partial class Equipo
     public virtual CatCentro CatCentro { get; set; } = null!;
 
     public virtual ICollection<EquipoCfematico> EquipoCfematicos { get; set; } = new List<EquipoCfematico>();
-  
+
+    public virtual ICollection<Impresora> Impresoras { get; set; } = new List<Impresora>();
 
 }
