@@ -72,37 +72,69 @@ namespace MantenimientosTI.Controllers
                     });
                 }
 
-                // Determinar el tipo de equipo y obtener número de cajero si es CFEMÁTICO
+                // Determinar el tipo de equipo
                 string tipoEquipo = "CFEMÁTICO";
                 string numCajero = "N/A";
+                int? claveTipoEquipo = null;
+                bool esImpresora = false;
+                string folioAtencion = "N/A";
+                string usuarioReporta = "N/A";
+                string fechaReporte = "N/A";
 
-                var equipoAC = await _dbocontext.EquipoAcs
-                    .Include(e => e.ClaveTipoEquipoNavigation)
-                    .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
+                // PRIMERO verificar si es IMPRESORA
+                var impresora = await _dbocontext.Impresoras
+                    .Include(i => i.ClaveTipoEquipoNavigation)
+                    .FirstOrDefaultAsync(i => i.NumActFijo == agendaItem.NumActFijo);
 
-                var equipoComputo = await _dbocontext.EquipoComputos
-                    .Include(e => e.ClaveTipoEquipoNavigation)
-                    .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
-
-                // Buscar en EquipoCfematico si no es Atencion a Clientes ni Equipo de Computo
-                if (equipoAC == null && equipoComputo == null)
+                if (impresora != null)
                 {
-                    var equipoCfematico = await _dbocontext.EquipoCfematicos
-                        .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
+                    tipoEquipo = impresora.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Impresora";
+                    claveTipoEquipo = impresora.ClaveTipoEquipo;
+                    esImpresora = true;
 
-                    if (equipoCfematico != null)
+                    // Buscar información del mantenimiento de impresora
+                    var impresoraMantenimiento = await _dbocontext.ImpresoraMantenimientos
+                        .FirstOrDefaultAsync(im => im.ClaveAgenda == claveAgenda);
+
+                    if (impresoraMantenimiento != null)
                     {
-                        tipoEquipo = "CFEMÁTICO";
-                        numCajero = equipoCfematico.NumCajero ?? "N/A";
+                        folioAtencion = impresoraMantenimiento.FolioAtencion;
+                        usuarioReporta = impresoraMantenimiento.UsuarioReporta;
+                        fechaReporte = impresoraMantenimiento.FechaReporte.ToString("dd/MM/yyyy");
                     }
                 }
-                else if (equipoAC != null)
+                else
                 {
-                    tipoEquipo = equipoAC.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC";
-                }
-                else if (equipoComputo != null)
-                {
-                    tipoEquipo = equipoComputo.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo";
+                    // Si no es impresora, verificar otros tipos
+                    var equipoAC = await _dbocontext.EquipoAcs
+                        .Include(e => e.ClaveTipoEquipoNavigation)
+                        .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
+
+                    var equipoComputo = await _dbocontext.EquipoComputos
+                        .Include(e => e.ClaveTipoEquipoNavigation)
+                        .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
+
+                    if (equipoAC == null && equipoComputo == null)
+                    {
+                        var equipoCfematico = await _dbocontext.EquipoCfematicos
+                            .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
+
+                        if (equipoCfematico != null)
+                        {
+                            tipoEquipo = "CFEMÁTICO";
+                            numCajero = equipoCfematico.NumCajero ?? "N/A";
+                        }
+                    }
+                    else if (equipoAC != null)
+                    {
+                        tipoEquipo = equipoAC.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC";
+                        claveTipoEquipo = equipoAC.ClaveTipoEquipo;
+                    }
+                    else if (equipoComputo != null)
+                    {
+                        tipoEquipo = equipoComputo.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo";
+                        claveTipoEquipo = equipoComputo.ClaveTipoEquipo;
+                    }
                 }
 
                 var centro = agendaItem.NumActFijoNavigation?.CatCentro;
@@ -124,6 +156,7 @@ namespace MantenimientosTI.Controllers
                     success = true,
                     puedeTerminar = true,
                     esCorrectivo = agendaItem.ClaveTipoMtto == "C",
+                    esImpresora = esImpresora, // Bandera para identificar si es impresora
                     data = new
                     {
                         numOrden = agendaItem.ClaveAgenda,
@@ -131,11 +164,16 @@ namespace MantenimientosTI.Controllers
                         fechaProgramada = agendaItem.FechaProgramada.ToString("dd/MM/yyyy"),
                         tipoMantenimiento = agendaItem.ClaveTipoMttoNavigation?.NombreTipoM,
                         tipoEquipo = tipoEquipo,
+                        claveTipoEquipo = claveTipoEquipo, // Para validar en frontend (6 = impresora)
                         zona = zona?.NombreZona ?? "No especificado",
                         agencia = agencia?.NombreAgencia ?? "No especificado",
                         centro = centro?.NombreCentro ?? "No especificado",
                         estatus = agendaItem.Estatus,
-                        numCajero = numCajero
+                        numCajero = numCajero,
+                        // Solo para impresoras
+                        folioAtencion = esImpresora ? folioAtencion : null,
+                        usuarioReporta = esImpresora ? usuarioReporta : null,
+                        fechaReporte = esImpresora ? fechaReporte : null
                     }
                 });
             }
@@ -148,15 +186,17 @@ namespace MantenimientosTI.Controllers
         [Authorize(Roles = "ADMINISTRADOR,TÉCNICO DE ZONA")]
         [HttpPost]
         public async Task<IActionResult> TerminarMantenimiento(
-            [FromForm] int numOrden,
-            [FromForm] string fechaAtencion,
-            [FromForm] string problemas,
-            [FromForm] string diagnostico,
-            [FromForm] string observaciones,
-            [FromForm] IFormFile archivoPdf,
-            [FromForm] IFormFile? fotoAntes,
-            [FromForm] IFormFile? fotoDurante,
-            [FromForm] IFormFile? fotoDespues)
+          [FromForm] int numOrden,
+          [FromForm] string fechaAtencion,
+          [FromForm] string problemas,
+          [FromForm] string diagnostico,
+          [FromForm] string observaciones,
+          [FromForm] IFormFile archivoPdf,
+          [FromForm] IFormFile? fotoAntes,
+          [FromForm] IFormFile? fotoDurante,
+          [FromForm] IFormFile? fotoDespues,
+          [FromForm] string? solucion = null, // Para impresoras
+          [FromForm] bool esImpresora = false) // Bandera para identificar tipo
         {
             using (var transaction = await _dbocontext.Database.BeginTransactionAsync())
             {
@@ -177,6 +217,17 @@ namespace MantenimientosTI.Controllers
                     if (string.IsNullOrEmpty(rpe))
                         return Json(new { success = false, message = "Sesión inválida, RPE no encontrado" });
 
+                    // Validar si es impresora
+                    var esRealmenteImpresora = await _dbocontext.Impresoras
+                        .AnyAsync(i => i.NumActFijo == agendaItem.NumActFijo);
+
+                    // Si se marca como impresora pero no lo es, o viceversa, ajustar
+                    if (esImpresora != esRealmenteImpresora)
+                    {
+                        esImpresora = esRealmenteImpresora;
+                    }
+
+                    // Crear el mantenimiento
                     var mantenimiento = new Mantenimiento
                     {
                         NumOrden = agendaItem.ClaveAgenda,
@@ -184,13 +235,14 @@ namespace MantenimientosTI.Controllers
                         NumActFijo = agendaItem.NumActFijo,
                         ClaveTipoMtto = agendaItem.ClaveTipoMtto,
                         Rpe = rpe,
-                        Problemas = problemas ?? string.Empty,
-                        Diagnostico = diagnostico ?? string.Empty,
+                        Problemas = esImpresora ? (solucion ?? problemas ?? string.Empty) : (problemas ?? string.Empty),
+                        Diagnostico = esImpresora ? (solucion ?? diagnostico ?? string.Empty) : (diagnostico ?? string.Empty),
                         Observaciones = observaciones ?? string.Empty,
                         FechaInsercion = DateTime.Now,
                         FechaAtencion = fechaAtencionParsed
                     };
 
+                    // Validar y guardar PDF (requerido para ambos tipos)
                     if (archivoPdf != null && archivoPdf.Length > 0)
                     {
                         if (archivoPdf.Length > 5 * 1024 * 1024)
@@ -209,51 +261,76 @@ namespace MantenimientosTI.Controllers
                     _dbocontext.Mantenimientos.Add(mantenimiento);
                     await _dbocontext.SaveChangesAsync();
 
-                    var foto = new Foto
+                    // Manejo de fotos según el tipo de equipo
+                    if (esImpresora)
                     {
-                        NumOrden = mantenimiento.NumOrden,
-                        FechaHora = DateTime.Now
-                    };
-
-                    bool seAgregoAlgunaFoto = false;
-
-                    if (fotoAntes != null && fotoAntes.Length > 0)
-                    {
-                        if (fotoAntes.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Antes' no debe exceder los 5MB" });
-
-                        foto.FotoAntes = await ProcesarImagen(fotoAntes);
-                        seAgregoAlgunaFoto = true;
+                        // PARA IMPRESORAS: NO SE GUARDAN FOTOS
+                        // No hacer nada aquí
                     }
-
-                    if (fotoDurante != null && fotoDurante.Length > 0)
+                    else
                     {
-                        if (fotoDurante.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Durante' no debe exceder los 5MB" });
+                        // Para otros equipos: manejar las 3 fotos tradicionales
+                        var foto = new Foto
+                        {
+                            NumOrden = mantenimiento.NumOrden,
+                            FechaHora = DateTime.Now
+                        };
 
-                        foto.FotoDurante = await ProcesarImagen(fotoDurante);
-                        seAgregoAlgunaFoto = true;
-                    }
+                        bool seAgregoAlgunaFoto = false;
 
-                    if (fotoDespues != null && fotoDespues.Length > 0)
-                    {
-                        if (fotoDespues.Length > 5 * 1024 * 1024)
-                            return Json(new { success = false, message = "La foto 'Después' no debe exceder los 5MB" });
+                        // Validar foto antes
+                        if (fotoAntes != null && fotoAntes.Length > 0)
+                        {
+                            if (fotoAntes.Length > 5 * 1024 * 1024)
+                                return Json(new { success = false, message = "La foto 'Antes' no debe exceder los 5MB" });
 
-                        foto.FotoDespues = await ProcesarImagen(fotoDespues);
-                        seAgregoAlgunaFoto = true;
-                    }
+                            foto.FotoAntes = await ProcesarImagen(fotoAntes);
+                            seAgregoAlgunaFoto = true;
+                        }
+                        else
+                        {
+                            return Json(new { success = false, message = "La foto 'Antes' es obligatoria" });
+                        }
 
-                    // Solo se guarda la entidad Foto si se subió al menos una imagen
-                    if (seAgregoAlgunaFoto)
-                    {
-                        _dbocontext.Fotos.Add(foto);
+                        // Validar foto durante
+                        if (fotoDurante != null && fotoDurante.Length > 0)
+                        {
+                            if (fotoDurante.Length > 5 * 1024 * 1024)
+                                return Json(new { success = false, message = "La foto 'Durante' no debe exceder los 5MB" });
+
+                            foto.FotoDurante = await ProcesarImagen(fotoDurante);
+                            seAgregoAlgunaFoto = true;
+                        }
+                        else
+                        {
+                            return Json(new { success = false, message = "La foto 'Durante' es obligatoria" });
+                        }
+
+                        // Validar foto después
+                        if (fotoDespues != null && fotoDespues.Length > 0)
+                        {
+                            if (fotoDespues.Length > 5 * 1024 * 1024)
+                                return Json(new { success = false, message = "La foto 'Después' no debe exceder los 5MB" });
+
+                            foto.FotoDespues = await ProcesarImagen(fotoDespues);
+                            seAgregoAlgunaFoto = true;
+                        }
+                        else
+                        {
+                            return Json(new { success = false, message = "La foto 'Después' es obligatoria" });
+                        }
+
+                        // Guardar las fotos
+                        if (seAgregoAlgunaFoto)
+                        {
+                            _dbocontext.Fotos.Add(foto);
+                        }
                     }
 
                     // Actualizar agenda
                     agendaItem.Estatus = "TERMINADO";
 
-                    // ✅ REGISTRO EN BITÁCORA - AGREGADO
+                    // ✅ REGISTRO EN BITÁCORA
                     var usuario = HttpContext.Session.GetString("NombreUsuario") ?? "Usuario no identificado";
                     var rol = HttpContext.Session.GetString("NombreRol") ?? "N/A";
                     var zona = HttpContext.Session.GetString("NombreZona") ?? "N/A";
@@ -275,13 +352,13 @@ namespace MantenimientosTI.Controllers
                     return Json(new
                     {
                         success = true,
-                        message = "Mantenimiento Terminado Correctamente."
+                        message = esImpresora ? "Mantenimiento de Impresora Terminado Correctamente."
+                                             : "Mantenimiento Terminado Correctamente."
                     });
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    // Devuelve un mensaje de error más detallado para depuración
                     return Json(new
                     {
                         success = false,
@@ -382,17 +459,17 @@ namespace MantenimientosTI.Controllers
                     query = query.Where(m => m.Agendum.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
                 }
 
-                // ✅ CAMBIO: Filtrar por FECHA PROGRAMADA en lugar de FechaInsercion
+                // Filtrar por FECHA PROGRAMADA
                 query = query.Where(m => m.Agendum.FechaProgramada >= fechaInicioDateOnly &&
                                         m.Agendum.FechaProgramada <= fechaFinDateOnly);
 
                 // CONSULTA PRINCIPAL OPTIMIZADA
                 var mantenimientosData = await query
-                    .OrderByDescending(m => m.Agendum.FechaProgramada) // ✅ CAMBIO: Ordenar por FechaProgramada
+                    .OrderByDescending(m => m.Agendum.FechaProgramada)
                     .Select(m => new
                     {
                         Mantenimiento = m,
-                        Agenda = m.Agendum, // ✅ Incluir Agenda para acceder a FechaProgramada
+                        Agenda = m.Agendum,
                         Centro = m.Agendum.NumActFijoNavigation.CatCentro,
                         Agencia = m.Agendum.NumActFijoNavigation.CatCentro.CatAgencium,
                         Zona = m.Agendum.NumActFijoNavigation.CatCentro.CatAgencium.CatZona
@@ -406,7 +483,8 @@ namespace MantenimientosTI.Controllers
                     {
                         Cfematicos = new List<object>(),
                         AtencionClientes = new List<object>(),
-                        EquiposComputo = new List<object>()
+                        EquiposComputo = new List<object>(),
+                        Impresoras = new List<object>()
                     });
                 }
 
@@ -433,7 +511,12 @@ namespace MantenimientosTI.Controllers
                     .Where(e => numActFijos.Contains(e.NumActFijo))
                     .ToDictionaryAsync(e => e.NumActFijo);
 
-                // 4. Verificar fotos masivamente
+                // 4. IMPRESORAS - Buscar qué equipos son impresoras
+                var impresoras = await _dbocontext.Impresoras
+                    .Where(i => numActFijos.Contains(i.NumActFijo))
+                    .ToDictionaryAsync(i => i.NumActFijo);
+
+                // 5. Verificar fotos masivamente
                 var ordenesConFotos = await _dbocontext.Fotos
                     .Where(f => numOrdenes.Contains(f.NumOrden))
                     .Select(f => f.NumOrden)
@@ -444,54 +527,106 @@ namespace MantenimientosTI.Controllers
                 var cfematicos = new List<object>();
                 var atencionClientes = new List<object>();
                 var equiposComputoList = new List<object>();
+                var impresorasList = new List<object>();
 
-                // PROCESAMIENTO OPTIMIZADO - Usar diccionarios en memoria
+                // PROCESAMIENTO OPTIMIZADO
                 foreach (var item in mantenimientosData)
                 {
                     var m = item.Mantenimiento;
-                    var agenda = item.Agenda; // ✅ Usar la agenda que incluye FechaProgramada
+                    var agenda = item.Agenda;
                     var centro = item.Centro;
                     var agencia = item.Agencia;
                     var zona = item.Zona;
 
-                    // Verificar fotos usando el HashSet (muy rápido)
+                    // Verificar fotos usando el HashSet
                     var tieneFotos = ordenesConFotos.Contains(m.NumOrden);
 
-                    // Determinar tipo de equipo usando diccionarios (muy rápido)
+                    // Verificar qué tipo de equipo es usando diccionarios
                     equiposAC.TryGetValue(m.NumActFijo, out var equipoAc);
                     equiposComputo.TryGetValue(m.NumActFijo, out var equipoComputoDict);
                     equiposCfematico.TryGetValue(m.NumActFijo, out var equipoCfematico);
+                    impresoras.TryGetValue(m.NumActFijo, out var impresora);
 
-                    // Crear el item para la tabla
-                    var itemTabla = new
+                    // ✅ SI ES IMPRESORA, agregar a lista de impresoras
+                    if (impresora != null)
                     {
-                        m.NumOrden,
-                        FechaProgramada = agenda.FechaProgramada.ToString("dd/MM/yyyy"), // ✅ Usar fecha de la agenda
-                        FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
-                        FechaTerminada = m.FechaInsercion.ToString("dd/MM/yyyy HH:mm"),
-                        m.EvidenciaHojaServicio,
-                        TieneFotos = tieneFotos,
-                        Rpe = m.Rpe,
-                        Zona = zona?.NombreZona ?? "No especificado",
-                        Agencia = agencia?.NombreAgencia ?? "No especificado",
-                        Centro = centro?.NombreCentro ?? "No especificado",
-                        NumCajero = equipoCfematico?.NumCajero ?? "N/A",
-                        TipoEquipo = equipoAc?.ClaveTipoEquipoNavigation?.NombreTipoEquipo ??
-                                    equipoComputoDict?.ClaveTipoEquipoNavigation?.NombreTipoEquipo ??
-                                    "CFEmático"
-                    };
+                        // Buscar si existe un registro en ImpresoraMantenimiento para obtener más detalles
+                        var impresoraMantenimiento = await _dbocontext.ImpresoraMantenimientos
+                            .FirstOrDefaultAsync(im => im.ClaveAgenda == m.NumOrden);
 
-                    // Clasificación usando los diccionarios
-                    if (equipoAc != null)
+                        var itemImpresora = new
+                        {
+                            m.NumOrden,
+                            Zona = zona?.NombreZona ?? "No especificado",
+                            Agencia = agencia?.NombreAgencia ?? "No especificado",
+                            Centro = centro?.NombreCentro ?? "No especificado",
+                            NumSerie = impresora.NumSerie ?? "N/A",
+                            UsuarioReporta = impresoraMantenimiento?.UsuarioReporta ?? "N/A",
+                            FolioAtencion = impresoraMantenimiento?.FolioAtencion ?? "N/A",
+                            FechaReporte = impresoraMantenimiento?.FechaReporte.ToString("dd/MM/yyyy") ?? "N/A",
+                            FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
+                            PdfQueja = impresoraMantenimiento?.PdfQueja
+                        };
+                        impresorasList.Add(itemImpresora);
+                    }
+                    // Si es Atención a Clientes
+                    else if (equipoAc != null)
                     {
+                        var itemTabla = new
+                        {
+                            m.NumOrden,
+                            FechaProgramada = agenda.FechaProgramada.ToString("dd/MM/yyyy"),
+                            FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
+                            FechaTerminada = m.FechaInsercion.ToString("dd/MM/yyyy HH:mm"),
+                            m.EvidenciaHojaServicio,
+                            TieneFotos = tieneFotos,
+                            Rpe = m.Rpe,
+                            Zona = zona?.NombreZona ?? "No especificado",
+                            Agencia = agencia?.NombreAgencia ?? "No especificado",
+                            Centro = centro?.NombreCentro ?? "No especificado",
+                            NumCajero = "N/A",
+                            TipoEquipo = equipoAc?.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC"
+                        };
                         atencionClientes.Add(itemTabla);
                     }
+                    // Si es Equipo de Cómputo
                     else if (equipoComputoDict != null)
                     {
+                        var itemTabla = new
+                        {
+                            m.NumOrden,
+                            FechaProgramada = agenda.FechaProgramada.ToString("dd/MM/yyyy"),
+                            FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
+                            FechaTerminada = m.FechaInsercion.ToString("dd/MM/yyyy HH:mm"),
+                            m.EvidenciaHojaServicio,
+                            TieneFotos = tieneFotos,
+                            Rpe = m.Rpe,
+                            Zona = zona?.NombreZona ?? "No especificado",
+                            Agencia = agencia?.NombreAgencia ?? "No especificado",
+                            Centro = centro?.NombreCentro ?? "No especificado",
+                            NumCajero = "N/A",
+                            TipoEquipo = equipoComputoDict?.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo"
+                        };
                         equiposComputoList.Add(itemTabla);
                     }
+                    // Si es CFEmático
                     else
                     {
+                        var itemTabla = new
+                        {
+                            m.NumOrden,
+                            FechaProgramada = agenda.FechaProgramada.ToString("dd/MM/yyyy"),
+                            FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
+                            FechaTerminada = m.FechaInsercion.ToString("dd/MM/yyyy HH:mm"),
+                            m.EvidenciaHojaServicio,
+                            TieneFotos = tieneFotos,
+                            Rpe = m.Rpe,
+                            Zona = zona?.NombreZona ?? "No especificado",
+                            Agencia = agencia?.NombreAgencia ?? "No especificado",
+                            Centro = centro?.NombreCentro ?? "No especificado",
+                            NumCajero = equipoCfematico?.NumCajero ?? "N/A",
+                            TipoEquipo = "CFEmático"
+                        };
                         cfematicos.Add(itemTabla);
                     }
                 }
@@ -500,12 +635,141 @@ namespace MantenimientosTI.Controllers
                 {
                     Cfematicos = cfematicos,
                     AtencionClientes = atencionClientes,
-                    EquiposComputo = equiposComputoList
+                    EquiposComputo = equiposComputoList,
+                    Impresoras = impresorasList
                 });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerInfoImpresora(int numOrden)
+        {
+            try
+            {
+                // Obtener el rol del usuario desde la sesión
+                var claveRolUsuario = HttpContext.Session.GetInt32("Rol");
+                var esAdministrador = claveRolUsuario == 1;
+
+                // Consulta para impresora mantenimiento
+                var query = _dbocontext.ImpresoraMantenimientos
+                    .Include(im => im.ClaveAgendaNavigation)
+                        .ThenInclude(a => a.NumActFijoNavigation)
+                            .ThenInclude(e => e.CatCentro)
+                                .ThenInclude(c => c.CatAgencium)
+                                    .ThenInclude(ag => ag.CatZona)
+                    .Include(im => im.ClaveAgendaNavigation)
+                        .ThenInclude(a => a.Mantenimientos)
+                    .Where(im => im.ClaveAgenda == numOrden);
+
+                // Si no es administrador, filtrar por zona
+                if (!esAdministrador)
+                {
+                    var claveZonaUsuario = HttpContext.Session.GetString("ClaveZona");
+                    if (string.IsNullOrEmpty(claveZonaUsuario))
+                    {
+                        return Content("<div class='alert alert-danger'>No se pudo determinar la zona del usuario</div>");
+                    }
+                    query = query.Where(im => im.ClaveAgendaNavigation.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
+                }
+
+                var impresoraMantenimiento = await query.FirstOrDefaultAsync();
+
+                if (impresoraMantenimiento == null)
+                {
+                    return Content("<div class='alert alert-danger'>No se encontró el mantenimiento de impresora o no tienes permisos para verlo</div>");
+                }
+
+                // Obtener información de la impresora
+                var impresora = await _dbocontext.Impresoras
+                    .Include(i => i.ClaveTipoEquipoNavigation)
+                    .FirstOrDefaultAsync(i => i.NumActFijo == impresoraMantenimiento.ClaveAgendaNavigation.NumActFijo);
+
+                var centro = impresoraMantenimiento.ClaveAgendaNavigation.NumActFijoNavigation?.CatCentro;
+                var agencia = centro?.CatAgencium;
+                var zona = agencia?.CatZona;
+
+                var mantenimiento = impresoraMantenimiento.ClaveAgendaNavigation.Mantenimientos.FirstOrDefault();
+
+                var html = $@"
+                    <div class='row'>
+                        <div class='col-md-6'>
+                            <h5>Información del Equipo</h5>
+                            <ul class='list-group list-group-flush'>
+                                <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {impresoraMantenimiento.ClaveAgendaNavigation.NumActFijo}</li>
+                                <li class='list-group-item'><strong>Tipo de Equipo:</strong> Impresora</li>
+                                <li class='list-group-item'><strong>Zona:</strong> {zona?.NombreZona ?? "No especificado"}</li>
+                                <li class='list-group-item'><strong>Agencia:</strong> {agencia?.NombreAgencia ?? "No especificado"}</li>
+                                <li class='list-group-item'><strong>Centro:</strong> {centro?.NombreCentro ?? "No especificado"}</li>
+                                <li class='list-group-item'><strong>Número de Serie:</strong> {impresora?.NumSerie ?? "N/A"}</li>
+                                <li class='list-group-item'><strong>Modelo:</strong> {impresora?.Modelo ?? "N/A"}</li>
+                                <li class='list-group-item'><strong>Tipo de Impresión:</strong> {impresora?.TipoImpresion ?? "N/A"}</li>
+                            </ul>
+                        </div>
+                        <div class='col-md-6'>
+                            <h5>Información del Mantenimiento</h5>
+                            <ul class='list-group list-group-flush'>
+                                <li class='list-group-item'><strong>Número de Orden:</strong> {impresoraMantenimiento.ClaveAgenda}</li>
+                                <li class='list-group-item'><strong>Folio de Atención:</strong> {impresoraMantenimiento.FolioAtencion}</li>
+                                <li class='list-group-item'><strong>Fecha Reporte:</strong> {impresoraMantenimiento.FechaReporte.ToString("dd/MM/yyyy")}</li>
+                                <li class='list-group-item'><strong>Fecha de Atención:</strong> {(mantenimiento?.FechaAtencion.ToString("dd/MM/yyyy") ?? "No especificada")}</li>
+                                <li class='list-group-item'><strong>RPE Técnico:</strong> {impresoraMantenimiento.Rpe}</li>
+                                <li class='list-group-item'><strong>Usuario que Reporta:</strong> {impresoraMantenimiento.UsuarioReporta}</li>
+                                <li class='list-group-item'><strong>Correo:</strong> {impresoraMantenimiento.Correo}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class='row mt-3'>
+                        <div class='col-12'>
+                            <h5>Detalles del Reporte</h5>
+                            <div class='card'>
+                                <div class='card-body'>
+                                    <p><strong>Problemática reportada:</strong></p>
+                                    <p>{impresoraMantenimiento.Problematica ?? "No especificado"}</p>
+                                    <p><strong>Observaciones:</strong></p>
+                                    <p>{impresoraMantenimiento.Observaciones ?? "No especificado"}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>";
+
+                return Content(html);
+            }
+            catch (Exception ex)
+            {
+                return Content($"<div class='alert alert-danger'>Error al obtener los detalles: {ex.Message}</div>");
+            }
+        }
+
+        [HttpGet]
+        public IActionResult DescargarPdfQueja(string folioAtencion)
+        {
+            try
+            {
+                var impresoraMantenimiento = _dbocontext.ImpresoraMantenimientos
+                    .FirstOrDefault(im => im.FolioAtencion == folioAtencion);
+
+                if (impresoraMantenimiento == null || string.IsNullOrEmpty(impresoraMantenimiento.PdfQueja))
+                {
+                    return NotFound();
+                }
+
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", impresoraMantenimiento.PdfQueja);
+
+                if (!System.IO.File.Exists(filePath))
+                {
+                    return NotFound();
+                }
+
+                var fileStream = System.IO.File.OpenRead(filePath);
+                return File(fileStream, "application/pdf", $"Queja_Impresora_{folioAtencion}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
             }
         }
 

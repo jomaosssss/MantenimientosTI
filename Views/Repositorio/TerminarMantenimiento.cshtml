@@ -23,35 +23,43 @@
                 </div>
             </div>
 
-            <div id="form-body" style="display: none;">
-
-                <div id="resultadoBusqueda" class="mt-4 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">Información del mantenimiento</h5>
+            <!-- Información común para todos los tipos -->
+            <div id="resultadoBusqueda" class="mt-4 mb-4" style="display: none;">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Información del mantenimiento</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4"><p><strong>Número de orden:</strong> <span id="infoNumOrden">-</span></p></div>
+                            <div class="col-md-4"><p><strong>Tipo de mantenimiento:</strong> <span id="infoTipoMantenimiento">-</span></p></div>
+                            <div class="col-md-4"><p><strong>Zona:</strong> <span id="infoZona">-</span></p></div>
                         </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4"><p><strong>Número de orden:</strong> <span id="infoNumOrden">-</span></p></div>
-                                <div class="col-md-4"><p><strong>Tipo de mantenimiento:</strong> <span id="infoTipoMantenimiento">-</span></p></div>
-                                <div class="col-md-4"><p><strong>Zona:</strong> <span id="infoZona">-</span></p></div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-md-4"><p><strong>Número de activo fijo:</strong> <span id="infoNumActFijo">-</span></p></div>
-                                <div class="col-md-4"><p><strong>Fecha programada:</strong> <span id="infoFechaProgramada">-</span></p></div>
-                                <div class="col-md-4"><p><strong>Agencia:</strong> <span id="infoAgencia">-</span></p></div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-md-4"><p><strong>Tipo de equipo:</strong> <span id="infoTipoEquipo">-</span></p></div>
-                                <div class="col-md-4"><p><strong>Estatus:</strong> <span id="infoEstatus">-</span></p></div>
-                                <div class="col-md-4"><p><strong>Centro:</strong> <span id="infoCentro">-</span></p></div>
-                            </div>
-                            <div class="row mt-2" id="filaNumCajero" style="display: none;">
-                                <div class="col-md-4"><p><strong>Número de cajero:</strong> <span id="infoNumCajero">-</span></p></div>
-                            </div>
+                        <div class="row mt-2">
+                            <div class="col-md-4"><p><strong>Número de activo fijo:</strong> <span id="infoNumActFijo">-</span></p></div>
+                            <div class="col-md-4"><p><strong>Fecha programada:</strong> <span id="infoFechaProgramada">-</span></p></div>
+                            <div class="col-md-4"><p><strong>Agencia:</strong> <span id="infoAgencia">-</span></p></div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-4"><p><strong>Tipo de equipo:</strong> <span id="infoTipoEquipo">-</span></p></div>
+                            <div class="col-md-4"><p><strong>Estatus:</strong> <span id="infoEstatus">-</span></p></div>
+                            <div class="col-md-4"><p><strong>Centro:</strong> <span id="infoCentro">-</span></p></div>
+                        </div>
+                        <div class="row mt-2" id="filaNumCajero" style="display: none;">
+                            <div class="col-md-4"><p><strong>Número de cajero:</strong> <span id="infoNumCajero">-</span></p></div>
+                        </div>
+                        <!-- Folio de atención para impresoras -->
+                        <div class="row mt-2" id="filaFolioAtencion" style="display: none;">
+                            <div class="col-md-4"><p><strong>Folio de atención:</strong> <span id="infoFolioAtencion">-</span></p></div>
+                            <div class="col-md-4"><p><strong>Usuario que reporta:</strong> <span id="infoUsuarioReporta">-</span></p></div>
+                            <div class="col-md-4"><p><strong>Fecha reporte:</strong> <span id="infoFechaReporte">-</span></p></div>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- FORMULARIO PARA EQUIPOS GENERALES (CFEMÁTICO, AC, COMPUTO) -->
+            <div id="form-body-general" style="display: none;">
 
                 <div class="row mb-4">
                     <div class="col-md-4">
@@ -132,11 +140,69 @@
                     </div>
                 </div>
             </div>
+
+            <!-- FORMULARIO ESPECÍFICO PARA IMPRESORAS -->
+            <div id="form-body-impresora" style="display: none;">
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Complete la información para terminar el mantenimiento de impresora
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Solución aplicada: <span class="text-danger">*</span></label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="char-counter" id="contador-solucion">500 caracteres restantes</span>
+                            </div>
+                            <textarea id="solucion" class="form-control" rows="4" placeholder="Describa la solución aplicada al problema"></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Observaciones:</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="char-counter" id="contador-obs-impresora">300 caracteres restantes</span>
+                            </div>
+                            <textarea id="observacionesImpresora" class="form-control" rows="4" placeholder="Observaciones adicionales (opcional)"></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Fecha de atención: <span class="text-danger">*</span></label>
+                            <input type="date" id="fechaAtencionImpresora" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Hoja de servicio (PDF): <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="file" id="archivoPdfImpresora" class="form-control" accept=".pdf">
+                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarPdfImpresora"><i class="bi bi-x-circle"></i> Limpiar</button>
+                            </div>
+                            <small class="form-text text-muted">Tamaño máximo: 5MB</small>
+                        </div>
+                    </div>
+                    </div>
+            </div>
+
         </div>
 
-        <div id="footer-form" class="card-footer text-end" style="display: none;">
-            <button type="button" id="btnTerminar" class="btn btn-success">
-                <i class="bi bi-check-circle me-2"></i> Terminar
+        <!-- FOOTER PARA FORMULARIO GENERAL -->
+        <div id="footer-form-general" class="card-footer text-end" style="display: none;">
+            <button type="button" id="btnTerminarGeneral" class="btn btn-success">
+                <i class="bi bi-check-circle me-2"></i> Terminar Mantenimiento
+            </button>
+        </div>
+
+        <!-- FOOTER PARA FORMULARIO IMPRESORA -->
+        <div id="footer-form-impresora" class="card-footer text-end" style="display: none;">
+            <button type="button" id="btnTerminarImpresora" class="btn btn-success">
+                <i class="bi bi-check-circle me-2"></i> Terminar Mantenimiento Impresora
             </button>
         </div>
     </div>
@@ -164,13 +230,11 @@
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
         }
 
-        /* Estilo para los asteriscos rojos */
         .text-danger {
             color: #dc3545 !important;
         }
     </style>
     <script>
-        // Tu código JavaScript existente permanece igual...
         $(document).ready(function() {
             inicializarContadoresCaracteres();
 
@@ -180,22 +244,34 @@
                 if (e.which === 13) buscarMantenimiento();
             });
 
-            // Limpiar campos
+            // Limpiar campos - FORMULARIO GENERAL
             $('#btnLimpiarPdf').click(() => $('#archivoPdf').val(''));
             $('#btnLimpiarFotoAntes').click(() => $('#fotoAntes').val(''));
             $('#btnLimpiarFotoDurante').click(() => $('#fotoDurante').val(''));
             $('#btnLimpiarFotoDespues').click(() => $('#fotoDespues').val(''));
 
-            // Terminar mantenimiento
-            $('#btnTerminar').click(validarAntesDeConfirmar);
+            // Limpiar campos - FORMULARIO IMPRESORA
+            $('#btnLimpiarPdfImpresora').click(() => $('#archivoPdfImpresora').val(''));
+            $('#btnLimpiarFotoImpresora').click(() => $('#fotoImpresora').val(''));
+
+            // Terminar mantenimiento - ambos tipos
+            $('#btnTerminarGeneral').click(validarAntesDeConfirmarGeneral);
+            $('#btnTerminarImpresora').click(validarAntesDeConfirmarImpresora);
         });
 
         function inicializarContadoresCaracteres() {
+            // Contadores para formulario general
             $('#problemas').on('input', () => limitarCaracteres('problemas', 300));
             $('#diagnostico').on('input', () => limitarCaracteres('diagnostico', 300));
             $('#observaciones').on('input', () => limitarCaracteres('observaciones', 300));
-            $('#problemas, #diagnostico, #observaciones').on('paste', function(e) {
-                const maxCaracteres = 300;
+
+            // Contadores para formulario impresora
+            $('#solucion').on('input', () => limitarCaracteres('solucion', 500, true));
+            $('#observacionesImpresora').on('input', () => limitarCaracteres('observacionesImpresora', 300, true));
+
+            // Prevenir pegar texto excesivo
+            $('#problemas, #diagnostico, #observaciones, #solucion, #observacionesImpresora').on('paste', function(e) {
+                const maxCaracteres = $(this).attr('id') === 'solucion' ? 500 : 300;
                 const textoPegado = e.originalEvent.clipboardData.getData('text');
                 const textoActual = $(this).val();
                 if ((textoActual.length + textoPegado.length) > maxCaracteres) {
@@ -208,18 +284,22 @@
             });
         }
 
-        function limitarCaracteres(campoId, maxCaracteres) {
+        function limitarCaracteres(campoId, maxCaracteres, esImpresora = false) {
             const textarea = $('#' + campoId);
-            const contador = $('#contador-' + campoId);
+            const contadorId = esImpresora ? 'contador-' + campoId.replace('Impresora', '') : 'contador-' + campoId;
+            const contador = $('#' + contadorId);
             let texto = textarea.val();
+
             if (texto.length > maxCaracteres) {
                 textarea.val(texto.substring(0, maxCaracteres));
                 texto = textarea.val();
             }
+
             const caracteresRestantes = maxCaracteres - texto.length;
             contador.text(caracteresRestantes + ' caracteres restantes');
             contador.removeClass('warning danger');
             textarea.removeClass('textarea-limit');
+
             if (caracteresRestantes <= 0) {
                 contador.addClass('danger');
                 textarea.addClass('textarea-limit');
@@ -236,13 +316,14 @@
             }
 
             $('#btnBuscarOrden').prop('disabled', true).html('<i class="bi bi-hourglass"></i> Buscando...');
-            // Ocultar el formulario si se realiza una nueva búsqueda
-            $('#form-body, #footer-form').hide();
+
+            // Ocultar todos los formularios al iniciar nueva búsqueda
+            $('#resultadoBusqueda, #form-body-general, #form-body-impresora, #footer-form-general, #footer-form-impresora').hide();
 
             $.get('/Repositorio/BuscarPorNumeroOrden', { claveAgenda: claveAgenda })
                 .done(function(response) {
                     if (response.success) {
-                        // Llenar datos
+                        // Llenar datos comunes
                         $('#infoNumOrden').text(response.data.numOrden);
                         $('#infoNumActFijo').text(response.data.numActFijo);
                         $('#infoFechaProgramada').text(response.data.fechaProgramada);
@@ -253,7 +334,7 @@
                         $('#infoAgencia').text(response.data.agencia);
                         $('#infoCentro').text(response.data.centro);
 
-                        // Mostrar u ocultar número de cajero según el tipo de equipo
+                        // Mostrar información adicional según el tipo
                         if (response.data.tipoEquipo === "CFEMÁTICO" && response.data.numCajero && response.data.numCajero !== "N/A") {
                             $('#infoNumCajero').text(response.data.numCajero);
                             $('#filaNumCajero').show();
@@ -261,11 +342,29 @@
                             $('#filaNumCajero').hide();
                         }
 
-                        // CAMBIO: Dejar fecha de atención vacía
-                        $('#fechaAtencion').val('');
+                        // Información adicional para impresoras
+                        if (response.data.tipoEquipo === "IMPRESORA" || response.data.claveTipoEquipo === 6) {
+                            // Mostrar información de folio de atención si está disponible
+                            if (response.data.folioAtencion) {
+                                $('#infoFolioAtencion').text(response.data.folioAtencion);
+                                $('#infoUsuarioReporta').text(response.data.usuarioReporta || 'N/A');
+                                $('#infoFechaReporte').text(response.data.fechaReporte || 'N/A');
+                                $('#filaFolioAtencion').show();
+                            }
 
-                        // Mostrar el cuerpo del formulario y el footer
-                        $('#form-body, #footer-form').show();
+                            // Mostrar formulario específico para impresoras
+                            $('#form-body-impresora').show();
+                            $('#footer-form-impresora').show();
+                            $('#fechaAtencionImpresora').val(''); // Limpiar fecha
+                        } else {
+                            // Mostrar formulario general para otros equipos
+                            $('#form-body-general').show();
+                            $('#footer-form-general').show();
+                            $('#fechaAtencion').val(''); // Limpiar fecha
+                        }
+
+                        // Mostrar información del mantenimiento
+                        $('#resultadoBusqueda').show();
 
                     } else {
                         mostrarAlerta('Búsqueda sin resultados', response.message, 'info');
@@ -279,121 +378,59 @@
                 });
         }
 
-        function validarAntesDeConfirmar() {
-            // 1. Validar campos de texto obligatorios - PROBLEMAS
+        function validarAntesDeConfirmarGeneral() {
+            // Validaciones para formulario general (CFEMÁTICO, AC, COMPUTO)
             const problemas = $('#problemas').val().trim();
-            if (!problemas) {
-                mostrarAlerta('Campo requerido', 'El campo "Problemas" es obligatorio', 'warning');
-                $('#problemas').focus();
-                return;
-            }
-            if (problemas.length > 300) {
-                mostrarAlerta('Texto demasiado largo', 'El campo "Problemas" no debe exceder los 300 caracteres', 'warning');
-                $('#problemas').focus();
-                return;
-            }
-
-            // 2. Validar campos de texto obligatorios - DIAGNÓSTICO
             const diagnostico = $('#diagnostico').val().trim();
-            if (!diagnostico) {
-                mostrarAlerta('Campo requerido', 'El campo "Diagnóstico" es obligatorio', 'warning');
-                $('#diagnostico').focus();
-                return;
-            }
-            if (diagnostico.length > 300) {
-                mostrarAlerta('Texto demasiado largo', 'El campo "Diagnóstico" no debe exceder los 300 caracteres', 'warning');
-                $('#diagnostico').focus();
-                return;
-            }
-
-            // 3. Validar campos de texto obligatorios - OBSERVACIONES
             const observaciones = $('#observaciones').val().trim();
-            if (!observaciones) {
-                mostrarAlerta('Campo requerido', 'El campo "Observaciones" es obligatorio', 'warning');
-                $('#observaciones').focus();
-                return;
-            }
-            if (observaciones.length > 300) {
-                mostrarAlerta('Texto demasiado largo', 'El campo "Observaciones" no debe exceder los 300 caracteres', 'warning');
-                $('#observaciones').focus();
-                return;
+
+            // Validar campos de texto
+            const camposTexto = [
+                { id: 'problemas', valor: problemas, nombre: 'Problemas', max: 300 },
+                { id: 'diagnostico', valor: diagnostico, nombre: 'Diagnóstico', max: 300 },
+                { id: 'observaciones', valor: observaciones, nombre: 'Observaciones', max: 300 }
+            ];
+
+            for (const campo of camposTexto) {
+                if (!campo.valor) {
+                    mostrarAlerta('Campo requerido', `El campo "${campo.nombre}" es obligatorio`, 'warning');
+                    $('#' + campo.id).focus();
+                    return;
+                }
+                if (campo.valor.length > campo.max) {
+                    mostrarAlerta('Texto demasiado largo', `El campo "${campo.nombre}" no debe exceder los ${campo.max} caracteres`, 'warning');
+                    $('#' + campo.id).focus();
+                    return;
+                }
             }
 
-            // 4. Validar FOTO ANTES
-            const fotoAntes = $('#fotoAntes')[0].files[0];
-            if (!fotoAntes) {
-                mostrarAlerta('Archivo requerido', 'La foto "Antes" del mantenimiento es obligatoria', 'warning');
-                $('#fotoAntes').focus();
-                return;
-            }
-            // Validar tipo y tamaño de foto antes
-            const extensionAntes = fotoAntes.name.split('.').pop().toLowerCase();
-            const extensionesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
-            if (!extensionesPermitidas.includes(extensionAntes)) {
-                mostrarAlerta('Formato incorrecto', 'La foto "Antes" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
-                return;
-            }
-            if (fotoAntes.size > 5 * 1024 * 1024) {
-                mostrarAlerta('Imagen muy grande', 'La foto "Antes" no debe exceder los 5MB', 'warning');
-                return;
+            // Validar fotos
+            const fotos = [
+                { id: 'fotoAntes', nombre: 'Antes' },
+                { id: 'fotoDurante', nombre: 'Durante' },
+                { id: 'fotoDespues', nombre: 'Después' }
+            ];
+
+            for (const foto of fotos) {
+                const archivo = $('#' + foto.id)[0].files[0];
+                if (!archivo) {
+                    mostrarAlerta('Archivo requerido', `La foto "${foto.nombre}" del mantenimiento es obligatoria`, 'warning');
+                    $('#' + foto.id).focus();
+                    return;
+                }
+                if (!validarImagen(archivo, foto.nombre)) return;
             }
 
-            // 5. Validar FOTO DURANTE
-            const fotoDurante = $('#fotoDurante')[0].files[0];
-            if (!fotoDurante) {
-                mostrarAlerta('Archivo requerido', 'La foto "Durante" del mantenimiento es obligatoria', 'warning');
-                $('#fotoDurante').focus();
-                return;
-            }
-            // Validar tipo y tamaño de foto durante
-            const extensionDurante = fotoDurante.name.split('.').pop().toLowerCase();
-            if (!extensionesPermitidas.includes(extensionDurante)) {
-                mostrarAlerta('Formato incorrecto', 'La foto "Durante" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
-                return;
-            }
-            if (fotoDurante.size > 5 * 1024 * 1024) {
-                mostrarAlerta('Imagen muy grande', 'La foto "Durante" no debe exceder los 5MB', 'warning');
-                return;
-            }
-
-            // 6. Validar FOTO DESPUÉS
-            const fotoDespues = $('#fotoDespues')[0].files[0];
-            if (!fotoDespues) {
-                mostrarAlerta('Archivo requerido', 'La foto "Después" del mantenimiento es obligatoria', 'warning');
-                $('#fotoDespues').focus();
-                return;
-            }
-            // Validar tipo y tamaño de foto después
-            const extensionDespues = fotoDespues.name.split('.').pop().toLowerCase();
-            if (!extensionesPermitidas.includes(extensionDespues)) {
-                mostrarAlerta('Formato incorrecto', 'La foto "Después" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
-                return;
-            }
-            if (fotoDespues.size > 5 * 1024 * 1024) {
-                mostrarAlerta('Imagen muy grande', 'La foto "Después" no debe exceder los 5MB', 'warning');
-                return;
-            }
-
-            // 7. Validar HOJA DE SERVICIO (PDF)
+            // Validar PDF
             const archivoPdf = $('#archivoPdf')[0].files[0];
             if (!archivoPdf) {
                 mostrarAlerta('Archivo requerido', 'La hoja de servicio es obligatoria', 'warning');
                 $('#archivoPdf').focus();
                 return;
             }
-            // Validar tipo de archivo PDF
-            const extensionPdf = archivoPdf.name.split('.').pop().toLowerCase();
-            if (extensionPdf !== 'pdf') {
-                mostrarAlerta('Formato incorrecto', 'Solo se permiten archivos PDF', 'warning');
-                return;
-            }
-            // Validar tamaño del PDF
-            if (archivoPdf.size > 5 * 1024 * 1024) {
-                mostrarAlerta('Archivo muy grande', 'La hoja de servicio no debe exceder los 5MB', 'warning');
-                return;
-            }
+            if (!validarPDF(archivoPdf)) return;
 
-            // 8. Validar FECHA DE ATENCIÓN (último)
+            // Validar fecha
             const fechaAtencion = $('#fechaAtencion').val();
             if (!fechaAtencion) {
                 mostrarAlerta('Campo requerido', 'Por favor seleccione la fecha de atención', 'warning');
@@ -401,11 +438,86 @@
                 return;
             }
 
-            // Si todas las validaciones pasan, proceder con la confirmación
-            confirmarTerminacion();
+            confirmarTerminacionGeneral();
         }
 
-        function confirmarTerminacion() {
+        function validarAntesDeConfirmarImpresora() {
+            // Validaciones para formulario de impresoras
+            const solucion = $('#solucion').val().trim();
+
+            // Validar solución aplicada
+            if (!solucion) {
+                mostrarAlerta('Campo requerido', 'El campo "Solución aplicada" es obligatorio', 'warning');
+                $('#solucion').focus();
+                return;
+            }
+            if (solucion.length > 500) {
+                mostrarAlerta('Texto demasiado largo', 'El campo "Solución aplicada" no debe exceder los 500 caracteres', 'warning');
+                $('#solucion').focus();
+                return;
+            }
+
+            // Validar observaciones (opcional, pero si hay texto validar longitud)
+            const observaciones = $('#observacionesImpresora').val().trim();
+            if (observaciones.length > 300) {
+                mostrarAlerta('Texto demasiado largo', 'El campo "Observaciones" no debe exceder los 300 caracteres', 'warning');
+                $('#observacionesImpresora').focus();
+                return;
+            }
+
+            // Validar PDF
+            const archivoPdf = $('#archivoPdfImpresora')[0].files[0];
+            if (!archivoPdf) {
+                mostrarAlerta('Archivo requerido', 'La hoja de servicio es obligatoria', 'warning');
+                $('#archivoPdfImpresora').focus();
+                return;
+            }
+            if (!validarPDF(archivoPdf)) return;
+
+            // Validar fecha
+            const fechaAtencion = $('#fechaAtencionImpresora').val();
+            if (!fechaAtencion) {
+                mostrarAlerta('Campo requerido', 'Por favor seleccione la fecha de atención', 'warning');
+                $('#fechaAtencionImpresora').focus();
+                return;
+            }
+
+            confirmarTerminacionImpresora();
+        }
+
+        function validarImagen(archivo, nombreFoto) {
+            const extensionesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
+            const extension = archivo.name.split('.').pop().toLowerCase();
+
+            if (!extensionesPermitidas.includes(extension)) {
+                mostrarAlerta('Formato incorrecto', `La foto "${nombreFoto}" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP`, 'warning');
+                return false;
+            }
+
+            if (archivo.size > 5 * 1024 * 1024) {
+                mostrarAlerta('Imagen muy grande', `La foto "${nombreFoto}" no debe exceder los 5MB`, 'warning');
+                return false;
+            }
+
+            return true;
+        }
+
+        function validarPDF(archivo) {
+            const extension = archivo.name.split('.').pop().toLowerCase();
+            if (extension !== 'pdf') {
+                mostrarAlerta('Formato incorrecto', 'Solo se permiten archivos PDF', 'warning');
+                return false;
+            }
+
+            if (archivo.size > 5 * 1024 * 1024) {
+                mostrarAlerta('Archivo muy grande', 'La hoja de servicio no debe exceder los 5MB', 'warning');
+                return false;
+            }
+
+            return true;
+        }
+
+        function confirmarTerminacionGeneral() {
             Swal.fire({
                 title: '¿Desea terminar este mantenimiento?',
                 text: "Esta acción no se puede deshacer.",
@@ -418,28 +530,70 @@
                 buttonsStyling: false,
             }).then((result) => {
                 if (result.isConfirmed) {
-                    terminarMantenimiento();
+                    terminarMantenimientoGeneral();
                 }
             });
         }
 
-        function terminarMantenimiento() {
+        function confirmarTerminacionImpresora() {
+            Swal.fire({
+                title: '¿Desea terminar el mantenimiento de impresora?',
+                text: "Esta acción no se puede deshacer.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, terminar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,
+                customClass: { confirmButton: 'btn btn-success mx-2', cancelButton: 'btn btn-danger mx-2' },
+                buttonsStyling: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    terminarMantenimientoImpresora();
+                }
+            });
+        }
+
+        function terminarMantenimientoGeneral() {
             const formData = new FormData();
             formData.append('numOrden', $('#numeroOrden').val());
             formData.append('fechaAtencion', $('#fechaAtencion').val());
             formData.append('problemas', $('#problemas').val());
             formData.append('diagnostico', $('#diagnostico').val());
             formData.append('observaciones', $('#observaciones').val());
+
             const pdf = $('#archivoPdf')[0].files[0];
             if (pdf) formData.append('archivoPdf', pdf);
+
             const fotoAntes = $('#fotoAntes')[0].files[0];
             if (fotoAntes) formData.append('fotoAntes', fotoAntes);
+
             const fotoDurante = $('#fotoDurante')[0].files[0];
             if (fotoDurante) formData.append('fotoDurante', fotoDurante);
+
             const fotoDespues = $('#fotoDespues')[0].files[0];
             if (fotoDespues) formData.append('fotoDespues', fotoDespues);
 
-            $('#btnTerminar').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...');
+            enviarMantenimiento(formData, 'General');
+        }
+
+        function terminarMantenimientoImpresora() {
+            const formData = new FormData();
+            formData.append('numOrden', $('#numeroOrden').val());
+            formData.append('fechaAtencion', $('#fechaAtencionImpresora').val());
+            formData.append('solucion', $('#solucion').val());
+            formData.append('observaciones', $('#observacionesImpresora').val());
+            formData.append('esImpresora', 'true');
+
+            const pdf = $('#archivoPdfImpresora')[0].files[0];
+            if (pdf) formData.append('archivoPdf', pdf);
+
+            enviarMantenimiento(formData, 'Impresora');
+        }
+
+        function enviarMantenimiento(formData, tipo) {
+            const botonTerminar = tipo === 'Impresora' ? $('#btnTerminarImpresora') : $('#btnTerminarGeneral');
+
+            botonTerminar.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...');
 
             $.ajax({
                 url: '/Repositorio/TerminarMantenimiento',
@@ -459,30 +613,32 @@
                     mostrarAlerta('Error', xhr.responseJSON?.message || 'Error al terminar el mantenimiento', 'error');
                 },
                 complete: function() {
-                    $('#btnTerminar').prop('disabled', false).html('<i class="bi bi-check-circle"></i> Terminar');
+                    const textoBoton = tipo === 'Impresora' ? '<i class="bi bi-check-circle"></i> Terminar Mantenimiento Impresora' : '<i class="bi bi-check-circle"></i> Terminar Mantenimiento';
+                    botonTerminar.prop('disabled', false).html(textoBoton);
                 }
             });
         }
 
-         function mostrarAlerta(titulo, mensaje, tipo) {
-             Swal.fire({
-                 title: titulo,
-                 text: mensaje,
-                 icon: tipo,
-                 confirmButtonText: 'Aceptar',
-                 customClass: { confirmButton: 'btn btn-primary' },
-                 buttonsStyling: false
-             });
-         }
-         function mostrarAlertaExito(titulo, mensaje) {
-             Swal.fire({
-                 title: titulo,
-                 text: mensaje,
-                 icon: 'success',
-                 confirmButtonText: 'Aceptar',
-                 customClass: { confirmButton: 'btn btn-success' },
-                 buttonsStyling: false
-             });
-         }
+        function mostrarAlerta(titulo, mensaje, tipo) {
+            Swal.fire({
+                title: titulo,
+                text: mensaje,
+                icon: tipo,
+                confirmButtonText: 'Aceptar',
+                customClass: { confirmButton: 'btn btn-primary' },
+                buttonsStyling: false
+            });
+        }
+
+        function mostrarAlertaExito(titulo, mensaje) {
+            Swal.fire({
+                title: titulo,
+                text: mensaje,
+                icon: 'success',
+                confirmButtonText: 'Aceptar',
+                customClass: { confirmButton: 'btn btn-success' },
+                buttonsStyling: false
+            });
+        }
     </script>
 }

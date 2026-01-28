@@ -137,7 +137,7 @@
                                id="correo"
                                class="form-control"
                                placeholder="ejemplo@cfe.mx"
-                               maxlength="20">
+                               maxlength="50">
                         <small class="form-text text-muted">Ingrese el correo del usuario que reporta</small>
                     </div>
                 </div>
@@ -349,8 +349,8 @@
             });
 
             $('#correo').on('input', function() {
-                if (this.value.length > 20) {
-                    this.value = this.value.substring(0, 20);
+                if (this.value.length > 50) {
+                    this.value = this.value.substring(0, 50);
                 }
             });
 

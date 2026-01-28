@@ -81,7 +81,6 @@
                             <input type="text" id="buscadorGeneral" class="form-control" placeholder="Buscar en todas las tablas...">
                         </div>
                     </div>
-
                 </div>
 
                 <!-- Tabla de cfematicos -->
@@ -179,6 +178,36 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ✅ NUEVA: Tabla de Impresoras -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-print me-1"></i>
+                        Impresoras
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="tablaImpresoras" class="table table-striped table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>N° Orden</th>
+                                        <th>Zona</th>
+                                        <th>Agencia</th>
+                                        <th>Centro</th>
+                                        <th>Núm. Serie</th>
+                                        <th>Usuario Reporta</th>
+                                        <th>Folio Atención</th>
+                                        <th>Fecha Reporte</th>
+                                        <th>Fecha Atención</th>
+                                        <th>Info</th>
+                                        <th>PDF Queja</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -221,7 +250,7 @@
     <script>
         $(document).ready(function () {
             // Variables globales para las tablas
-            let tablaCFEmaticos, tablaAtencionClientes, tablaEquiposComputo;
+            let tablaCFEmaticos, tablaAtencionClientes, tablaEquiposComputo, tablaImpresoras;
 
             // Inicializar filtros
             inicializarFiltros();
@@ -246,7 +275,7 @@
                 pageLength: 10,
                 lengthMenu: [5, 10, 25, 50],
                 order: [[5, 'desc']],
-                processing: false, // Desactivar animación de procesamiento
+                processing: false,
                 serverSide: false,
                 ajax: {
                     url: '/Repositorio/ObtenerMantenimientos',
@@ -444,6 +473,42 @@
                         dataSrc: 'equiposComputo'
                     }
                 });
+
+                // ✅ NUEVA: Tabla Impresoras
+                tablaImpresoras = $('#tablaImpresoras').DataTable({
+                    ...dataTablesOptions,
+                    columns: [
+                        { data: 'numOrden' },
+                        { data: 'zona' },
+                        { data: 'agencia' },
+                        { data: 'centro' },
+                        { data: 'numSerie' },
+                        { data: 'usuarioReporta' },
+                        { data: 'folioAtencion' },
+                        { data: 'fechaReporte' },
+                        { data: 'fechaAtencion' },
+                        {
+                            data: 'numOrden',
+                            render: function(data, type, row) {
+                                return '<button class="btn btn-sm btn-outline-dark ver-info-impresora" data-num-orden="' + data + '"><i class="bi bi-info-circle"></i></button>';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'pdfQueja',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<a href="/Repositorio/DescargarPdfQueja?folioAtencion=' + row.folioAtencion + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
+                                    'No disponible';
+                            },
+                            orderable: false
+                        }
+                    ],
+                    ajax: {
+                        ...dataTablesOptions.ajax,
+                        dataSrc: 'impresoras'
+                    }
+                });
             }
 
             // Función para inicializar filtros
@@ -470,18 +535,16 @@
                 const $icono = $btn.find('i');
 
                 if (mostrarLoading) {
-                    // Cambiar a estado de carga
                     $btn.prop('disabled', true);
                     $icono.removeClass('fa-search').addClass('fa-spinner fa-spin');
                     $btn.html('<i class="fas fa-spinner fa-spin"></i> Buscando...');
                 } else {
-                    // Restaurar estado normal
                     $btn.prop('disabled', false);
                     $btn.html('<i class="fas fa-search"></i> Filtrar');
                 }
             }
 
-            // Función para recargar todas las tablas
+            // ✅ ACTUALIZADA: Función para recargar todas las tablas (AHORA 4 TABLAS)
             function recargarTablas() {
                 console.log('Recargando tablas con mes:', $('#filtroMes').val(), 'año:', $('#filtroAnio').val());
 
@@ -493,72 +556,54 @@
 
                 // Contador para saber cuándo todas las tablas han terminado de cargar
                 let tablasCargadas = 0;
-                const totalTablas = 3;
+                const totalTablas = 4; // ✅ CAMBIO: De 3 a 4
 
                 function verificarCargaCompleta() {
                     tablasCargadas++;
                     if (tablasCargadas === totalTablas) {
-                        // Todas las tablas han terminado de cargar
                         setTimeout(() => {
                             toggleBotonFiltrar(false);
-                        }, 500); // Delay para mejor experiencia visual
+                        }, 500);
                     }
                 }
 
                 // Recargar cada tabla y contar cuando terminen
                 if (tablaCFEmaticos) {
-                    tablaCFEmaticos.ajax.reload(() => {
-                        verificarCargaCompleta();
-                    });
-                } else {
-                    verificarCargaCompleta();
-                }
+                    tablaCFEmaticos.ajax.reload(() => verificarCargaCompleta());
+                } else verificarCargaCompleta();
 
                 if (tablaAtencionClientes) {
-                    tablaAtencionClientes.ajax.reload(() => {
-                        verificarCargaCompleta();
-                    });
-                } else {
-                    verificarCargaCompleta();
-                }
+                    tablaAtencionClientes.ajax.reload(() => verificarCargaCompleta());
+                } else verificarCargaCompleta();
 
                 if (tablaEquiposComputo) {
-                    tablaEquiposComputo.ajax.reload(() => {
-                        verificarCargaCompleta();
-                    });
-                } else {
-                    verificarCargaCompleta();
-                }
+                    tablaEquiposComputo.ajax.reload(() => verificarCargaCompleta());
+                } else verificarCargaCompleta();
+
+                // ✅ NUEVA: Recargar tabla de impresoras
+                if (tablaImpresoras) {
+                    tablaImpresoras.ajax.reload(() => verificarCargaCompleta());
+                } else verificarCargaCompleta();
             }
 
-            // Función para buscar en todas las tablas
+            // ✅ ACTUALIZADA: Función para buscar en todas las tablas (AHORA 4 TABLAS)
             function buscarEnTodasLasTablas(termino) {
-                if (tablaCFEmaticos) {
-                    tablaCFEmaticos.search(termino).draw();
-                }
-                if (tablaAtencionClientes) {
-                    tablaAtencionClientes.search(termino).draw();
-                }
-                if (tablaEquiposComputo) {
-                    tablaEquiposComputo.search(termino).draw();
-                }
+                if (tablaCFEmaticos) tablaCFEmaticos.search(termino).draw();
+                if (tablaAtencionClientes) tablaAtencionClientes.search(termino).draw();
+                if (tablaEquiposComputo) tablaEquiposComputo.search(termino).draw();
+                if (tablaImpresoras) tablaImpresoras.search(termino).draw(); // ✅ NUEVA
             }
 
             // Buscador general con debounce para mejor performance
             let timeoutBusqueda;
             $('#buscadorGeneral').on('input', function() {
                 const termino = $(this).val();
-
-                // Limpiar timeout anterior
                 clearTimeout(timeoutBusqueda);
-
-                // Esperar 300ms después de que el usuario deje de escribir
                 timeoutBusqueda = setTimeout(() => {
                     buscarEnTodasLasTablas(termino);
                 }, 300);
             });
 
-            // También buscar al pegar texto
             $('#buscadorGeneral').on('paste', function() {
                 const termino = $(this).val();
                 buscarEnTodasLasTablas(termino);
@@ -583,7 +628,6 @@
 
                 $('#imagenModalLabel').text(titulo);
 
-                // Añadir timestamp para evitar caché
                 var url = '/Repositorio/ObtenerImagen?numOrden=' + numOrden +
                           '&tipo=' + tipo +
                           '&t=' + new Date().getTime();
@@ -601,6 +645,18 @@
                     $('#modalInfo').modal('show');
                 }).fail(function() {
                     alert('Error al cargar los detalles del equipo');
+                });
+            });
+
+            // ✅ NUEVO: Manejar clic en botones "Info" de impresoras
+            $(document).on('click', '.ver-info-impresora', function() {
+                var numOrden = $(this).data('num-orden');
+
+                $.get('/Repositorio/ObtenerInfoImpresora', { numOrden: numOrden }, function(data) {
+                    $('#modalInfoBody').html(data);
+                    $('#modalInfo').modal('show');
+                }).fail(function() {
+                    alert('Error al cargar la información de la impresora');
                 });
             });
         });
