@@ -76,16 +76,23 @@ namespace MantenimientosTI.Controllers
                 string tipoEquipo = "CFEMÁTICO";
                 string numCajero = "N/A";
 
+                // PRIMERO: Buscar en Impresoras (NUEVO)
+                var impresora = await _dbocontext.Impresoras
+                    .Include(i => i.ClaveTipoEquipoNavigation)
+                    .FirstOrDefaultAsync(i => i.NumActFijo == agendaItem.NumActFijo);
+
+                // SEGUNDO: Buscar en Equipos AC
                 var equipoAC = await _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
 
+                // TERCERO: Buscar en Equipos de Computo
                 var equipoComputo = await _dbocontext.EquipoComputos
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
 
-                // Buscar en EquipoCfematico si no es Atencion a Clientes ni Equipo de Computo
-                if (equipoAC == null && equipoComputo == null)
+                // CUARTO: Buscar en EquipoCfematico si no es Impresora, AC ni Computo
+                if (impresora == null && equipoAC == null && equipoComputo == null)
                 {
                     var equipoCfematico = await _dbocontext.EquipoCfematicos
                         .FirstOrDefaultAsync(e => e.NumActFijo == agendaItem.NumActFijo);
@@ -96,11 +103,15 @@ namespace MantenimientosTI.Controllers
                         numCajero = equipoCfematico.NumCajero ?? "N/A";
                     }
                 }
-                else if (equipoAC != null)
+                else if (impresora != null) // PRIORIDAD 1: Impresora
+                {
+                    tipoEquipo = impresora.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "IMPRESORA";
+                }
+                else if (equipoAC != null) // PRIORIDAD 2: Equipo AC
                 {
                     tipoEquipo = equipoAC.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC";
                 }
-                else if (equipoComputo != null)
+                else if (equipoComputo != null) // PRIORIDAD 3: Equipo de Cómputo
                 {
                     tipoEquipo = equipoComputo.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo";
                 }
@@ -433,6 +444,12 @@ namespace MantenimientosTI.Controllers
                     .Where(e => numActFijos.Contains(e.NumActFijo))
                     .ToDictionaryAsync(e => e.NumActFijo);
 
+                // 4. Impresoras
+                var impresoras = await _dbocontext.Impresoras
+                    .Include(i => i.ClaveTipoEquipoNavigation)
+                    .Where(i => numActFijos.Contains(i.NumActFijo))
+                    .ToDictionaryAsync(i => i.NumActFijo);
+
                 // 4. Verificar fotos masivamente
                 var ordenesConFotos = await _dbocontext.Fotos
                     .Where(f => numOrdenes.Contains(f.NumOrden))
@@ -654,6 +671,11 @@ namespace MantenimientosTI.Controllers
                 string tipoEquipo = "CFEMÁTICO";
                 string numCajero = "N/A";
 
+                // NUEVO: Buscar en Impresora
+                var impresora = await _dbocontext.Impresoras
+                    .Include(i => i.ClaveTipoEquipoNavigation)
+                    .FirstOrDefaultAsync(i => i.NumActFijo == mantenimiento.NumActFijo);
+
                 var equipoAC = await _dbocontext.EquipoAcs
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
@@ -662,7 +684,7 @@ namespace MantenimientosTI.Controllers
                     .Include(e => e.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
 
-                if (equipoAC == null && equipoComputo == null)
+                if (impresora == null && equipoAC == null && equipoComputo == null)
                 {
                     var equipoCfematico = await _dbocontext.EquipoCfematicos
                         .FirstOrDefaultAsync(e => e.NumActFijo == mantenimiento.NumActFijo);
@@ -673,11 +695,15 @@ namespace MantenimientosTI.Controllers
                         numCajero = equipoCfematico.NumCajero ?? "N/A";
                     }
                 }
-                else if (equipoAC != null)
+                else if (impresora != null) // PRIORIDAD 1: Impresora
+                {
+                    tipoEquipo = impresora.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "IMPRESORA";
+                }
+                else if (equipoAC != null) // PRIORIDAD 2: Equipo AC
                 {
                     tipoEquipo = equipoAC.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC";
                 }
-                else if (equipoComputo != null)
+                else if (equipoComputo != null) // PRIORIDAD 3: Equipo de Cómputo
                 {
                     tipoEquipo = equipoComputo.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo";
                 }
@@ -689,17 +715,17 @@ namespace MantenimientosTI.Controllers
                 var fechaProgramada = mantenimiento.Agendum?.FechaProgramada.ToString("dd/MM/yyyy") ?? "No especificada";
                 var nombreUsuario = $"{mantenimiento.RpeNavigation?.Nombre ?? ""} {mantenimiento.RpeNavigation?.ApellidoP ?? ""} {mantenimiento.RpeNavigation?.ApellidoM ?? ""}".Trim();
 
-                // Construir el HTML con los detalles (num de cajero primero
+                // Construir el HTML con los detalles
                 var htmlInfoEquipo = @"
                 <ul class='list-group list-group-flush'>";
 
-                    // Mostrar número de cajero primero si es CFEMÁTICO y tiene valor
-                    if (tipoEquipo == "CFEMÁTICO" && numCajero != "N/A")
-                    {
-                        htmlInfoEquipo += $@"<li class='list-group-item'><strong>Número de Cajero:</strong> {numCajero}</li>";
-                    }
+                // Mostrar número de cajero primero si es CFEMÁTICO y tiene valor
+                if (tipoEquipo == "CFEMÁTICO" && numCajero != "N/A")
+                {
+                    htmlInfoEquipo += $@"<li class='list-group-item'><strong>Número de Cajero:</strong> {numCajero}</li>";
+                }
 
-                    htmlInfoEquipo += $@"
+                htmlInfoEquipo += $@"
                     <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {mantenimiento.NumActFijo}</li>
                     <li class='list-group-item'><strong>Tipo de Equipo:</strong> {tipoEquipo}</li>
                     <li class='list-group-item'><strong>Zona:</strong> {zona?.NombreZona ?? "No especificado"}</li>

@@ -53,8 +53,9 @@
                     </div>
                 </div>
 
-                <div class="row mb-4">
-                    <div class="col-md-4">
+                <!-- Sección de campos de texto con IDs agregados -->
+                <div class="row mb-4" id="fila-campos-texto">
+                    <div class="col-md-4" id="col-problemas">
                         <div class="form-group">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label mb-0">Problemas: <span class="text-danger">*</span></label>
@@ -63,16 +64,16 @@
                             <textarea id="problemas" class="form-control" rows="3" placeholder="Describa los problemas encontrados"></textarea>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4" id="col-diagnostico">
                         <div class="form-group">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label class="form-label mb-0">Diagnóstico: <span class="text-danger">*</span></label>
+                                <label class="form-label mb-0" id="label-diagnostico">Diagnóstico: <span class="text-danger">*</span></label>
                                 <span class="char-counter" id="contador-diagnostico">300 caracteres restantes</span>
                             </div>
                             <textarea id="diagnostico" class="form-control" rows="3" placeholder="Describa el diagnóstico técnico"></textarea>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4" id="col-observaciones">
                         <div class="form-group">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label mb-0">Observaciones: <span class="text-danger">*</span></label>
@@ -83,7 +84,8 @@
                     </div>
                 </div>
 
-                <div class="row mb-4">
+                <!-- Sección de fotos con ID agregado -->
+                <div class="row mb-4" id="col-fotos">
                     <div class="col-md-4">
                         <div class="form-group">
                             <label class="form-label">Foto antes del mantenimiento: <span class="text-danger">*</span></label>
@@ -113,6 +115,7 @@
                     </div>
                 </div>
 
+                <!-- Sección de hoja de servicio y fecha (siempre visible) -->
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="form-group">
@@ -170,7 +173,9 @@
         }
     </style>
     <script>
-        // Tu código JavaScript existente permanece igual...
+        // Variable global para controlar si es impresora
+        var esImpresora = false;
+
         $(document).ready(function() {
             inicializarContadoresCaracteres();
 
@@ -228,6 +233,37 @@
             }
         }
 
+        // Función para ajustar la vista según el tipo de equipo
+        function ajustarVistaSegunTipoEquipo(tipoEquipo) {
+            // Convertir a mayúsculas para comparar
+            var tipo = tipoEquipo.toUpperCase();
+
+            // Verificar si es impresora (puede ser "IMPRESORA" o contener la palabra)
+            esImpresora = tipo === "IMPRESORA" || tipo.includes("IMPRESORA");
+
+            if (esImpresora) {
+                // Ocultar campos que no se usan para impresoras
+                $('#col-problemas, #col-fotos').hide();
+
+                // Ajustar el ancho de las columnas restantes para que ocupen todo el espacio
+                $('#col-diagnostico, #col-observaciones').removeClass('col-md-4').addClass('col-md-6');
+
+                // Cambiar el texto "Diagnóstico" por "Solución" y placeholder
+                $('#label-diagnostico').html('Solución: <span class="text-danger">*</span>');
+                $('#diagnostico').attr('placeholder', 'Describa la solución aplicada');
+            } else {
+                // Mostrar todos los campos para otros tipos de equipo
+                $('#col-problemas, #col-fotos').show();
+
+                // Restaurar el ancho de las columnas original
+                $('#col-diagnostico, #col-observaciones').removeClass('col-md-6').addClass('col-md-4');
+
+                // Restaurar el texto "Diagnóstico" y placeholder original
+                $('#label-diagnostico').html('Diagnóstico: <span class="text-danger">*</span>');
+                $('#diagnostico').attr('placeholder', 'Describa el diagnóstico técnico');
+            }
+        }
+
         function buscarMantenimiento() {
             const claveAgenda = $('#numeroOrden').val().trim();
             if (!claveAgenda) {
@@ -261,7 +297,10 @@
                             $('#filaNumCajero').hide();
                         }
 
-                        // CAMBIO: Dejar fecha de atención vacía
+                        // Ajustar vista según el tipo de equipo
+                        ajustarVistaSegunTipoEquipo(response.data.tipoEquipo);
+
+                        // Dejar fecha de atención vacía
                         $('#fechaAtencion').val('');
 
                         // Mostrar el cuerpo del formulario y el footer
@@ -280,33 +319,38 @@
         }
 
         function validarAntesDeConfirmar() {
-            // 1. Validar campos de texto obligatorios - PROBLEMAS
-            const problemas = $('#problemas').val().trim();
-            if (!problemas) {
-                mostrarAlerta('Campo requerido', 'El campo "Problemas" es obligatorio', 'warning');
-                $('#problemas').focus();
-                return;
-            }
-            if (problemas.length > 300) {
-                mostrarAlerta('Texto demasiado largo', 'El campo "Problemas" no debe exceder los 300 caracteres', 'warning');
-                $('#problemas').focus();
-                return;
+            // 1. Validar campos de texto obligatorios - PROBLEMAS (solo si NO es impresora)
+            if (!esImpresora) {
+                const problemas = $('#problemas').val().trim();
+                if (!problemas) {
+                    mostrarAlerta('Campo requerido', 'El campo "Problemas" es obligatorio', 'warning');
+                    $('#problemas').focus();
+                    return;
+                }
+                if (problemas.length > 300) {
+                    mostrarAlerta('Texto demasiado largo', 'El campo "Problemas" no debe exceder los 300 caracteres', 'warning');
+                    $('#problemas').focus();
+                    return;
+                }
             }
 
-            // 2. Validar campos de texto obligatorios - DIAGNÓSTICO
+            // 2. Validar campos de texto obligatorios - DIAGNÓSTICO/SOLUCIÓN (SIEMPRE obligatorio)
             const diagnostico = $('#diagnostico').val().trim();
             if (!diagnostico) {
-                mostrarAlerta('Campo requerido', 'El campo "Diagnóstico" es obligatorio', 'warning');
+                // Cambiar el mensaje según si es impresora o no
+                const campoNombre = esImpresora ? 'Solución' : 'Diagnóstico';
+                mostrarAlerta('Campo requerido', `El campo "${campoNombre}" es obligatorio`, 'warning');
                 $('#diagnostico').focus();
                 return;
             }
             if (diagnostico.length > 300) {
-                mostrarAlerta('Texto demasiado largo', 'El campo "Diagnóstico" no debe exceder los 300 caracteres', 'warning');
+                const campoNombre = esImpresora ? 'Solución' : 'Diagnóstico';
+                mostrarAlerta('Texto demasiado largo', `El campo "${campoNombre}" no debe exceder los 300 caracteres`, 'warning');
                 $('#diagnostico').focus();
                 return;
             }
 
-            // 3. Validar campos de texto obligatorios - OBSERVACIONES
+            // 3. Validar campos de texto obligatorios - OBSERVACIONES (SIEMPRE obligatorio)
             const observaciones = $('#observaciones').val().trim();
             if (!observaciones) {
                 mostrarAlerta('Campo requerido', 'El campo "Observaciones" es obligatorio', 'warning');
@@ -319,81 +363,79 @@
                 return;
             }
 
-            // 4. Validar FOTO ANTES
-            const fotoAntes = $('#fotoAntes')[0].files[0];
-            if (!fotoAntes) {
-                mostrarAlerta('Archivo requerido', 'La foto "Antes" del mantenimiento es obligatoria', 'warning');
-                $('#fotoAntes').focus();
-                return;
-            }
-            // Validar tipo y tamaño de foto antes
-            const extensionAntes = fotoAntes.name.split('.').pop().toLowerCase();
-            const extensionesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
-            if (!extensionesPermitidas.includes(extensionAntes)) {
-                mostrarAlerta('Formato incorrecto', 'La foto "Antes" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
-                return;
-            }
-            if (fotoAntes.size > 5 * 1024 * 1024) {
-                mostrarAlerta('Imagen muy grande', 'La foto "Antes" no debe exceder los 5MB', 'warning');
-                return;
+            // 4. Validar FOTOS (solo si NO es impresora)
+            if (!esImpresora) {
+                // Validar FOTO ANTES
+                const fotoAntes = $('#fotoAntes')[0].files[0];
+                if (!fotoAntes) {
+                    mostrarAlerta('Archivo requerido', 'La foto "Antes" del mantenimiento es obligatoria', 'warning');
+                    $('#fotoAntes').focus();
+                    return;
+                }
+                const extensionAntes = fotoAntes.name.split('.').pop().toLowerCase();
+                const extensionesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
+                if (!extensionesPermitidas.includes(extensionAntes)) {
+                    mostrarAlerta('Formato incorrecto', 'La foto "Antes" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
+                    return;
+                }
+                if (fotoAntes.size > 5 * 1024 * 1024) {
+                    mostrarAlerta('Imagen muy grande', 'La foto "Antes" no debe exceder los 5MB', 'warning');
+                    return;
+                }
+
+                // Validar FOTO DURANTE
+                const fotoDurante = $('#fotoDurante')[0].files[0];
+                if (!fotoDurante) {
+                    mostrarAlerta('Archivo requerido', 'La foto "Durante" del mantenimiento es obligatoria', 'warning');
+                    $('#fotoDurante').focus();
+                    return;
+                }
+                const extensionDurante = fotoDurante.name.split('.').pop().toLowerCase();
+                if (!extensionesPermitidas.includes(extensionDurante)) {
+                    mostrarAlerta('Formato incorrecto', 'La foto "Durante" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
+                    return;
+                }
+                if (fotoDurante.size > 5 * 1024 * 1024) {
+                    mostrarAlerta('Imagen muy grande', 'La foto "Durante" no debe exceder los 5MB', 'warning');
+                    return;
+                }
+
+                // Validar FOTO DESPUÉS
+                const fotoDespues = $('#fotoDespues')[0].files[0];
+                if (!fotoDespues) {
+                    mostrarAlerta('Archivo requerido', 'La foto "Después" del mantenimiento es obligatoria', 'warning');
+                    $('#fotoDespues').focus();
+                    return;
+                }
+                const extensionDespues = fotoDespues.name.split('.').pop().toLowerCase();
+                if (!extensionesPermitidas.includes(extensionDespues)) {
+                    mostrarAlerta('Formato incorrecto', 'La foto "Después" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
+                    return;
+                }
+                if (fotoDespues.size > 5 * 1024 * 1024) {
+                    mostrarAlerta('Imagen muy grande', 'La foto "Después" no debe exceder los 5MB', 'warning');
+                    return;
+                }
             }
 
-            // 5. Validar FOTO DURANTE
-            const fotoDurante = $('#fotoDurante')[0].files[0];
-            if (!fotoDurante) {
-                mostrarAlerta('Archivo requerido', 'La foto "Durante" del mantenimiento es obligatoria', 'warning');
-                $('#fotoDurante').focus();
-                return;
-            }
-            // Validar tipo y tamaño de foto durante
-            const extensionDurante = fotoDurante.name.split('.').pop().toLowerCase();
-            if (!extensionesPermitidas.includes(extensionDurante)) {
-                mostrarAlerta('Formato incorrecto', 'La foto "Durante" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
-                return;
-            }
-            if (fotoDurante.size > 5 * 1024 * 1024) {
-                mostrarAlerta('Imagen muy grande', 'La foto "Durante" no debe exceder los 5MB', 'warning');
-                return;
-            }
-
-            // 6. Validar FOTO DESPUÉS
-            const fotoDespues = $('#fotoDespues')[0].files[0];
-            if (!fotoDespues) {
-                mostrarAlerta('Archivo requerido', 'La foto "Después" del mantenimiento es obligatoria', 'warning');
-                $('#fotoDespues').focus();
-                return;
-            }
-            // Validar tipo y tamaño de foto después
-            const extensionDespues = fotoDespues.name.split('.').pop().toLowerCase();
-            if (!extensionesPermitidas.includes(extensionDespues)) {
-                mostrarAlerta('Formato incorrecto', 'La foto "Después" no es una imagen válida. Formatos permitidos: JPG, JPEG, PNG, GIF, BMP', 'warning');
-                return;
-            }
-            if (fotoDespues.size > 5 * 1024 * 1024) {
-                mostrarAlerta('Imagen muy grande', 'La foto "Después" no debe exceder los 5MB', 'warning');
-                return;
-            }
-
-            // 7. Validar HOJA DE SERVICIO (PDF)
+            // 5. Validar HOJA DE SERVICIO (PDF) (SIEMPRE obligatorio)
             const archivoPdf = $('#archivoPdf')[0].files[0];
             if (!archivoPdf) {
                 mostrarAlerta('Archivo requerido', 'La hoja de servicio es obligatoria', 'warning');
                 $('#archivoPdf').focus();
                 return;
             }
-            // Validar tipo de archivo PDF
             const extensionPdf = archivoPdf.name.split('.').pop().toLowerCase();
             if (extensionPdf !== 'pdf') {
                 mostrarAlerta('Formato incorrecto', 'Solo se permiten archivos PDF', 'warning');
                 return;
             }
-            // Validar tamaño del PDF
             if (archivoPdf.size > 5 * 1024 * 1024) {
                 mostrarAlerta('Archivo muy grande', 'La hoja de servicio no debe exceder los 5MB', 'warning');
                 return;
             }
 
-            // 8. Validar FECHA DE ATENCIÓN (último)
+            // 6. Validar FECHA DE ATENCIÓN (SIEMPRE obligatorio)
             const fechaAtencion = $('#fechaAtencion').val();
             if (!fechaAtencion) {
                 mostrarAlerta('Campo requerido', 'Por favor seleccione la fecha de atención', 'warning');
@@ -406,9 +448,17 @@
         }
 
         function confirmarTerminacion() {
+            var titulo = esImpresora ?
+                '¿Desea terminar este mantenimiento de impresora?' :
+                '¿Desea terminar este mantenimiento?';
+
+            var texto = esImpresora ?
+                "Esta acción registrará el mantenimiento de la impresora." :
+                "Esta acción no se puede deshacer.";
+
             Swal.fire({
-                title: '¿Desea terminar este mantenimiento?',
-                text: "Esta acción no se puede deshacer.",
+                title: titulo,
+                text: texto,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, terminar',
@@ -427,17 +477,32 @@
             const formData = new FormData();
             formData.append('numOrden', $('#numeroOrden').val());
             formData.append('fechaAtencion', $('#fechaAtencion').val());
-            formData.append('problemas', $('#problemas').val());
+
+            // Solo agregar problemas si NO es impresora
+            if (!esImpresora) {
+                formData.append('problemas', $('#problemas').val());
+            } else {
+                formData.append('problemas', ''); // Enviar vacío para impresoras
+            }
+
+            // Nota: El campo sigue llamándose "diagnostico" en el servidor, aunque en la vista se muestre como "Solución"
             formData.append('diagnostico', $('#diagnostico').val());
             formData.append('observaciones', $('#observaciones').val());
+
             const pdf = $('#archivoPdf')[0].files[0];
             if (pdf) formData.append('archivoPdf', pdf);
-            const fotoAntes = $('#fotoAntes')[0].files[0];
-            if (fotoAntes) formData.append('fotoAntes', fotoAntes);
-            const fotoDurante = $('#fotoDurante')[0].files[0];
-            if (fotoDurante) formData.append('fotoDurante', fotoDurante);
-            const fotoDespues = $('#fotoDespues')[0].files[0];
-            if (fotoDespues) formData.append('fotoDespues', fotoDespues);
+
+            // Solo agregar fotos si NO es impresora
+            if (!esImpresora) {
+                const fotoAntes = $('#fotoAntes')[0].files[0];
+                if (fotoAntes) formData.append('fotoAntes', fotoAntes);
+
+                const fotoDurante = $('#fotoDurante')[0].files[0];
+                if (fotoDurante) formData.append('fotoDurante', fotoDurante);
+
+                const fotoDespues = $('#fotoDespues')[0].files[0];
+                if (fotoDespues) formData.append('fotoDespues', fotoDespues);
+            }
 
             $('#btnTerminar').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...');
 
@@ -464,25 +529,26 @@
             });
         }
 
-         function mostrarAlerta(titulo, mensaje, tipo) {
-             Swal.fire({
-                 title: titulo,
-                 text: mensaje,
-                 icon: tipo,
-                 confirmButtonText: 'Aceptar',
-                 customClass: { confirmButton: 'btn btn-primary' },
-                 buttonsStyling: false
-             });
-         }
-         function mostrarAlertaExito(titulo, mensaje) {
-             Swal.fire({
-                 title: titulo,
-                 text: mensaje,
-                 icon: 'success',
-                 confirmButtonText: 'Aceptar',
-                 customClass: { confirmButton: 'btn btn-success' },
-                 buttonsStyling: false
-             });
-         }
+        function mostrarAlerta(titulo, mensaje, tipo) {
+            Swal.fire({
+                title: titulo,
+                text: mensaje,
+                icon: tipo,
+                confirmButtonText: 'Aceptar',
+                customClass: { confirmButton: 'btn btn-primary' },
+                buttonsStyling: false
+            });
+        }
+
+        function mostrarAlertaExito(titulo, mensaje) {
+            Swal.fire({
+                title: titulo,
+                text: mensaje,
+                icon: 'success',
+                confirmButtonText: 'Aceptar',
+                customClass: { confirmButton: 'btn btn-success' },
+                buttonsStyling: false
+            });
+        }
     </script>
 }
