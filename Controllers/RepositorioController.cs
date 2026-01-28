@@ -1,5 +1,4 @@
 ﻿using ClosedXML.Excel;
-using ClosedXML.Excel;
 using MantenimientosTI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,8 +7,6 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 using System.Globalization;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Formats.Jpeg;
 using MantenimientosTI.Services;
 
 namespace MantenimientosTI.Controllers
@@ -18,7 +15,6 @@ namespace MantenimientosTI.Controllers
     {
         private readonly MantenimientosTIContext _dbocontext;
         private readonly BitacoraService _bitacora;
-
 
         public RepositorioController(MantenimientosTIContext context, BitacoraService bitacora)
         {
@@ -292,7 +288,6 @@ namespace MantenimientosTI.Controllers
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    // Devuelve un mensaje de error más detallado para depuración
                     return Json(new
                     {
                         success = false,
@@ -329,24 +324,6 @@ namespace MantenimientosTI.Controllers
             }
 
             return nombreArchivo;
-        }
-
-        private async Task<string> ConvertirImagenAHex(IFormFile imagen)
-        {
-            using (var memoryStream = new MemoryStream())
-            {
-                await imagen.CopyToAsync(memoryStream);
-                byte[] imageBytes = memoryStream.ToArray();
-
-                // Convertir a hexadecimal y asegurar formato válido
-                var hexString = BitConverter.ToString(imageBytes).Replace("-", "");
-                if (!hexString.StartsWith("0x"))
-                {
-                    hexString = "0x" + hexString;
-                }
-
-                return hexString;
-            }
         }
 
         [HttpGet]
@@ -393,17 +370,17 @@ namespace MantenimientosTI.Controllers
                     query = query.Where(m => m.Agendum.NumActFijoNavigation.ClaveZona == claveZonaUsuario);
                 }
 
-                // ✅ CAMBIO: Filtrar por FECHA PROGRAMADA en lugar de FechaInsercion
+                // ✅ Filtrar por FECHA PROGRAMADA en lugar de FechaInsercion
                 query = query.Where(m => m.Agendum.FechaProgramada >= fechaInicioDateOnly &&
                                         m.Agendum.FechaProgramada <= fechaFinDateOnly);
 
                 // CONSULTA PRINCIPAL OPTIMIZADA
                 var mantenimientosData = await query
-                    .OrderByDescending(m => m.Agendum.FechaProgramada) // ✅ CAMBIO: Ordenar por FechaProgramada
+                    .OrderByDescending(m => m.Agendum.FechaProgramada)
                     .Select(m => new
                     {
                         Mantenimiento = m,
-                        Agenda = m.Agendum, // ✅ Incluir Agenda para acceder a FechaProgramada
+                        Agenda = m.Agendum,
                         Centro = m.Agendum.NumActFijoNavigation.CatCentro,
                         Agencia = m.Agendum.NumActFijoNavigation.CatCentro.CatAgencium,
                         Zona = m.Agendum.NumActFijoNavigation.CatCentro.CatAgencium.CatZona
@@ -417,13 +394,15 @@ namespace MantenimientosTI.Controllers
                     {
                         Cfematicos = new List<object>(),
                         AtencionClientes = new List<object>(),
-                        EquiposComputo = new List<object>()
+                        EquiposComputo = new List<object>(),
+                        Impresoras = new List<object>()
                     });
                 }
 
                 // OBTENER TODOS LOS NUM_ACT_FIJO Y NUM_ORDEN DE UNA VEZ
                 var numActFijos = mantenimientosData.Select(x => x.Mantenimiento.NumActFijo).Distinct().ToList();
                 var numOrdenes = mantenimientosData.Select(x => x.Mantenimiento.NumOrden).Distinct().ToList();
+                var claveAgendas = mantenimientosData.Select(x => x.Mantenimiento.ClaveAgenda).Distinct().ToList();
 
                 // CONSULTAS MASIVAS EN LUGAR DE INDIVIDUALES
 
@@ -450,7 +429,12 @@ namespace MantenimientosTI.Controllers
                     .Where(i => numActFijos.Contains(i.NumActFijo))
                     .ToDictionaryAsync(i => i.NumActFijo);
 
-                // 4. Verificar fotos masivamente
+                // 5. ImpresoraMantenimientos (solo para las agendas que corresponden)
+                var impresoraMantenimientos = await _dbocontext.ImpresoraMantenimientos
+                    .Where(im => claveAgendas.Contains(im.ClaveAgenda))
+                    .ToDictionaryAsync(im => im.ClaveAgenda);
+
+                // 6. Verificar fotos masivamente
                 var ordenesConFotos = await _dbocontext.Fotos
                     .Where(f => numOrdenes.Contains(f.NumOrden))
                     .Select(f => f.NumOrden)
@@ -461,12 +445,13 @@ namespace MantenimientosTI.Controllers
                 var cfematicos = new List<object>();
                 var atencionClientes = new List<object>();
                 var equiposComputoList = new List<object>();
+                var impresorasList = new List<object>();
 
                 // PROCESAMIENTO OPTIMIZADO - Usar diccionarios en memoria
                 foreach (var item in mantenimientosData)
                 {
                     var m = item.Mantenimiento;
-                    var agenda = item.Agenda; // ✅ Usar la agenda que incluye FechaProgramada
+                    var agenda = item.Agenda;
                     var centro = item.Centro;
                     var agencia = item.Agencia;
                     var zona = item.Zona;
@@ -478,12 +463,16 @@ namespace MantenimientosTI.Controllers
                     equiposAC.TryGetValue(m.NumActFijo, out var equipoAc);
                     equiposComputo.TryGetValue(m.NumActFijo, out var equipoComputoDict);
                     equiposCfematico.TryGetValue(m.NumActFijo, out var equipoCfematico);
+                    impresoras.TryGetValue(m.NumActFijo, out var impresoraDict);
 
-                    // Crear el item para la tabla
+                    // Obtener datos de ImpresoraMantenimiento si es impresora
+                    impresoraMantenimientos.TryGetValue(m.ClaveAgenda, out var impresoraMantenimiento);
+
+                    // Crear el item base para la tabla
                     var itemTabla = new
                     {
                         m.NumOrden,
-                        FechaProgramada = agenda.FechaProgramada.ToString("dd/MM/yyyy"), // ✅ Usar fecha de la agenda
+                        FechaProgramada = agenda.FechaProgramada.ToString("dd/MM/yyyy"),
                         FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
                         FechaTerminada = m.FechaInsercion.ToString("dd/MM/yyyy HH:mm"),
                         m.EvidenciaHojaServicio,
@@ -495,11 +484,30 @@ namespace MantenimientosTI.Controllers
                         NumCajero = equipoCfematico?.NumCajero ?? "N/A",
                         TipoEquipo = equipoAc?.ClaveTipoEquipoNavigation?.NombreTipoEquipo ??
                                     equipoComputoDict?.ClaveTipoEquipoNavigation?.NombreTipoEquipo ??
-                                    "CFEmático"
+                                    (impresoraDict != null ? "IMPRESORA" : "CFEmático")
                     };
 
-                    // Clasificación usando los diccionarios
-                    if (equipoAc != null)
+                    // Clasificación usando los diccionarios - IMPRESORAS PRIMERO
+                    if (impresoraDict != null)
+                    {
+                        // Crear item específico para impresoras
+                        var itemImpresora = new
+                        {
+                            m.NumOrden,
+                            Zona = zona?.NombreZona ?? "No especificado",
+                            Agencia = agencia?.NombreAgencia ?? "No especificado",
+                            Centro = centro?.NombreCentro ?? "No especificado",
+                            NumSerieImpresora = impresoraDict.NumSerie ?? "N/A",
+                            UsuarioReporta = impresoraMantenimiento?.UsuarioReporta ?? "N/A",
+                            FolioAtencion = impresoraMantenimiento?.FolioAtencion ?? "N/A",
+                            FechaReporte = impresoraMantenimiento?.FechaReporte.ToString("dd/MM/yyyy") ?? "N/A",
+                            FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
+                            EvidenciaHojaServicio = m.EvidenciaHojaServicio,
+                            Rpe = m.Rpe
+                        };
+                        impresorasList.Add(itemImpresora);
+                    }
+                    else if (equipoAc != null)
                     {
                         atencionClientes.Add(itemTabla);
                     }
@@ -517,7 +525,8 @@ namespace MantenimientosTI.Controllers
                 {
                     Cfematicos = cfematicos,
                     AtencionClientes = atencionClientes,
-                    EquiposComputo = equiposComputoList
+                    EquiposComputo = equiposComputoList,
+                    Impresoras = impresorasList
                 });
             }
             catch (Exception ex)
@@ -544,9 +553,7 @@ namespace MantenimientosTI.Controllers
                 if (foto?.Imagen == null)
                     return NotFound();
 
-                // ✅ CONVERSIÓN MÁS RÁPIDA
                 byte[] imageBytes = ConvertirBase64Rapido(foto.Imagen);
-
                 return File(imageBytes, "image/jpeg");
             }
             catch (Exception ex)
@@ -555,10 +562,8 @@ namespace MantenimientosTI.Controllers
             }
         }
 
-        // ✅ MÉTODO OPTIMIZADO PARA CONVERSIÓN RÁPIDA
         private byte[] ConvertirBase64Rapido(string base64String)
         {
-            // Si tiene prefijo data:image, saltarlo directamente
             if (base64String.StartsWith("data:image"))
             {
                 int commaIndex = base64String.IndexOf(',');
@@ -568,17 +573,14 @@ namespace MantenimientosTI.Controllers
                 }
             }
 
-            // ✅ MEJORA: Usar Span<T> para mejor performance
             return Convert.FromBase64String(base64String);
         }
 
-        // ✅ NUEVO: Método para redimensionar imágenes
         private byte[] RedimensionarImagen(byte[] imageBytes, int maxWidth, int maxHeight, int calidad)
         {
             using (var memoryStream = new MemoryStream(imageBytes))
             using (var image = Image.Load(memoryStream))
             {
-                // Calcular nuevo tamaño manteniendo aspecto
                 var options = new ResizeOptions
                 {
                     Mode = ResizeMode.Max,
@@ -587,7 +589,6 @@ namespace MantenimientosTI.Controllers
 
                 image.Mutate(x => x.Resize(options));
 
-                // Guardar con compresión
                 using (var outputStream = new MemoryStream())
                 {
                     image.Save(outputStream, new JpegEncoder
@@ -671,7 +672,7 @@ namespace MantenimientosTI.Controllers
                 string tipoEquipo = "CFEMÁTICO";
                 string numCajero = "N/A";
 
-                // NUEVO: Buscar en Impresora
+                // Buscar en Impresora
                 var impresora = await _dbocontext.Impresoras
                     .Include(i => i.ClaveTipoEquipoNavigation)
                     .FirstOrDefaultAsync(i => i.NumActFijo == mantenimiento.NumActFijo);
@@ -695,17 +696,25 @@ namespace MantenimientosTI.Controllers
                         numCajero = equipoCfematico.NumCajero ?? "N/A";
                     }
                 }
-                else if (impresora != null) // PRIORIDAD 1: Impresora
+                else if (impresora != null)
                 {
                     tipoEquipo = impresora.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "IMPRESORA";
                 }
-                else if (equipoAC != null) // PRIORIDAD 2: Equipo AC
+                else if (equipoAC != null)
                 {
                     tipoEquipo = equipoAC.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo AC";
                 }
-                else if (equipoComputo != null) // PRIORIDAD 3: Equipo de Cómputo
+                else if (equipoComputo != null)
                 {
                     tipoEquipo = equipoComputo.ClaveTipoEquipoNavigation?.NombreTipoEquipo ?? "Equipo de Cómputo";
+                }
+
+                // Obtener datos de ImpresoraMantenimiento si es impresora
+                ImpresoraMantenimiento impresoraMantenimiento = null;
+                if (impresora != null)
+                {
+                    impresoraMantenimiento = await _dbocontext.ImpresoraMantenimientos
+                        .FirstOrDefaultAsync(im => im.ClaveAgenda == mantenimiento.ClaveAgenda);
                 }
 
                 var centro = mantenimiento.Agendum.NumActFijoNavigation?.CatCentro;
@@ -725,6 +734,18 @@ namespace MantenimientosTI.Controllers
                     htmlInfoEquipo += $@"<li class='list-group-item'><strong>Número de Cajero:</strong> {numCajero}</li>";
                 }
 
+                // Mostrar información específica de impresora
+                if (impresora != null)
+                {
+                    htmlInfoEquipo += $@"
+                    <li class='list-group-item'><strong>Número de Serie:</strong> {impresora.NumSerie}</li>
+                    <li class='list-group-item'><strong>Modelo:</strong> {impresora.Modelo}</li>
+                    <li class='list-group-item'><strong>Tipo de Impresión:</strong> {impresora.TipoImpresion}</li>
+                    <li class='list-group-item'><strong>IP Impresora:</strong> {impresora.IpImpresora}</li>
+                    <li class='list-group-item'><strong>Folio Llave:</strong> {impresora.FolioLlave}</li>
+                    <li class='list-group-item'><strong>Responsable:</strong> {impresora.Responsable}</li>";
+                }
+
                 htmlInfoEquipo += $@"
                     <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {mantenimiento.NumActFijo}</li>
                     <li class='list-group-item'><strong>Tipo de Equipo:</strong> {tipoEquipo}</li>
@@ -732,6 +753,31 @@ namespace MantenimientosTI.Controllers
                     <li class='list-group-item'><strong>Agencia:</strong> {agencia?.NombreAgencia ?? "No especificado"}</li>
                     <li class='list-group-item'><strong>Centro:</strong> {centro?.NombreCentro ?? "No especificado"}</li>
                 </ul>";
+
+                // Si es impresora, agregar sección adicional con datos de mantenimiento
+                var htmlImpresoraExtra = "";
+                if (impresoraMantenimiento != null)
+                {
+                    htmlImpresoraExtra = $@"
+                    <div class='row mt-3'>
+                        <div class='col-12'>
+                            <h5>Información del Reporte</h5>
+                            <div class='card'>
+                                <div class='card-body'>
+                                    <p><strong>Usuario que Reporta:</strong> {impresoraMantenimiento.UsuarioReporta}</p>
+                                    <p><strong>Correo:</strong> {impresoraMantenimiento.Correo}</p>
+                                    <p><strong>Folio de Atención:</strong> {impresoraMantenimiento.FolioAtencion}</p>
+                                    <p><strong>Fecha de Reporte:</strong> {impresoraMantenimiento.FechaReporte.ToString("dd/MM/yyyy")}</p>
+                                    <p><strong>Fecha de Captura:</strong> {impresoraMantenimiento.FechaCaptura.ToString("dd/MM/yyyy HH:mm")}</p>
+                                    <p><strong>Problemática:</strong></p>
+                                    <p>{impresoraMantenimiento.Problematica ?? "No especificado"}</p>
+                                    <p><strong>Observaciones:</strong></p>
+                                    <p>{impresoraMantenimiento.Observaciones ?? "No especificado"}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>";
+                }
 
                 var html = $@"
                 <div class='row'>
@@ -759,14 +805,15 @@ namespace MantenimientosTI.Controllers
                             <div class='card-body'>
                                 <p><strong>Problemas reportados:</strong></p>
                                 <p>{mantenimiento.Problemas ?? "No especificado"}</p>
-                                <p><strong>Diagnóstico:</strong></p>
+                                <p><strong>Diagnóstico/Solución:</strong></p>
                                 <p>{mantenimiento.Diagnostico ?? "No especificado"}</p>
                                 <p><strong>Observaciones:</strong></p>
                                 <p>{mantenimiento.Observaciones ?? "No especificado"}</p>
                             </div>
                         </div>
                     </div>
-                </div>";
+                </div>
+                {htmlImpresoraExtra}";
 
                 return Content(html);
             }

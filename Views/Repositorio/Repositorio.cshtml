@@ -179,6 +179,36 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Tabla de impresoras -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-table me-1"></i>
+                        Impresoras
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="tablaImpresoras" class="table table-striped table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>N° Orden</th>
+                                        <th>Zona</th>
+                                        <th>Agencia</th>
+                                        <th>Centro</th>
+                                        <th>Núm. serie impresora</th>
+                                        <th>Usuario que reporta</th>
+                                        <th>Folio de atención</th>
+                                        <th>Fecha de reporte</th>
+                                        <th>Fecha de atención</th>
+                                        <th>Hoja de servicio</th>
+                                        <th>Ver equipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -221,7 +251,7 @@
     <script>
         $(document).ready(function () {
             // Variables globales para las tablas
-            let tablaCFEmaticos, tablaAtencionClientes, tablaEquiposComputo;
+            let tablaCFEmaticos, tablaAtencionClientes, tablaEquiposComputo, tablaImpresoras;
 
             // Inicializar filtros
             inicializarFiltros();
@@ -245,7 +275,7 @@
                 dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
                 pageLength: 10,
                 lengthMenu: [5, 10, 25, 50],
-                order: [[5, 'desc']],
+                order: [[0, 'desc']],
                 processing: false, // Desactivar animación de procesamiento
                 serverSide: false,
                 ajax: {
@@ -444,6 +474,42 @@
                         dataSrc: 'equiposComputo'
                     }
                 });
+
+                // Tabla Impresoras
+                tablaImpresoras = $('#tablaImpresoras').DataTable({
+                    ...dataTablesOptions,
+                    columns: [
+                        { data: 'numOrden' },
+                        { data: 'zona' },
+                        { data: 'agencia' },
+                        { data: 'centro' },
+                        { data: 'numSerieImpresora' },
+                        { data: 'usuarioReporta' },
+                        { data: 'folioAtencion' },
+                        { data: 'fechaReporte' },
+                        { data: 'fechaAtencion' },
+                        {
+                            data: 'evidenciaHojaServicio',
+                            render: function(data, type, row) {
+                                return data ?
+                                    '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
+                                    'No disponible';
+                            },
+                            orderable: false
+                        },
+                        {
+                            data: 'numOrden',
+                            render: function(data, type, row) {
+                                return '<button class="btn btn-sm btn-outline-dark ver-equipo" data-num-orden="' + data + '"><i class="bi bi-eye"></i></button>';
+                            },
+                            orderable: false
+                        }
+                    ],
+                    ajax: {
+                        ...dataTablesOptions.ajax,
+                        dataSrc: 'impresoras'
+                    }
+                });
             }
 
             // Función para inicializar filtros
@@ -493,7 +559,7 @@
 
                 // Contador para saber cuándo todas las tablas han terminado de cargar
                 let tablasCargadas = 0;
-                const totalTablas = 3;
+                const totalTablas = 4;
 
                 function verificarCargaCompleta() {
                     tablasCargadas++;
@@ -529,6 +595,14 @@
                 } else {
                     verificarCargaCompleta();
                 }
+
+                if (tablaImpresoras) {
+                    tablaImpresoras.ajax.reload(() => {
+                        verificarCargaCompleta();
+                    });
+                } else {
+                    verificarCargaCompleta();
+                }
             }
 
             // Función para buscar en todas las tablas
@@ -541,6 +615,9 @@
                 }
                 if (tablaEquiposComputo) {
                     tablaEquiposComputo.search(termino).draw();
+                }
+                if (tablaImpresoras) {
+                    tablaImpresoras.search(termino).draw();
                 }
             }
 
