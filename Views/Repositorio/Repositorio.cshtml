@@ -200,7 +200,7 @@
                                         <th>Fecha Reporte</th>
                                         <th>Fecha Atención</th>
                                         <th>Info</th>
-                                        <th>PDF Queja</th>
+                                        <th>PDF</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -474,7 +474,8 @@
                     }
                 });
 
-                // ✅ NUEVA: Tabla Impresoras
+
+                        // ✅ ACTUALIZADO: Configuración de la tabla de impresoras
                 tablaImpresoras = $('#tablaImpresoras').DataTable({
                     ...dataTablesOptions,
                     columns: [
@@ -495,10 +496,11 @@
                             orderable: false
                         },
                         {
-                            data: 'pdfQueja',
+                            // ✅ CORREGIDO: Ahora usa evidenciaHojaServicio para descargar la hoja del mantenimiento terminado
+                            data: 'evidenciaHojaServicio',
                             render: function(data, type, row) {
                                 return data ?
-                                    '<a href="/Repositorio/DescargarPdfQueja?folioAtencion=' + row.folioAtencion + '" class="btn btn-sm btn-outline-success" target="_blank">Descargar</a>' :
+                                    '<a href="/Repositorio/DescargarHojaServicio?numOrden=' + row.numOrden + '" class="btn btn-sm btn-outline-success" target="_blank" title="Descargar hoja de servicio del mantenimiento">Descargar</a>' :
                                     'No disponible';
                             },
                             orderable: false

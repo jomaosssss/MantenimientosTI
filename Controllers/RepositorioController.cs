@@ -564,6 +564,7 @@ namespace MantenimientosTI.Controllers
                             UsuarioReporta = impresoraMantenimiento?.UsuarioReporta ?? "N/A",
                             FolioAtencion = impresoraMantenimiento?.FolioAtencion ?? "N/A",
                             FechaReporte = impresoraMantenimiento?.FechaReporte.ToString("dd/MM/yyyy") ?? "N/A",
+                            EvidenciaHojaServicio = m.EvidenciaHojaServicio, // ¡IMPORTANTE! Agregar esto
                             FechaAtencion = m.FechaAtencion.ToString("dd/MM/yyyy"),
                             PdfQueja = impresoraMantenimiento?.PdfQueja
                         };
@@ -694,47 +695,76 @@ namespace MantenimientosTI.Controllers
 
                 var mantenimiento = impresoraMantenimiento.ClaveAgendaNavigation.Mantenimientos.FirstOrDefault();
 
+                // Botón para descargar hoja de servicio
+                var botonHojaServicio = mantenimiento != null && !string.IsNullOrEmpty(mantenimiento.EvidenciaHojaServicio) ?
+                    $@"<a href='/Repositorio/DescargarHojaServicio?numOrden={mantenimiento.NumOrden}' class='btn btn-sm btn-success' target='_blank'>
+                <i class='bi bi-download me-1'></i>Descargar Hoja de Servicio
+               </a>" :
+                    "<span class='badge bg-secondary'>No disponible</span>";
+
+                // Botón para descargar PDF de queja (si existe)
+                var botonPdfQueja = !string.IsNullOrEmpty(impresoraMantenimiento.PdfQueja) ?
+                    $@"<a href='/Repositorio/DescargarPdfQueja?folioAtencion={impresoraMantenimiento.FolioAtencion}' class='btn btn-sm btn-info' target='_blank'>
+                <i class='bi bi-file-earmark-pdf me-1'></i>Descargar PDF Queja
+               </a>" :
+                    "<span class='badge bg-secondary'>No disponible</span>";
+
                 var html = $@"
-                    <div class='row'>
-                        <div class='col-md-6'>
-                            <h5>Información del Equipo</h5>
-                            <ul class='list-group list-group-flush'>
-                                <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {impresoraMantenimiento.ClaveAgendaNavigation.NumActFijo}</li>
-                                <li class='list-group-item'><strong>Tipo de Equipo:</strong> Impresora</li>
-                                <li class='list-group-item'><strong>Zona:</strong> {zona?.NombreZona ?? "No especificado"}</li>
-                                <li class='list-group-item'><strong>Agencia:</strong> {agencia?.NombreAgencia ?? "No especificado"}</li>
-                                <li class='list-group-item'><strong>Centro:</strong> {centro?.NombreCentro ?? "No especificado"}</li>
-                                <li class='list-group-item'><strong>Número de Serie:</strong> {impresora?.NumSerie ?? "N/A"}</li>
-                                <li class='list-group-item'><strong>Modelo:</strong> {impresora?.Modelo ?? "N/A"}</li>
-                                <li class='list-group-item'><strong>Tipo de Impresión:</strong> {impresora?.TipoImpresion ?? "N/A"}</li>
-                            </ul>
-                        </div>
-                        <div class='col-md-6'>
-                            <h5>Información del Mantenimiento</h5>
-                            <ul class='list-group list-group-flush'>
-                                <li class='list-group-item'><strong>Número de Orden:</strong> {impresoraMantenimiento.ClaveAgenda}</li>
-                                <li class='list-group-item'><strong>Folio de Atención:</strong> {impresoraMantenimiento.FolioAtencion}</li>
-                                <li class='list-group-item'><strong>Fecha Reporte:</strong> {impresoraMantenimiento.FechaReporte.ToString("dd/MM/yyyy")}</li>
-                                <li class='list-group-item'><strong>Fecha de Atención:</strong> {(mantenimiento?.FechaAtencion.ToString("dd/MM/yyyy") ?? "No especificada")}</li>
-                                <li class='list-group-item'><strong>RPE Técnico:</strong> {impresoraMantenimiento.Rpe}</li>
-                                <li class='list-group-item'><strong>Usuario que Reporta:</strong> {impresoraMantenimiento.UsuarioReporta}</li>
-                                <li class='list-group-item'><strong>Correo:</strong> {impresoraMantenimiento.Correo}</li>
-                            </ul>
+            <div class='row'>
+                <div class='col-md-6'>
+                    <h5>Información del Equipo</h5>
+                    <ul class='list-group list-group-flush'>
+                        <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {impresoraMantenimiento.ClaveAgendaNavigation.NumActFijo}</li>
+                        <li class='list-group-item'><strong>Tipo de Equipo:</strong> Impresora</li>
+                        <li class='list-group-item'><strong>Zona:</strong> {zona?.NombreZona ?? "No especificado"}</li>
+                        <li class='list-group-item'><strong>Agencia:</strong> {agencia?.NombreAgencia ?? "No especificado"}</li>
+                        <li class='list-group-item'><strong>Centro:</strong> {centro?.NombreCentro ?? "No especificado"}</li>
+                        <li class='list-group-item'><strong>Número de Serie:</strong> {impresora?.NumSerie ?? "N/A"}</li>
+                        <li class='list-group-item'><strong>Modelo:</strong> {impresora?.Modelo ?? "N/A"}</li>
+                        <li class='list-group-item'><strong>Tipo de Impresión:</strong> {impresora?.TipoImpresion ?? "N/A"}</li>
+                    </ul>
+                </div>
+                <div class='col-md-6'>
+                    <h5>Información del Mantenimiento</h5>
+                    <ul class='list-group list-group-flush'>
+                        <li class='list-group-item'><strong>Número de Orden:</strong> {impresoraMantenimiento.ClaveAgenda}</li>
+                        <li class='list-group-item'><strong>Folio de Atención:</strong> {impresoraMantenimiento.FolioAtencion}</li>
+                        <li class='list-group-item'><strong>Fecha Reporte:</strong> {impresoraMantenimiento.FechaReporte.ToString("dd/MM/yyyy")}</li>
+                        <li class='list-group-item'><strong>Fecha de Atención:</strong> {(mantenimiento?.FechaAtencion.ToString("dd/MM/yyyy") ?? "No especificada")}</li>
+                        <li class='list-group-item'><strong>RPE Técnico:</strong> {impresoraMantenimiento.Rpe}</li>
+                        <li class='list-group-item'><strong>Usuario que Reporta:</strong> {impresoraMantenimiento.UsuarioReporta}</li>
+                        <li class='list-group-item'><strong>Correo:</strong> {impresoraMantenimiento.Correo}</li>
+                    </ul>
+                </div>
+            </div>
+            <div class='row mt-3'>
+                <div class='col-12'>
+                    <h5>Documentos</h5>
+                    <div class='d-flex gap-2 mb-3'>
+                        {botonHojaServicio}
+                        {botonPdfQueja}
+                    </div>
+                </div>
+            </div>
+            <div class='row mt-3'>
+                <div class='col-12'>
+                    <h5>Detalles del Reporte</h5>
+                    <div class='card'>
+                        <div class='card-body'>
+                            <p><strong>Problemática reportada:</strong></p>
+                            <p>{impresoraMantenimiento.Problematica ?? "No especificado"}</p>
+                            <p><strong>Observaciones:</strong></p>
+                            <p>{impresoraMantenimiento.Observaciones ?? "No especificado"}</p>
+                            {(mantenimiento?.Diagnostico != null ?
+                                        $@"<p><strong>Diagnóstico/Solución:</strong></p>
+                                   <p>{mantenimiento.Diagnostico}</p>" : "")}
+                            {(mantenimiento?.Observaciones != null ?
+                                        $@"<p><strong>Observaciones del técnico:</strong></p>
+                                   <p>{mantenimiento.Observaciones}</p>" : "")}
                         </div>
                     </div>
-                    <div class='row mt-3'>
-                        <div class='col-12'>
-                            <h5>Detalles del Reporte</h5>
-                            <div class='card'>
-                                <div class='card-body'>
-                                    <p><strong>Problemática reportada:</strong></p>
-                                    <p>{impresoraMantenimiento.Problematica ?? "No especificado"}</p>
-                                    <p><strong>Observaciones:</strong></p>
-                                    <p>{impresoraMantenimiento.Observaciones ?? "No especificado"}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>";
+                </div>
+            </div>";
 
                 return Content(html);
             }
