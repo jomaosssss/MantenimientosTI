@@ -490,14 +490,14 @@ public partial class MantenimientosTIContext : DbContext
                 .HasColumnName("usuarioReporta");
 
             entity.Property(e => e.Correo)
-                .HasMaxLength(20)
+                .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("correo");
 
-            entity.Property(e => e.PdfQueja)
+            entity.Property(e => e.PdfRptUsuarioImpresora)
                 .HasMaxLength(100)
                 .IsUnicode(false)
-                .HasColumnName("pdfQueja");
+                .HasColumnName("pdfRptUsuarioImpresora");
 
             entity.Property(e => e.Problematica)
                 .HasMaxLength(300)

@@ -738,17 +738,17 @@ namespace MantenimientosTI.Controllers
                 if (impresora != null)
                 {
                     htmlInfoEquipo += $@"
-                    <li class='list-group-item'><strong>Número de Serie:</strong> {impresora.NumSerie}</li>
+                    <li class='list-group-item'><strong>Número de serie:</strong> {impresora.NumSerie}</li>
                     <li class='list-group-item'><strong>Modelo:</strong> {impresora.Modelo}</li>
-                    <li class='list-group-item'><strong>Tipo de Impresión:</strong> {impresora.TipoImpresion}</li>
-                    <li class='list-group-item'><strong>IP Impresora:</strong> {impresora.IpImpresora}</li>
-                    <li class='list-group-item'><strong>Folio Llave:</strong> {impresora.FolioLlave}</li>
+                    <li class='list-group-item'><strong>Tipo de impresión:</strong> {impresora.TipoImpresion}</li>
+                    <li class='list-group-item'><strong>IP de la impresora:</strong> {impresora.IpImpresora}</li>
+                    <li class='list-group-item'><strong>Folio llave:</strong> {impresora.FolioLlave}</li>
                     <li class='list-group-item'><strong>Responsable:</strong> {impresora.Responsable}</li>";
                 }
 
                 htmlInfoEquipo += $@"
-                    <li class='list-group-item'><strong>Número de Activo Fijo:</strong> {mantenimiento.NumActFijo}</li>
-                    <li class='list-group-item'><strong>Tipo de Equipo:</strong> {tipoEquipo}</li>
+                    <li class='list-group-item'><strong>Número de activo fijo:</strong> {mantenimiento.NumActFijo}</li>
+                    <li class='list-group-item'><strong>Tipo de equipo:</strong> {tipoEquipo}</li>
                     <li class='list-group-item'><strong>Zona:</strong> {zona?.NombreZona ?? "No especificado"}</li>
                     <li class='list-group-item'><strong>Agencia:</strong> {agencia?.NombreAgencia ?? "No especificado"}</li>
                     <li class='list-group-item'><strong>Centro:</strong> {centro?.NombreCentro ?? "No especificado"}</li>
@@ -761,14 +761,14 @@ namespace MantenimientosTI.Controllers
                     htmlImpresoraExtra = $@"
                     <div class='row mt-3'>
                         <div class='col-12'>
-                            <h5>Información del Reporte</h5>
+                            <h5>Información del reporte</h5>
                             <div class='card'>
                                 <div class='card-body'>
-                                    <p><strong>Usuario que Reporta:</strong> {impresoraMantenimiento.UsuarioReporta}</p>
+                                    <p><strong>Usuario que reporta:</strong> {impresoraMantenimiento.UsuarioReporta}</p>
                                     <p><strong>Correo:</strong> {impresoraMantenimiento.Correo}</p>
-                                    <p><strong>Folio de Atención:</strong> {impresoraMantenimiento.FolioAtencion}</p>
-                                    <p><strong>Fecha de Reporte:</strong> {impresoraMantenimiento.FechaReporte.ToString("dd/MM/yyyy")}</p>
-                                    <p><strong>Fecha de Captura:</strong> {impresoraMantenimiento.FechaCaptura.ToString("dd/MM/yyyy HH:mm")}</p>
+                                    <p><strong>Folio de atención:</strong> {impresoraMantenimiento.FolioAtencion}</p>
+                                    <p><strong>Fecha de reporte:</strong> {impresoraMantenimiento.FechaReporte.ToString("dd/MM/yyyy")}</p>
+                                    <p><strong>Fecha de captura:</strong> {impresoraMantenimiento.FechaCaptura.ToString("dd/MM/yyyy HH:mm")}</p>
                                     <p><strong>Problemática:</strong></p>
                                     <p>{impresoraMantenimiento.Problematica ?? "No especificado"}</p>
                                     <p><strong>Observaciones:</strong></p>
@@ -782,17 +782,17 @@ namespace MantenimientosTI.Controllers
                 var html = $@"
                 <div class='row'>
                     <div class='col-md-6'>
-                        <h5>Información del Equipo</h5>
+                        <h5>Información del equipo</h5>
                         {htmlInfoEquipo}
                     </div>
                     <div class='col-md-6'>
-                        <h5>Información del Mantenimiento</h5>
+                        <h5>Información del mantenimiento</h5>
                         <ul class='list-group list-group-flush'>
-                            <li class='list-group-item'><strong>Número de Orden:</strong> {mantenimiento.NumOrden}</li>
-                            <li class='list-group-item'><strong>Fecha Programada:</strong> {fechaProgramada}</li>
-                            <li class='list-group-item'><strong>Fecha de Atención:</strong> {mantenimiento.FechaAtencion.ToString("dd/MM/yyyy")}</li>
-                            <li class='list-group-item'><strong>Fecha de Terminación:</strong> {mantenimiento.FechaInsercion.ToString("dd/MM/yyyy HH:mm")}</li>
-                            <li class='list-group-item'><strong>Tipo de Mantenimiento:</strong> {mantenimiento.Agendum.ClaveTipoMttoNavigation?.NombreTipoM}</li>
+                            <li class='list-group-item'><strong>Número de orden:</strong> {mantenimiento.NumOrden}</li>
+                            <li class='list-group-item'><strong>Fecha programada:</strong> {fechaProgramada}</li>
+                            <li class='list-group-item'><strong>Fecha de atención:</strong> {mantenimiento.FechaAtencion.ToString("dd/MM/yyyy")}</li>
+                            <li class='list-group-item'><strong>Fecha de terminación:</strong> {mantenimiento.FechaInsercion.ToString("dd/MM/yyyy HH:mm")}</li>
+                            <li class='list-group-item'><strong>Tipo de mantenimiento:</strong> {mantenimiento.Agendum.ClaveTipoMttoNavigation?.NombreTipoM}</li>
                             <li class='list-group-item'><strong>RPE:</strong> {mantenimiento.Rpe}</li>
                             <li class='list-group-item'><strong>Nombre:</strong> {nombreUsuario}</li>
                         </ul>
@@ -800,7 +800,7 @@ namespace MantenimientosTI.Controllers
                 </div>
                 <div class='row mt-3'>
                     <div class='col-12'>
-                        <h5>Detalles del Mantenimiento</h5>
+                        <h5>Detalles del mantenimiento</h5>
                         <div class='card'>
                             <div class='card-body'>
                                 <p><strong>Problemas reportados:</strong></p>

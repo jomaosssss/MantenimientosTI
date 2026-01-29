@@ -10,7 +10,7 @@ public partial class ImpresoraMantenimiento
     public string Rpe { get; set; } = null!;
     public string UsuarioReporta { get; set; } = null!;
     public string Correo { get; set; } = null!;
-    public string PdfQueja { get; set; } = null!;
+    public string PdfRptUsuarioImpresora { get; set; } = null!;
     public string Problematica { get; set; } = null!;
     public string Observaciones { get; set; } = null!;
     public DateOnly FechaReporte { get; set; }
