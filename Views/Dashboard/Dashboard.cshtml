@@ -301,6 +301,10 @@
         animation-delay: 0.3s;
     }
 
+    .tipo-equipo-card:nth-child(4) {
+        animation-delay: 0.4s;
+    }
+
     @@media (max-width: 768px) {
         .cards-container {
             gap: 8px;
@@ -577,8 +581,8 @@
                             </div>
 
                             <div class="row g-3" id="contenedorGraficasTipos" style="display: none;">
-                                <!-- Gráficas individuales -->
-                                <div class="col-md-4">
+                                <!-- Gráficas individuales - Cambiado a col-md-3 para que quepan 4 en una fila -->
+                                <div class="col-lg-3 col-md-6">
                                     <div class="card tipo-equipo-card border-0 shadow-sm h-100">
                                         <div class="tipo-equipo-header">
                                             <h6 class="mb-0 text-center text-dark" style="font-weight: normal;">CFEMÁTICOS</h6>
@@ -603,7 +607,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-4">
+                                <div class="col-lg-3 col-md-6">
                                     <div class="card tipo-equipo-card border-0 shadow-sm h-100">
                                         <div class="tipo-equipo-header">
                                             <h6 class="mb-0 text-center text-dark" style="font-weight: normal;">EQUIPOS DE ATENCIÓN A CLIENTES</h6>
@@ -628,7 +632,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-4">
+                                <div class="col-lg-3 col-md-6">
                                     <div class="card tipo-equipo-card border-0 shadow-sm h-100">
                                         <div class="tipo-equipo-header">
                                             <h6 class="mb-0 text-center text-dark" style="font-weight: normal;">EQUIPOS DE CÓMPUTO</h6>
@@ -646,6 +650,32 @@
                                                     <div class="d-flex align-items-center">
                                                         <div class="color-box bg-warning me-2"></div>
                                                         <small class="text-muted">Pendientes: <span id="equipos-computo-pendientes">0</span></small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- NUEVA GRÁFICA PARA IMPRESORAS -->
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="card tipo-equipo-card border-0 shadow-sm h-100">
+                                        <div class="tipo-equipo-header">
+                                            <h6 class="mb-0 text-center text-dark" style="font-weight: normal;">IMPRESORAS</h6>
+                                        </div>
+                                        <div class="tipo-equipo-body p-2 d-flex flex-column">
+                                            <div class="chart-container flex-grow-1 position-relative">
+                                                <canvas id="chart-impresoras"></canvas>
+                                            </div>
+                                            <div class="legend-container mt-2">
+                                                <div class="d-flex flex-column align-items-center gap-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="color-box bg-success me-2"></div>
+                                                        <small class="text-muted">Terminados: <span id="impresoras-terminados">0</span></small>
+                                                    </div>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="color-box bg-warning me-2"></div>
+                                                        <small class="text-muted">Pendientes: <span id="impresoras-pendientes">0</span></small>
                                                     </div>
                                                 </div>
                                             </div>
@@ -692,6 +722,14 @@
                                                             <td class="text-center" id="tabla-equipos-computo-terminados">0</td>
                                                             <td class="text-center" id="tabla-equipos-computo-pendientes">0</td>
                                                             <td class="text-center" id="tabla-equipos-computo-porcentaje">0%</td>
+                                                        </tr>
+                                                        <!-- NUEVA FILA PARA IMPRESORAS -->
+                                                        <tr>
+                                                            <td class="text-start">IMPRESORAS</td>
+                                                            <td class="text-center" id="tabla-impresoras-programados">0</td>
+                                                            <td class="text-center" id="tabla-impresoras-terminados">0</td>
+                                                            <td class="text-center" id="tabla-impresoras-pendientes">0</td>
+                                                            <td class="text-center" id="tabla-impresoras-porcentaje">0%</td>
                                                         </tr>
                                                         <tr class="table-active fw-bold">
                                                             <td class="text-start">TOTAL</td>
@@ -959,6 +997,7 @@
             let chartCfematicos = null;
             let chartEquiposAC = null;
             let chartEquiposComputo = null;
+            let chartImpresoras = null; // Nueva variable para impresoras
 
             function mostrarAlerta(mensaje, tipo, contenedor = '#mensajeGraficas') {
                 $(contenedor).empty();
@@ -1273,94 +1312,112 @@
                 });
             }
 
-        function actualizarGraficasPorTipoEquipo(datosGraficas, zonaSeleccionada) {
-            // Destruir gráficas existentes
-            if (chartCfematicos) chartCfematicos.destroy();
-            if (chartEquiposAC) chartEquiposAC.destroy();
-            if (chartEquiposComputo) chartEquiposComputo.destroy();
+            function actualizarGraficasPorTipoEquipo(datosGraficas, zonaSeleccionada) {
+                // Destruir gráficas existentes
+                if (chartCfematicos) chartCfematicos.destroy();
+                if (chartEquiposAC) chartEquiposAC.destroy();
+                if (chartEquiposComputo) chartEquiposComputo.destroy();
+                if (chartImpresoras) chartImpresoras.destroy(); // Nueva línea
 
-            // Procesar datos para cada tipo de equipo
-            const datosCfematicos = datosGraficas.find(d => d.tipoEquipo === 'CFEMÁTICOS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
-            const datosEquiposAC = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_AC') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
-            const datosEquiposComputo = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_COMPUTO') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+                // Procesar datos para cada tipo de equipo
+                const datosCfematicos = datosGraficas.find(d => d.tipoEquipo === 'CFEMÁTICOS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+                const datosEquiposAC = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_AC') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+                const datosEquiposComputo = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_COMPUTO') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
+                const datosImpresoras = datosGraficas.find(d => d.tipoEquipo === 'IMPRESORAS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 }; // Nueva línea
 
-            // Actualizar estadísticas de las tarjetas
-            actualizarEstadisticas('cfematicos', datosCfematicos);
-            actualizarEstadisticas('equipos-ac', datosEquiposAC);
-            actualizarEstadisticas('equipos-computo', datosEquiposComputo);
+                // Actualizar estadísticas de las tarjetas
+                actualizarEstadisticas('cfematicos', datosCfematicos);
+                actualizarEstadisticas('equipos-ac', datosEquiposAC);
+                actualizarEstadisticas('equipos-computo', datosEquiposComputo);
+                actualizarEstadisticas('impresoras', datosImpresoras); // Nueva línea
 
-            // Actualizar tabla de resumen
-            actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo);
+                // Actualizar tabla de resumen
+                actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo, datosImpresoras);
 
-            // Crear nuevas gráficas con animación escalonada
-            setTimeout(() => {
-                chartCfematicos = crearGraficaPastel('chart-cfematicos', datosCfematicos, ['#28a745', '#ffc107', '#6c757d'], 'CFEMÁTICOS', zonaSeleccionada);
-            }, 100);
+                // Crear nuevas gráficas con animación escalonada
+                setTimeout(() => {
+                    chartCfematicos = crearGraficaPastel('chart-cfematicos', datosCfematicos, ['#28a745', '#ffc107', '#6c757d'], 'CFEMÁTICOS', zonaSeleccionada);
+                }, 100);
 
-            setTimeout(() => {
-                chartEquiposAC = crearGraficaPastel('chart-equipos-ac', datosEquiposAC, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_AC', zonaSeleccionada);
-            }, 300);
+                setTimeout(() => {
+                    chartEquiposAC = crearGraficaPastel('chart-equipos-ac', datosEquiposAC, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_AC', zonaSeleccionada);
+                }, 300);
 
-            setTimeout(() => {
-                chartEquiposComputo = crearGraficaPastel('chart-equipos-computo', datosEquiposComputo, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_COMPUTO', zonaSeleccionada);
-            }, 500);
-        }
+                setTimeout(() => {
+                    chartEquiposComputo = crearGraficaPastel('chart-equipos-computo', datosEquiposComputo, ['#28a745', '#ffc107', '#6c757d'], 'EQUIPOS_COMPUTO', zonaSeleccionada);
+                }, 500);
 
-                // Nueva función para actualizar la tabla de resumen
-        function actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo) {
-            // CFEMÁTICOS
-            const cfematicosProgramados = datosCfematicos.programados || 0;
-            const cfematicosTerminados = datosCfematicos.terminados || 0;
-            const cfematicosPendientes = datosCfematicos.pendientes || 0;
-            const cfematicosPorcentaje = cfematicosProgramados > 0 ? Math.round((cfematicosTerminados / cfematicosProgramados) * 100) : 0;
+                setTimeout(() => {
+                    chartImpresoras = crearGraficaPastel('chart-impresoras', datosImpresoras, ['#28a745', '#ffc107', '#6c757d'], 'IMPRESORAS', zonaSeleccionada); // Nueva línea
+                }, 700);
+            }
 
-            $('#tabla-cfematicos-programados').text(cfematicosProgramados);
-            $('#tabla-cfematicos-terminados').text(cfematicosTerminados);
-            $('#tabla-cfematicos-pendientes').text(cfematicosPendientes);
-            $('#tabla-cfematicos-porcentaje').text(cfematicosPorcentaje + '%');
+            // Nueva función para actualizar la tabla de resumen
+            function actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo, datosImpresoras) {
+                // CFEMÁTICOS
+                const cfematicosProgramados = datosCfematicos.programados || 0;
+                const cfematicosTerminados = datosCfematicos.terminados || 0;
+                const cfematicosPendientes = datosCfematicos.pendientes || 0;
+                const cfematicosPorcentaje = cfematicosProgramados > 0 ? Math.round((cfematicosTerminados / cfematicosProgramados) * 100) : 0;
 
-            // EQUIPOS DE ATENCIÓN A CLIENTES
-            const equiposACProgramados = datosEquiposAC.programados || 0;
-            const equiposACTerminados = datosEquiposAC.terminados || 0;
-            const equiposACPendientes = datosEquiposAC.pendientes || 0;
-            const equiposACPorcentaje = equiposACProgramados > 0 ? Math.round((equiposACTerminados / equiposACProgramados) * 100) : 0;
+                $('#tabla-cfematicos-programados').text(cfematicosProgramados);
+                $('#tabla-cfematicos-terminados').text(cfematicosTerminados);
+                $('#tabla-cfematicos-pendientes').text(cfematicosPendientes);
+                $('#tabla-cfematicos-porcentaje').text(cfematicosPorcentaje + '%');
 
-            $('#tabla-equipos-ac-programados').text(equiposACProgramados);
-            $('#tabla-equipos-ac-terminados').text(equiposACTerminados);
-            $('#tabla-equipos-ac-pendientes').text(equiposACPendientes);
-            $('#tabla-equipos-ac-porcentaje').text(equiposACPorcentaje + '%');
+                // EQUIPOS DE ATENCIÓN A CLIENTES
+                const equiposACProgramados = datosEquiposAC.programados || 0;
+                const equiposACTerminados = datosEquiposAC.terminados || 0;
+                const equiposACPendientes = datosEquiposAC.pendientes || 0;
+                const equiposACPorcentaje = equiposACProgramados > 0 ? Math.round((equiposACTerminados / equiposACProgramados) * 100) : 0;
 
-            // EQUIPOS DE CÓMPUTO
-            const equiposComputoProgramados = datosEquiposComputo.programados || 0;
-            const equiposComputoTerminados = datosEquiposComputo.terminados || 0;
-            const equiposComputoPendientes = datosEquiposComputo.pendientes || 0;
-            const equiposComputoPorcentaje = equiposComputoProgramados > 0 ? Math.round((equiposComputoTerminados / equiposComputoProgramados) * 100) : 0;
+                $('#tabla-equipos-ac-programados').text(equiposACProgramados);
+                $('#tabla-equipos-ac-terminados').text(equiposACTerminados);
+                $('#tabla-equipos-ac-pendientes').text(equiposACPendientes);
+                $('#tabla-equipos-ac-porcentaje').text(equiposACPorcentaje + '%');
 
-            $('#tabla-equipos-computo-programados').text(equiposComputoProgramados);
-            $('#tabla-equipos-computo-terminados').text(equiposComputoTerminados);
-            $('#tabla-equipos-computo-pendientes').text(equiposComputoPendientes);
-            $('#tabla-equipos-computo-porcentaje').text(equiposComputoPorcentaje + '%');
+                // EQUIPOS DE CÓMPUTO
+                const equiposComputoProgramados = datosEquiposComputo.programados || 0;
+                const equiposComputoTerminados = datosEquiposComputo.terminados || 0;
+                const equiposComputoPendientes = datosEquiposComputo.pendientes || 0;
+                const equiposComputoPorcentaje = equiposComputoProgramados > 0 ? Math.round((equiposComputoTerminados / equiposComputoProgramados) * 100) : 0;
 
-            // TOTALES
-            const totalProgramados = cfematicosProgramados + equiposACProgramados + equiposComputoProgramados;
-            const totalTerminados = cfematicosTerminados + equiposACTerminados + equiposComputoTerminados;
-            const totalPendientes = cfematicosPendientes + equiposACPendientes + equiposComputoPendientes;
-            const totalPorcentaje = totalProgramados > 0 ? Math.round((totalTerminados / totalProgramados) * 100) : 0;
+                $('#tabla-equipos-computo-programados').text(equiposComputoProgramados);
+                $('#tabla-equipos-computo-terminados').text(equiposComputoTerminados);
+                $('#tabla-equipos-computo-pendientes').text(equiposComputoPendientes);
+                $('#tabla-equipos-computo-porcentaje').text(equiposComputoPorcentaje + '%');
 
-            $('#tabla-total-programados').text(totalProgramados);
-            $('#tabla-total-terminados').text(totalTerminados);
-            $('#tabla-total-pendientes').text(totalPendientes);
-            $('#tabla-total-porcentaje').text(totalPorcentaje + '%');
-        }
+                // NUEVO: IMPRESORAS
+                const impresorasProgramados = datosImpresoras.programados || 0;
+                const impresorasTerminados = datosImpresoras.terminados || 0;
+                const impresorasPendientes = datosImpresoras.pendientes || 0;
+                const impresorasPorcentaje = impresorasProgramados > 0 ? Math.round((impresorasTerminados / impresorasProgramados) * 100) : 0;
 
-        function actualizarEstadisticas(prefijo, datos) {
-            const terminados = datos.terminados || 0;
-            const pendientes = datos.pendientes || 0;
+                $('#tabla-impresoras-programados').text(impresorasProgramados);
+                $('#tabla-impresoras-terminados').text(impresorasTerminados);
+                $('#tabla-impresoras-pendientes').text(impresorasPendientes);
+                $('#tabla-impresoras-porcentaje').text(impresorasPorcentaje + '%');
 
-            // Actualizar elementos HTML de las tarjetas
-            $(`#${prefijo}-terminados`).text(terminados);
-            $(`#${prefijo}-pendientes`).text(pendientes);
-        }
+                // TOTALES (modificado para incluir impresoras)
+                const totalProgramados = cfematicosProgramados + equiposACProgramados + equiposComputoProgramados + impresorasProgramados;
+                const totalTerminados = cfematicosTerminados + equiposACTerminados + equiposComputoTerminados + impresorasTerminados;
+                const totalPendientes = cfematicosPendientes + equiposACPendientes + equiposComputoPendientes + impresorasPendientes;
+                const totalPorcentaje = totalProgramados > 0 ? Math.round((totalTerminados / totalProgramados) * 100) : 0;
+
+                $('#tabla-total-programados').text(totalProgramados);
+                $('#tabla-total-terminados').text(totalTerminados);
+                $('#tabla-total-pendientes').text(totalPendientes);
+                $('#tabla-total-porcentaje').text(totalPorcentaje + '%');
+            }
+
+            function actualizarEstadisticas(prefijo, datos) {
+                const terminados = datos.terminados || 0;
+                const pendientes = datos.pendientes || 0;
+
+                // Actualizar elementos HTML de las tarjetas
+                $(`#${prefijo}-terminados`).text(terminados);
+                $(`#${prefijo}-pendientes`).text(pendientes);
+            }
 
             function crearGraficaPastel(canvasId, datos, colores, tipoEquipo, zonaSeleccionada) {
                 const ctx = document.getElementById(canvasId);
@@ -1451,92 +1508,92 @@
             }
 
             // NUEVA FUNCIÓN: Mostrar modal con registros
-        function mostrarRegistrosModal(datos) {
-            const modal = new bootstrap.Modal(document.getElementById('registrosModal'));
-            const tituloModal = document.getElementById('registrosModalLabel');
-            const subtituloModal = document.getElementById('modalSubtitulo');
-            const cuerpoTabla = document.getElementById('cuerpoTablaRegistros');
-            const sinRegistros = document.getElementById('modalSinRegistros');
-            const cargando = document.getElementById('modalCargando');
+            function mostrarRegistrosModal(datos) {
+                const modal = new bootstrap.Modal(document.getElementById('registrosModal'));
+                const tituloModal = document.getElementById('registrosModalLabel');
+                const subtituloModal = document.getElementById('modalSubtitulo');
+                const cuerpoTabla = document.getElementById('cuerpoTablaRegistros');
+                const sinRegistros = document.getElementById('modalSinRegistros');
+                const cargando = document.getElementById('modalCargando');
 
-            // Obtener el nombre de la zona desde el dropdown
-            const zonaSeleccionada = datos.zonaSeleccionada;
-            let nombreZona = zonaSeleccionada;
+                // Obtener el nombre de la zona desde el dropdown
+                const zonaSeleccionada = datos.zonaSeleccionada;
+                let nombreZona = zonaSeleccionada;
 
-            // Buscar el nombre de la zona en el dropdown
-            if (zonaSeleccionada !== 'TODAS') {
-                const option = $(`#filtroZona option[value="${zonaSeleccionada}"]`);
-                if (option.length > 0) {
-                    nombreZona = option.text();
+                // Buscar el nombre de la zona en el dropdown
+                if (zonaSeleccionada !== 'TODAS') {
+                    const option = $(`#filtroZona option[value="${zonaSeleccionada}"]`);
+                    if (option.length > 0) {
+                        nombreZona = option.text();
+                    }
+                } else {
+                    nombreZona = 'TODAS LAS ZONAS';
                 }
-            } else {
-                nombreZona = 'TODAS LAS ZONAS';
-            }
 
-            // Configurar título y subtítulo del modal
-            tituloModal.textContent = `ZONA ${nombreZona}`;
-            subtituloModal.textContent = `${datos.estado}: ${datos.cantidad} mantenimientos`;
+                // Configurar título y subtítulo del modal
+                tituloModal.textContent = `ZONA ${nombreZona}`;
+                subtituloModal.textContent = `${datos.estado}: ${datos.cantidad} mantenimientos`;
 
-            // Mostrar estado de carga
-            cargando.style.display = 'block';
-            sinRegistros.style.display = 'none';
-            cuerpoTabla.innerHTML = '';
+                // Mostrar estado de carga
+                cargando.style.display = 'block';
+                sinRegistros.style.display = 'none';
+                cuerpoTabla.innerHTML = '';
 
-            // Mostrar modal
-            modal.show();
+                // Mostrar modal
+                modal.show();
 
-            // Obtener registros del servidor
-            $.ajax({
-                url: '@Url.Action("ObtenerRegistrosPorEstado", "Dashboard")',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    tipo: datos.tipo,
-                    clave: datos.clave,
-                    estado: datos.estado,
-                    fechaInicio: datos.fechaInicio,
-                    fechaFin: datos.fechaFin,
-                    zonaSeleccionada: datos.zonaSeleccionada,
-                    tipoEquipo: datos.tipoEquipo
-                }),
-                success: function(response) {
-                    cargando.style.display = 'none';
+                // Obtener registros del servidor
+                $.ajax({
+                    url: '@Url.Action("ObtenerRegistrosPorEstado", "Dashboard")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        tipo: datos.tipo,
+                        clave: datos.clave,
+                        estado: datos.estado,
+                        fechaInicio: datos.fechaInicio,
+                        fechaFin: datos.fechaFin,
+                        zonaSeleccionada: datos.zonaSeleccionada,
+                        tipoEquipo: datos.tipoEquipo
+                    }),
+                    success: function(response) {
+                        cargando.style.display = 'none';
 
-                    if (response.success && response.registros && response.registros.length > 0) {
-                        // Construir tabla con registros
-                        let html = '';
-                        response.registros.forEach(registro => {
-                            html += `
-                                <tr>
-                                    <td>${registro.numActFijo || 'N/A'}</td>
-                                    <td>${registro.nombreAgencia || 'N/A'}</td>
-                                    <td>${registro.nombreCentro || 'N/A'}</td>
-                                    <td>${registro.fechaProgramada || 'N/A'}</td>
-                                    <td>${registro.fechaTerminada || 'N/A'}</td>
-                                    <td>
-                                        <span class="badge ${obtenerClaseEstatus(registro.estatus)}">
-                                            ${registro.estatus || 'N/A'}
-                                        </span>
-                                    </td>
-                                    <td>${registro.tipoEquipo || 'N/A'}</td>
-                                </tr>
-                            `;
-                        });
-                        cuerpoTabla.innerHTML = html;
-                        sinRegistros.style.display = 'none';
-                    } else {
+                        if (response.success && response.registros && response.registros.length > 0) {
+                            // Construir tabla con registros
+                            let html = '';
+                            response.registros.forEach(registro => {
+                                html += `
+                                    <tr>
+                                        <td>${registro.numActFijo || 'N/A'}</td>
+                                        <td>${registro.nombreAgencia || 'N/A'}</td>
+                                        <td>${registro.nombreCentro || 'N/A'}</td>
+                                        <td>${registro.fechaProgramada || 'N/A'}</td>
+                                        <td>${registro.fechaTerminada || 'N/A'}</td>
+                                        <td>
+                                            <span class="badge ${obtenerClaseEstatus(registro.estatus)}">
+                                                ${registro.estatus || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td>${registro.tipoEquipo || 'N/A'}</td>
+                                    </tr>
+                                `;
+                            });
+                            cuerpoTabla.innerHTML = html;
+                            sinRegistros.style.display = 'none';
+                        } else {
+                            cuerpoTabla.innerHTML = '';
+                            sinRegistros.style.display = 'block';
+                        }
+                    },
+                    error: function(xhr) {
+                        cargando.style.display = 'none';
                         cuerpoTabla.innerHTML = '';
                         sinRegistros.style.display = 'block';
+                        console.error('Error al cargar registros:', xhr);
                     }
-                },
-                error: function(xhr) {
-                    cargando.style.display = 'none';
-                    cuerpoTabla.innerHTML = '';
-                    sinRegistros.style.display = 'block';
-                    console.error('Error al cargar registros:', xhr);
-                }
-            });
-        }
+                });
+            }
 
             // Función auxiliar para determinar clase CSS del estatus
             function obtenerClaseEstatus(estatus) {
@@ -1715,7 +1772,6 @@
                 actualizarInfoReporte();
                 actualizarInfoProgramacion();
             }
-
 
             // Eventos para el selector de usuarios
             $('#btnSeleccionarUsuarios').click(function() {

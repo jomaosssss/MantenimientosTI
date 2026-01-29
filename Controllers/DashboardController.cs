@@ -253,16 +253,36 @@ namespace MantenimientosTI.Controllers
                         otros = equiposComputoOtros > 0 ? equiposComputoOtros : 0
                     });
 
+                    // 4. NUEVO: IMPRESORAS
+                    var impresorasQuery = baseQuery
+                        .Where(a => a.NumActFijoNavigation != null &&
+                                   a.NumActFijoNavigation.ClaveZona == model.ZonaSeleccionada &&
+                                   _context.Impresoras.Any(i => i.NumActFijo == a.NumActFijo));
+
+                    var impresorasProgramados = await impresorasQuery.CountAsync();
+                    var impresorasTerminados = await impresorasQuery.CountAsync(a => a.Estatus == "TERMINADO");
+                    var impresorasPendientes = await impresorasQuery.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var impresorasOtros = impresorasProgramados - impresorasTerminados - impresorasPendientes;
+
+                    graficasTipos.Add(new
+                    {
+                        tipoEquipo = "IMPRESORAS",
+                        programados = impresorasProgramados,
+                        terminados = impresorasTerminados,
+                        pendientes = impresorasPendientes,
+                        otros = impresorasOtros > 0 ? impresorasOtros : 0
+                    });
+
                     // NUEVO: Agregar logging detallado para debug
                     _logger.LogInformation($"Datos tipos equipo - Zona: {model.ZonaSeleccionada}");
                     _logger.LogInformation($"CFEMÁTICOS: Programados={cfematicosProgramados}, Terminados={cfematicosTerminados}, Pendientes={cfematicosPendientes}");
                     _logger.LogInformation($"EQUIPOS_AC: Programados={equiposACProgramados}, Terminados={equiposACTerminados}, Pendientes={equiposACPendientes}");
                     _logger.LogInformation($"EQUIPOS_COMPUTO: Programados={equiposComputoProgramados}, Terminados={equiposComputoTerminados}, Pendientes={equiposComputoPendientes}");
+                    _logger.LogInformation($"IMPRESORAS: Programados={impresorasProgramados}, Terminados={impresorasTerminados}, Pendientes={impresorasPendientes}");
 
                     // NUEVO: Verificar si hay registros en las tablas para debug
-                    var totalEquiposAC = await _context.EquipoAcs.CountAsync();
-                    var totalEquiposComputo = await _context.EquipoComputos.CountAsync();
-                    _logger.LogInformation($"Total registros en BD - EquipoAcs: {totalEquiposAC}, EquipoComputos: {totalEquiposComputo}");
+                    var totalImpresoras = await _context.Impresoras.CountAsync();
+                    _logger.LogInformation($"Total registros en BD - Impresoras: {totalImpresoras}");
 
                     return Json(new { success = true, datosGraficas = graficasTipos, tipo = "tiposEquipo" });
                 }
@@ -957,7 +977,7 @@ namespace MantenimientosTI.Controllers
                                a.FechaProgramada >= primerDia &&
                                a.FechaProgramada <= ultimoDia);
 
-                // Aplicar filtro por tipo de equipo específico para EQUIPOS_AC y EQUIPOS_COMPUTO
+                // Aplicar filtro por tipo de equipo específico para EQUIPOS_AC, EQUIPOS_COMPUTO e IMPRESORAS
                 if (model.Tipo == "tiposEquipo")
                 {
                     if (model.Clave == "CFEMÁTICOS")
@@ -973,6 +993,10 @@ namespace MantenimientosTI.Controllers
                     {
                         // Filtrar por PC (ClaveTipoEquipo == 3) y LAPTOP (ClaveTipoEquipo == 4)
                         baseQuery = baseQuery.Where(a => _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo));
+                    }
+                    else if (model.Clave == "IMPRESORAS") // NUEVO
+                    {
+                        baseQuery = baseQuery.Where(a => _context.Impresoras.Any(i => i.NumActFijo == a.NumActFijo));
                     }
                 }
 
@@ -1040,8 +1064,9 @@ namespace MantenimientosTI.Controllers
                                     _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo && ec.ClaveTipoEquipo == 4) ? "LAPTOP" :
                                     _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo && ea.ClaveTipoEquipo == 1) ? "CFECAM" :
                                     _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo && ea.ClaveTipoEquipo == 2) ? "CFETURNO" :
-                                    _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo) ? "CFEMÁTICOS" : "DESCONOCIDO",
-                        // Obtener número de cajero para CFEMÁTICOS
+                                    _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo) ? "CFEMÁTICOS" :
+                                    _context.Impresoras.Any(i => i.NumActFijo == a.NumActFijo) ? "IMPRESORA" : "DESCONOCIDO", // NUEVO: IMPRESORA
+                                                                                                                              // Obtener número de cajero para CFEMÁTICOS
                         NumCajero = _context.EquipoCfematicos
                             .Where(ec => ec.NumActFijo == a.NumActFijo)
                             .Select(ec => ec.NumCajero)
@@ -1055,7 +1080,8 @@ namespace MantenimientosTI.Controllers
                         // Información adicional para debug
                         TieneEquipoAC = _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo),
                         TieneEquipoComputo = _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo),
-                        TieneEquipoCfematico = _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo)
+                        TieneEquipoCfematico = _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo),
+                        TieneImpresora = _context.Impresoras.Any(i => i.NumActFijo == a.NumActFijo) // NUEVO
                     })
                     .OrderBy(a => a.NombreAgencia)
                     .ThenBy(a => a.NombreCentro)
@@ -1067,7 +1093,8 @@ namespace MantenimientosTI.Controllers
                 _logger.LogInformation($"Desglose por tipo: " +
                                       $"CFEMÁTICOS: {registros.Count(r => r.TipoEquipo == "CFEMÁTICOS")}, " +
                                       $"EQUIPOS_AC: {registros.Count(r => r.TipoEquipo == "CFECAM" || r.TipoEquipo == "CFETURNO")}, " +
-                                      $"EQUIPOS_COMPUTO: {registros.Count(r => r.TipoEquipo == "PC" || r.TipoEquipo == "LAPTOP")}");
+                                      $"EQUIPOS_COMPUTO: {registros.Count(r => r.TipoEquipo == "PC" || r.TipoEquipo == "LAPTOP")}, " +
+                                      $"IMPRESORAS: {registros.Count(r => r.TipoEquipo == "IMPRESORA")}"); // NUEVO
 
                 // Formatear los datos finales
                 var registrosFormateados = registros.Select(r => new

@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MantenimientosTI.Models;
+using MantenimientosTI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Globalization;
-using System.IO; // Añade este using
+using System.IO;
+using Microsoft.Extensions.Logging;
 
 namespace MantenimientosTI.Controllers
 {
@@ -11,10 +13,17 @@ namespace MantenimientosTI.Controllers
     public class ImpresoraController : Controller
     {
         private readonly MantenimientosTIContext _dbContext;
+        private readonly ReporteService _reporteService;
+        private readonly ILogger<ImpresoraController> _logger;
 
-        public ImpresoraController(MantenimientosTIContext context)
+        public ImpresoraController(
+            MantenimientosTIContext context,
+            ReporteService reporteService,
+            ILogger<ImpresoraController> logger)
         {
             _dbContext = context;
+            _reporteService = reporteService;
+            _logger = logger;
         }
 
         public IActionResult AgendarImpresoras()
@@ -134,7 +143,7 @@ namespace MantenimientosTI.Controllers
                     }
 
                     // Obtener el número de serie de la impresora
-                    var numSerieImpresora = impresora.NumSerie; // Asumiendo que existe esta propiedad
+                    var numSerieImpresora = impresora.NumSerie;
 
                     // Verificar si ya existe el folio de atención
                     var folioExistente = await _dbContext.ImpresoraMantenimientos
@@ -179,7 +188,7 @@ namespace MantenimientosTI.Controllers
                     _dbContext.Agenda.Add(agenda);
                     await _dbContext.SaveChangesAsync(); // Guardar para obtener ClaveAgenda
 
-                    // 2. Guardar archivo PDF en carpeta "rptImpresoras" - PASAR EL NÚMERO DE SERIE
+                    // 2. Guardar archivo PDF en carpeta "rptImpresoras"
                     var nombreArchivoPdf = await GuardarPdfRptUsuarioImpresora(pdfRptUsuarioImpresora, numSerieImpresora);
 
                     // 3. Crear registro en ImpresoraMantenimiento
@@ -200,22 +209,53 @@ namespace MantenimientosTI.Controllers
                     _dbContext.ImpresoraMantenimientos.Add(impresoraMantenimiento);
                     await _dbContext.SaveChangesAsync();
 
+                    // 4. ENVIAR CORREO DE NOTIFICACIÓN
+                    bool correoEnviado = false;
+                    string mensajeCorreo = "";
+
+                    try
+                    {
+                        correoEnviado = await _reporteService.EnviarCorreoNotificacionImpresora(
+                            correo,
+                            usuarioReporta,
+                            folioAtencion);
+
+                        if (correoEnviado)
+                        {
+                            mensajeCorreo = " Se ha enviado un correo de notificación al usuario.";
+                            _logger.LogInformation($"Correo de notificación enviado exitosamente a: {correo}");
+                        }
+                        else
+                        {
+                            mensajeCorreo = " No se pudo enviar el correo de notificación.";
+                            _logger.LogWarning($"No se pudo enviar correo de notificación a: {correo}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        mensajeCorreo = " Error al enviar correo de notificación.";
+                        _logger.LogError(ex, "Error al enviar correo de notificación");
+                        // No revertimos la transacción si falla el correo, solo registramos
+                    }
+
                     await transaction.CommitAsync();
 
                     return Json(new
                     {
                         success = true,
-                        message = $"Mantenimiento agendado correctamente para el {fechaReporteParsed.ToString("dd/MM/yyyy")}. Folio: {folioAtencion}"
+                        message = $"Mantenimiento agendado correctamente para el {fechaReporteParsed.ToString("dd/MM/yyyy")}. Folio: {folioAtencion}.{mensajeCorreo}"
                     });
                 }
                 catch (DbUpdateException ex)
                 {
                     await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error de base de datos al agendar mantenimiento de impresora");
                     return Json(new { success = false, message = "Error al guardar en la base de datos: " + ex.InnerException?.Message });
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error inesperado al agendar mantenimiento de impresora");
                     return Json(new { success = false, message = $"Error inesperado: {ex.Message}" });
                 }
             }

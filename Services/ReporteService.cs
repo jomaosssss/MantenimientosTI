@@ -919,6 +919,101 @@ namespace MantenimientosTI.Services
                 _logger.LogError(ex, "Error al generar hoja Computo");
             }
         }
+
+        public async Task<bool> EnviarCorreoNotificacionImpresora(
+    string destinatario,
+    string usuarioReporta,
+    string folioAtencion)
+        {
+            try
+            {
+                var smtpServer = _configuration["EmailSettings:SmtpServer"];
+                var port = int.Parse(_configuration["EmailSettings:Port"]);
+                var username = _configuration["EmailSettings:Username"];
+                var password = _configuration["EmailSettings:Password"];
+                var fromAddress = _configuration["EmailSettings:FromAddress"];
+
+                _logger.LogInformation($"Enviando notificación de impresora a: {destinatario}");
+
+                var asunto = "AVISO DE MANTENIMIENTO A IMPRESORA";
+                var cuerpoHTML = $@"
+        <html>
+        <body style='font-family: Arial, sans-serif; line-height: 1.6;'>
+            <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;'>
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+                    <h2 style='color: #2c3e50; margin: 0;'>AVISO DE MANTENIMIENTO A IMPRESORA</h2>
+                </div>
+                
+                <p>Estimado(a) <strong>{usuarioReporta}</strong>,</p>
+                
+                <p>Le informamos que su reporte con el folio <strong>{folioAtencion}</strong> está siendo atendido.</p>
+                
+                <div style='background-color: #e8f4fd; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0;'>
+                    <p style='margin: 0;'>
+                        <strong>Folio:</strong> {folioAtencion}<br>
+                        <strong>Estatus:</strong> En proceso de atención<br>
+                        <strong>Fecha de notificación:</strong> {DateTime.Now:dd/MM/yyyy HH:mm}
+                    </p>
+                </div>
+                
+                <p>Nuestro equipo de soporte técnico se pondrá en contacto para dar seguimiento a su reporte.</p>
+                
+                <p>Gracias por su comprensión.</p>
+                
+                <hr style='border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;'>
+                
+                <div style='font-size: 12px; color: #666; text-align: center;'>
+                    <p>Este correo se envía de manera automática, favor de no responderlo.</p>
+                    <p>© Sistema de Mantenimientos TI - CFE</p>
+                </div>
+            </div>
+        </body>
+        </html>";
+
+                using var client = new SmtpClient(smtpServer, port);
+
+                // Configuración SMTP (igual que en el método existente)
+                if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+                {
+                    client.Credentials = new NetworkCredential(username, password);
+                    _logger.LogInformation("Usando autenticación con credenciales");
+                }
+                else
+                {
+                    _logger.LogInformation("Envío sin autenticación (red interna)");
+                }
+
+                client.EnableSsl = false;
+                client.Timeout = 60000;
+                client.DeliveryMethod = SmtpDeliveryMethod.Network;
+
+                using var message = new MailMessage
+                {
+                    From = new MailAddress(fromAddress),
+                    Subject = asunto,
+                    Body = cuerpoHTML,
+                    IsBodyHtml = true
+                };
+
+                message.To.Add(destinatario.Trim());
+
+                _logger.LogInformation($"Enviando correo de notificación de impresora...");
+                await client.SendMailAsync(message);
+                _logger.LogInformation("Correo de notificación enviado exitosamente");
+
+                return true;
+            }
+            catch (SmtpException smtpEx)
+            {
+                _logger.LogError(smtpEx, "Error SMTP al enviar correo de notificación: {Message}", smtpEx.Message);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al enviar correo de notificación: {Message}", ex.Message);
+                return false;
+            }
+        }
     }
 
     public class ReporteResumen
