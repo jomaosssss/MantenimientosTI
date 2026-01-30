@@ -1122,6 +1122,171 @@ namespace MantenimientosTI.Controllers
                 return Json(new { success = false, message = $"Error interno: {ex.Message}" });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ObtenerDatosTablasAvance([FromBody] FiltroCompletoModel model)
+        {
+            try
+            {
+                _logger.LogInformation($"ObtenerDatosTablasAvance: {model.FechaInicio:dd/MM/yyyy} - {model.FechaFin:dd/MM/yyyy}");
+
+                if (model.FechaInicio == default || model.FechaFin == default)
+                {
+                    return Json(new { success = false, message = "Las fechas de inicio y fin son requeridas" });
+                }
+
+                if (model.FechaInicio > model.FechaFin)
+                {
+                    return Json(new { success = false, message = "La fecha de inicio no puede ser mayor a la fecha fin" });
+                }
+
+                var primerDia = DateOnly.FromDateTime(model.FechaInicio);
+                var ultimoDia = DateOnly.FromDateTime(model.FechaFin);
+
+                var estatusExcluidos = new List<string> { "CANCELADO" };
+
+                // Obtener todas las zonas
+                var zonas = await _context.CatZonas.ToListAsync();
+
+                // Listas para almacenar los resultados
+                var tablaCFE = new List<object>();
+                var tablaAC = new List<object>();
+                var tablaComputo = new List<object>();
+                var tablaImpresoras = new List<object>();
+
+                // Variables para totales
+                int totalCFEProgramados = 0, totalCFETerminados = 0, totalCFEPendientes = 0;
+                int totalACProgramados = 0, totalACTerminados = 0, totalACPendientes = 0;
+                int totalComputoProgramados = 0, totalComputoTerminados = 0, totalComputoPendientes = 0;
+                int totalImpresorasProgramados = 0, totalImpresorasTerminados = 0, totalImpresorasPendientes = 0;
+
+                foreach (var zona in zonas)
+                {
+                    // Base query para esta zona
+                    var baseQuery = _context.Agenda
+                        .Where(a => !estatusExcluidos.Contains(a.Estatus) &&
+                                   a.FechaProgramada >= primerDia &&
+                                   a.FechaProgramada <= ultimoDia &&
+                                   a.NumActFijoNavigation != null &&
+                                   a.NumActFijoNavigation.ClaveZona == zona.ClaveZona);
+
+                    // 1. CFEMÁTICOS
+                    var cfematicosQuery = baseQuery
+                        .Where(a => _context.EquipoCfematicos.Any(ec => ec.NumActFijo == a.NumActFijo));
+
+                    var cfematicosProgramados = await cfematicosQuery.CountAsync();
+                    var cfematicosTerminados = await cfematicosQuery.CountAsync(a => a.Estatus == "TERMINADO");
+                    var cfematicosPendientes = await cfematicosQuery.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var cfematicosAvance = cfematicosProgramados > 0 ? Math.Round((cfematicosTerminados * 100.0) / cfematicosProgramados, 2) : 0;
+
+                    tablaCFE.Add(new
+                    {
+                        zona = zona.NombreZona ?? zona.ClaveZona,
+                        programados = cfematicosProgramados,
+                        terminados = cfematicosTerminados,
+                        pendientes = cfematicosPendientes,
+                        avance = cfematicosAvance
+                    });
+
+                    totalCFEProgramados += cfematicosProgramados;
+                    totalCFETerminados += cfematicosTerminados;
+                    totalCFEPendientes += cfematicosPendientes;
+
+                    // 2. EQUIPOS DE ATENCIÓN A CLIENTES
+                    var equiposACQuery = baseQuery
+                        .Where(a => _context.EquipoAcs.Any(ea => ea.NumActFijo == a.NumActFijo));
+
+                    var equiposACProgramados = await equiposACQuery.CountAsync();
+                    var equiposACTerminados = await equiposACQuery.CountAsync(a => a.Estatus == "TERMINADO");
+                    var equiposACPendientes = await equiposACQuery.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var equiposACAvance = equiposACProgramados > 0 ? Math.Round((equiposACTerminados * 100.0) / equiposACProgramados, 2) : 0;
+
+                    tablaAC.Add(new
+                    {
+                        zona = zona.NombreZona ?? zona.ClaveZona,
+                        programados = equiposACProgramados,
+                        terminados = equiposACTerminados,
+                        pendientes = equiposACPendientes,
+                        avance = equiposACAvance
+                    });
+
+                    totalACProgramados += equiposACProgramados;
+                    totalACTerminados += equiposACTerminados;
+                    totalACPendientes += equiposACPendientes;
+
+                    // 3. EQUIPOS DE CÓMPUTO
+                    var equiposComputoQuery = baseQuery
+                        .Where(a => _context.EquipoComputos.Any(ec => ec.NumActFijo == a.NumActFijo));
+
+                    var equiposComputoProgramados = await equiposComputoQuery.CountAsync();
+                    var equiposComputoTerminados = await equiposComputoQuery.CountAsync(a => a.Estatus == "TERMINADO");
+                    var equiposComputoPendientes = await equiposComputoQuery.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var equiposComputoAvance = equiposComputoProgramados > 0 ? Math.Round((equiposComputoTerminados * 100.0) / equiposComputoProgramados, 2) : 0;
+
+                    tablaComputo.Add(new
+                    {
+                        zona = zona.NombreZona ?? zona.ClaveZona,
+                        programados = equiposComputoProgramados,
+                        terminados = equiposComputoTerminados,
+                        pendientes = equiposComputoPendientes,
+                        avance = equiposComputoAvance
+                    });
+
+                    totalComputoProgramados += equiposComputoProgramados;
+                    totalComputoTerminados += equiposComputoTerminados;
+                    totalComputoPendientes += equiposComputoPendientes;
+
+                    // 4. IMPRESORAS
+                    var impresorasQuery = baseQuery
+                        .Where(a => _context.Impresoras.Any(i => i.NumActFijo == a.NumActFijo));
+
+                    var impresorasProgramados = await impresorasQuery.CountAsync();
+                    var impresorasTerminados = await impresorasQuery.CountAsync(a => a.Estatus == "TERMINADO");
+                    var impresorasPendientes = await impresorasQuery.CountAsync(a => a.Estatus == "PENDIENTE" || a.Estatus == "PRE-CANCELADO");
+                    var impresorasAvance = impresorasProgramados > 0 ? Math.Round((impresorasTerminados * 100.0) / impresorasProgramados, 2) : 0;
+
+                    tablaImpresoras.Add(new
+                    {
+                        zona = zona.NombreZona ?? zona.ClaveZona,
+                        programados = impresorasProgramados,
+                        terminados = impresorasTerminados,
+                        pendientes = impresorasPendientes,
+                        avance = impresorasAvance
+                    });
+
+                    totalImpresorasProgramados += impresorasProgramados;
+                    totalImpresorasTerminados += impresorasTerminados;
+                    totalImpresorasPendientes += impresorasPendientes;
+                }
+
+                // Calcular avances totales
+                var totalCFEAvance = totalCFEProgramados > 0 ? Math.Round((totalCFETerminados * 100.0) / totalCFEProgramados, 2) : 0;
+                var totalACAvance = totalACProgramados > 0 ? Math.Round((totalACTerminados * 100.0) / totalACProgramados, 2) : 0;
+                var totalComputoAvance = totalComputoProgramados > 0 ? Math.Round((totalComputoTerminados * 100.0) / totalComputoProgramados, 2) : 0;
+                var totalImpresorasAvance = totalImpresorasProgramados > 0 ? Math.Round((totalImpresorasTerminados * 100.0) / totalImpresorasProgramados, 2) : 0;
+
+                return Json(new
+                {
+                    success = true,
+                    tablaCFE,
+                    tablaAC,
+                    tablaComputo,
+                    tablaImpresoras,
+                    totales = new
+                    {
+                        cfematicos = new { programados = totalCFEProgramados, terminados = totalCFETerminados, pendientes = totalCFEPendientes, avance = totalCFEAvance },
+                        equiposAC = new { programados = totalACProgramados, terminados = totalACTerminados, pendientes = totalACPendientes, avance = totalACAvance },
+                        equiposComputo = new { programados = totalComputoProgramados, terminados = totalComputoTerminados, pendientes = totalComputoPendientes, avance = totalComputoAvance },
+                        impresoras = new { programados = totalImpresorasProgramados, terminados = totalImpresorasTerminados, pendientes = totalImpresorasPendientes, avance = totalImpresorasAvance }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener datos para tablas de avance");
+                return Json(new { success = false, message = $"Error interno: {ex.Message}" });
+            }
+        }
     }
 
     public class FiltroRegistrosModel

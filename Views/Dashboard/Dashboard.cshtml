@@ -305,6 +305,89 @@
         animation-delay: 0.4s;
     }
 
+    /* Estilos para las tablas de resumen */
+    .table-sm th, .table-sm td {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.5rem;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    .table-light th {
+        font-weight: 600;
+        background-color: #f8f9fa !important;
+    }
+
+    .table-active {
+        background-color: #e9ecef !important;
+    }
+
+    .text-success {
+        color: #28a745 !important;
+    }
+
+    .text-primary {
+        color: #0d6efd !important;
+    }
+
+    .text-warning {
+        color: #ffc107 !important;
+    }
+
+    .text-info {
+        color: #17a2b8 !important;
+    }
+
+    .text-danger {
+        color: #dc3545 !important;
+    }
+
+    .tabla-avance-card {
+        margin-top: 20px;
+    }
+
+    .tabla-avance-header {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .tabla-titulo {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .avance-alto {
+        color: #28a745 !important;
+        font-weight: 700;
+    }
+
+    .avance-medio {
+        color: #ffc107 !important;
+        font-weight: 700;
+    }
+
+    .avance-bajo {
+        color: #dc3545 !important;
+        font-weight: 700;
+    }
+
+    /* Estilos para tarjeta de gráficas */
+    .card-graficas {
+        height: auto !important;
+        min-height: auto;
+    }
+
+    .card {
+        height: auto !important;
+    }
+
+    .card-body {
+        overflow: visible;
+    }
+
     @@media (max-width: 768px) {
         .cards-container {
             gap: 8px;
@@ -340,6 +423,18 @@
 
         .tipo-equipo-card {
             animation-delay: 0s !important;
+        }
+
+        .table-responsive {
+            font-size: 0.8rem;
+        }
+
+        .row.g-4 {
+            margin-bottom: 15px !important;
+        }
+
+        .tabla-avance-card {
+            margin-top: 15px;
         }
     }
 
@@ -484,9 +579,10 @@
                 </div>
             </div>
 
+            <!-- Fila para gráficas y reportes -->
             <div class="row g-4 mb-4">
                 <div class="col-lg-8 col-md-12">
-                    <div class="card h-100 shadow-sm">
+                    <div class="card shadow-sm card-graficas">
                         <div class="card-header bg-light border-bottom">
                             <h5 class="mb-0 text-secondary"><i class="fas fa-chart-pie me-2"></i> Avances de mantenimientos</h5>
                         </div>
@@ -809,11 +905,11 @@
                                             <span id="infoReporte">Selecciona rango...</span>
                                         </small>
                                     </div>
-                                </div>
-                                <div class="d-grid">
-                                    <button id="btnEnviarCorreo" class="btn btn-success btn-sm">
-                                        <i class="fas fa-paper-plane me-1"></i>Enviar ahora
-                                    </button>
+                                    <div class="d-grid">
+                                        <button id="btnEnviarCorreo" class="btn btn-success btn-sm">
+                                            <i class="fas fa-paper-plane me-1"></i>Enviar ahora
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             @if (User.IsInRole("ADMINISTRADOR"))
@@ -934,6 +1030,136 @@
                     </div>
                 </div>
             </div>
+
+            <!-- NUEVA FILA PARA LAS TABLAS DE AVANCE (fuera del row anterior) -->
+            <div class="row mt-4">
+                <div class="col-lg-8 col-md-12">
+                    <!-- Tarjeta de tablas de avance por tipo de equipo -->
+                    <div class="card shadow-sm tabla-avance-card">
+                        <div class="card-header tablas-avance-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-table me-2"></i>Avance por tipo de equipo a nivel zona</h5>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-secondary me-2" id="infoFiltroTablas">Mes actual</span>
+@*                                 <button class="btn btn-sm btn-outline-primary" onclick="exportarTablasAExcel()">
+                                    <i class="fas fa-file-excel me-1"></i>Exportar
+                                </button> *@
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <!-- Tabla CFEMÁTICOS -->
+                            <div class="table-responsive mb-4">
+                                <h6 class="text-success mb-2 tabla-titulo"><i class="fas fa-calculator me-1"></i> CFEMÁTICOS</h6>
+                                <table class="table table-bordered table-sm table-hover mb-4">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="text-center">ZONA</th>
+                                            <th class="text-center">PROGRAMADOS</th>
+                                            <th class="text-center">TERMINADOS</th>
+                                            <th class="text-center">PENDIENTES</th>
+                                            <th class="text-center">AVANCE %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-cfematicos-detalle">
+                                        <!-- Se cargará dinámicamente -->
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">
+                                                <i class="fas fa-spinner fa-spin me-1"></i>Cargando datos...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="tabla-cfematicos-totales" class="table-active fw-bold">
+                                        <!-- Totales se cargarán dinámicamente -->
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <!-- Tabla EQUIPOS DE ATENCIÓN A CLIENTES -->
+                            <div class="table-responsive mb-4">
+                                <h6 class="text-primary mb-2 tabla-titulo"><i class="fas fa-headset me-1"></i> EQUIPOS DE ATENCIÓN A CLIENTES</h6>
+                                <table class="table table-bordered table-sm table-hover mb-4">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="text-center">ZONA</th>
+                                            <th class="text-center">PROGRAMADOS</th>
+                                            <th class="text-center">TERMINADOS</th>
+                                            <th class="text-center">PENDIENTES</th>
+                                            <th class="text-center">AVANCE %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-equipos-ac-detalle">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">
+                                                <i class="fas fa-spinner fa-spin me-1"></i>Cargando datos...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="tabla-equipos-ac-totales" class="table-active fw-bold">
+                                        <!-- Totales se cargarán dinámicamente -->
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <!-- Tabla EQUIPOS DE CÓMPUTO -->
+                            <div class="table-responsive mb-4">
+                                <h6 class="text-warning mb-2 tabla-titulo"><i class="fas fa-desktop me-1"></i> EQUIPOS DE CÓMPUTO</h6>
+                                <table class="table table-bordered table-sm table-hover mb-4">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="text-center">ZONA</th>
+                                            <th class="text-center">PROGRAMADOS</th>
+                                            <th class="text-center">TERMINADOS</th>
+                                            <th class="text-center">PENDIENTES</th>
+                                            <th class="text-center">AVANCE %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-equipos-computo-detalle">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">
+                                                <i class="fas fa-spinner fa-spin me-1"></i>Cargando datos...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="tabla-equipos-computo-totales" class="table-active fw-bold">
+                                        <!-- Totales se cargarán dinámicamente -->
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <!-- Tabla IMPRESORAS (NUEVA) -->
+                            <div class="table-responsive">
+                                <h6 class="text-info mb-2 tabla-titulo"><i class="fas fa-print me-1"></i> IMPRESORAS</h6>
+                                <table class="table table-bordered table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="text-center">ZONA</th>
+                                            <th class="text-center">PROGRAMADOS</th>
+                                            <th class="text-center">TERMINADOS</th>
+                                            <th class="text-center">PENDIENTES</th>
+                                            <th class="text-center">AVANCE %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-impresoras-detalle">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">
+                                                <i class="fas fa-spinner fa-spin me-1"></i>Cargando datos...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="tabla-impresoras-totales" class="table-active fw-bold">
+                                        <!-- Totales se cargarán dinámicamente -->
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna vacía para mantener el layout (opcional) -->
+                <div class="col-lg-4 col-md-12">
+                    <!-- Puedes dejar esta columna vacía o agregar contenido adicional si lo necesitas -->
+                    <!-- Por ejemplo, podrías agregar un espacio para notas o información adicional -->
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -954,13 +1180,13 @@
                     <table class="table table-striped table-hover table-sm">
                         <thead class="table-light">
                             <tr>
-                                <th>Núm. de Activo Fijo</th>
+                                <th>Núm. de activo fijo</th>
                                 <th>Agencia</th>
                                 <th>Centro</th>
-                                <th>Fecha Programada</th>
-                                <th>Fecha Terminada</th>
+                                <th>Fecha programada</th>
+                                <th>Fecha terminada</th>
                                 <th>Estatus</th>
-                                <th>Tipo Equipo</th>
+                                <th>Tipo equipo</th>
                             </tr>
                         </thead>
                         <tbody id="cuerpoTablaRegistros">
@@ -1018,6 +1244,120 @@
                     }, 5000);
                 }
             }
+
+            // =============== FUNCIONES PARA TABLAS DE AVANCE ===============
+            // Función para cargar las tablas de avance
+            function cargarTablasAvance(fechaInicio, fechaFin) {
+                $('#contenedorTablasAvance tbody td').html('<i class="fas fa-spinner fa-spin me-1"></i>Cargando...');
+
+                const url = '@Url.Action("ObtenerDatosTablasAvance", "Dashboard")';
+                const data = {
+                    fechaInicio: fechaInicio,
+                    fechaFin: fechaFin,
+                    zonaSeleccionada: 'TODAS',
+                    tipoEquipo: 'TODOS'
+                };
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        if (response.success) {
+                            actualizarTablas(response);
+                            actualizarInfoFiltroTablas(fechaInicio, fechaFin);
+                        } else {
+                            mostrarAlerta(response.message || 'Error al cargar las tablas.', 'danger', '#contenedorTablasAvance');
+                        }
+                    },
+                    error: function(xhr) {
+                        const errorMsg = xhr.responseJSON?.message || 'Error de conexión al cargar las tablas.';
+                        mostrarAlerta(errorMsg, 'danger', '#contenedorTablasAvance');
+                    }
+                });
+            }
+
+            // Función para actualizar las tablas con los datos recibidos
+            function actualizarTablas(datos) {
+                // Actualizar tabla CFEMÁTICOS
+                actualizarTablaIndividual('#tabla-cfematicos-detalle', '#tabla-cfematicos-totales', datos.tablaCFE, datos.totales.cfematicos);
+
+                // Actualizar tabla EQUIPOS DE ATENCIÓN A CLIENTES
+                actualizarTablaIndividual('#tabla-equipos-ac-detalle', '#tabla-equipos-ac-totales', datos.tablaAC, datos.totales.equiposAC);
+
+                // Actualizar tabla EQUIPOS DE CÓMPUTO
+                actualizarTablaIndividual('#tabla-equipos-computo-detalle', '#tabla-equipos-computo-totales', datos.tablaComputo, datos.totales.equiposComputo);
+
+                // Actualizar tabla IMPRESORAS
+                actualizarTablaIndividual('#tabla-impresoras-detalle', '#tabla-impresoras-totales', datos.tablaImpresoras, datos.totales.impresoras);
+            }
+
+            // Función para actualizar una tabla individual
+            function actualizarTablaIndividual(selectorBody, selectorFooter, datos, totales) {
+                const tbody = $(selectorBody);
+                tbody.empty();
+
+                if (datos.length === 0) {
+                    tbody.html('<tr><td colspan="5" class="text-center text-muted">No hay datos disponibles</td></tr>');
+                } else {
+                    datos.forEach(item => {
+                        const avanceClase = item.avance >= 80 ? 'avance-alto' :
+                                           item.avance >= 50 ? 'avance-medio' : 'avance-bajo';
+
+                        const row = `
+                            <tr>
+                                <td class="text-start">${item.zona}</td>
+                                <td class="text-center">${item.programados}</td>
+                                <td class="text-center">${item.terminados}</td>
+                                <td class="text-center">${item.pendientes}</td>
+                                <td class="text-center fw-bold ${avanceClase}">
+                                    ${item.avance.toFixed(2)}%
+                                </td>
+                            </tr>`;
+                        tbody.append(row);
+                    });
+                }
+
+                // Actualizar totales
+                const footer = $(selectorFooter);
+                const totalAvanceClase = totales.avance >= 80 ? 'avance-alto' :
+                                        totales.avance >= 50 ? 'avance-medio' : 'avance-bajo';
+
+                footer.html(`
+                    <tr>
+                        <td class="text-start">TOTAL</td>
+                        <td class="text-center">${totales.programados}</td>
+                        <td class="text-center">${totales.terminados}</td>
+                        <td class="text-center">${totales.pendientes}</td>
+                        <td class="text-center fw-bold ${totalAvanceClase}">
+                            ${totales.avance.toFixed(2)}%
+                        </td>
+                    </tr>
+                `);
+            }
+
+            // Función para actualizar la información del filtro en las tablas
+            function actualizarInfoFiltroTablas(fechaInicio, fechaFin) {
+                if (fechaInicio && fechaFin) {
+                    const inicio = new Date(fechaInicio);
+                    const fin = new Date(fechaFin);
+                    const diffTime = Math.abs(fin - inicio);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                    $('#infoFiltroTablas').text(`${inicio.toLocaleDateString('es-ES')} - ${fin.toLocaleDateString('es-ES')} (${diffDays} días)`);
+                }
+            }
+
+            // Función para exportar las tablas a Excel
+            function exportarTablasAExcel() {
+                const fechaInicio = $('#filtroFechaInicio').val();
+                const fechaFin = $('#filtroFechaFin').val();
+
+                const url = '@Url.Action("GenerarExcelTablas", "Dashboard")';
+                window.location.href = `${url}?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`;
+            }
+            // =============== FIN FUNCIONES PARA TABLAS DE AVANCE ===============
 
             function cargarUsuariosAdministradores() {
                 $.get('@Url.Action("ObtenerUsuariosAdministradores", "Dashboard")')
@@ -1960,6 +2300,11 @@
                 }
 
                 cargarGraficasConFiltroCompleto(fechaInicio, fechaFin, zonaSeleccionada);
+
+                // También actualizar las tablas con el mismo filtro
+                setTimeout(() => {
+                    cargarTablasAvance(fechaInicio, fechaFin);
+                }, 500);
             });
 
             // --- INICIALIZACIÓN ---
@@ -1975,6 +2320,12 @@
                 $('#filtroFechaInicio').val(),
                 $('#filtroFechaFin').val(),
                 $('#filtroZona').val()
+            );
+
+            // Cargar tablas de avance al iniciar
+            cargarTablasAvance(
+                $('#filtroFechaInicio').val(),
+                $('#filtroFechaFin').val()
             );
         });
     </script>
