@@ -133,7 +133,7 @@ namespace MantenimientosTI.Controllers
         {
             try
             {
-                _logger.LogInformation($"ObtenerDatosGraficasFiltroCompleto: {model.FechaInicio:dd/MM/yyyy} - {model.FechaFin:dd/MM/yyyy}, Zona: {model.ZonaSeleccionada}");
+                _logger.LogInformation($"ObtenerDatosGraficasFiltroCompleto: {model.FechaInicio:dd/MM/yyyy} - {model.FechaFin:dd/MM/yyyy}, Zona: {model.ZonaSeleccionada}, TipoEquipo: {model.TipoEquipo}");
 
                 if (model.FechaInicio == default || model.FechaFin == default)
                 {
@@ -186,6 +186,7 @@ namespace MantenimientosTI.Controllers
                         });
                     }
 
+                    _logger.LogInformation($"Devolviendo {graficasZonas.Count} gráficas por zona");
                     return Json(new { success = true, datosGraficas = graficasZonas, tipo = "zonas" });
                 }
                 else
@@ -273,17 +274,18 @@ namespace MantenimientosTI.Controllers
                         otros = impresorasOtros > 0 ? impresorasOtros : 0
                     });
 
-                    // NUEVO: Agregar logging detallado para debug
+                    // Agregar logging detallado para debug
                     _logger.LogInformation($"Datos tipos equipo - Zona: {model.ZonaSeleccionada}");
                     _logger.LogInformation($"CFEMÁTICOS: Programados={cfematicosProgramados}, Terminados={cfematicosTerminados}, Pendientes={cfematicosPendientes}");
                     _logger.LogInformation($"EQUIPOS_AC: Programados={equiposACProgramados}, Terminados={equiposACTerminados}, Pendientes={equiposACPendientes}");
                     _logger.LogInformation($"EQUIPOS_COMPUTO: Programados={equiposComputoProgramados}, Terminados={equiposComputoTerminados}, Pendientes={equiposComputoPendientes}");
                     _logger.LogInformation($"IMPRESORAS: Programados={impresorasProgramados}, Terminados={impresorasTerminados}, Pendientes={impresorasPendientes}");
 
-                    // NUEVO: Verificar si hay registros en las tablas para debug
+                    // Verificar si hay registros en las tablas para debug
                     var totalImpresoras = await _context.Impresoras.CountAsync();
                     _logger.LogInformation($"Total registros en BD - Impresoras: {totalImpresoras}");
 
+                    _logger.LogInformation($"Devolviendo {graficasTipos.Count} gráficas por tipo de equipo para zona {model.ZonaSeleccionada}");
                     return Json(new { success = true, datosGraficas = graficasTipos, tipo = "tiposEquipo" });
                 }
             }

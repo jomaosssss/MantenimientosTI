@@ -6,6 +6,33 @@
 @using System.Globalization
 
 <style>
+
+    /* Estilos para mensaje de no datos */
+    .no-data-message {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-style: italic;
+        width: 100%;
+        padding: 10px;
+    }
+
+    .no-data-icon {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+        color: #adb5bd;
+    }
+
+    .chart-container.empty {
+        min-height: 160px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
     .hover-scale {
         transition: all 0.3s ease;
     }
@@ -622,58 +649,13 @@
                             <div id="mensajeGraficas" class="mt-2 small"></div>
 
                             <div id="contenedorGraficasZonas">
-                                @{
-                                    var zonasConDatos = Model.GraficasZonas.Where(z => z.TieneDatos).ToList();
-                                }
-
-                                @if (zonasConDatos.Any())
-                                {
-                                    <div class="row g-3" id="contenedorGraficas">
-                                        @foreach (var zona in zonasConDatos)
-                                        {
-                                            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 card-fade-in">
-                                                <div class="card border-0 shadow-sm h-100">
-                                                    <div class="card-header bg-light py-2">
-                                                        <h6 class="mb-0 text-center text-dark" style="font-size: 0.85rem; font-weight: normal;">@zona.NombreZona</h6>
-                                                    </div>
-                                                    <div class="card-body p-2 d-flex flex-column">
-                                                        <div class="chart-container flex-grow-1 position-relative">
-                                                            <canvas id="chart-@zona.Zona"
-                                                                    data-item='@Json.Serialize(zona)'
-                                                                    data-tiene-datos="true"
-                                                                    data-tipo="zonas"></canvas>
-                                                        </div>
-                                                        <div class="legend-container mt-2">
-                                                            <div class="d-flex justify-content-center flex-wrap gap-2">
-                                                                <div class="d-flex align-items-center">
-                                                                    <div class="color-box bg-success me-1"></div>
-                                                                    <small class="text-muted">Terminados: @zona.Terminados</small>
-                                                                </div>
-                                                                <div class="d-flex align-items-center">
-                                                                    <div class="color-box bg-warning me-1"></div>
-                                                                    <small class="text-muted">Pendientes: @zona.Pendientes</small>
-                                                                </div>
-                                                                @if (zona.Otros > 0)
-                                                                {
-                                                                    <div class="d-flex align-items-center">
-                                                                        <div class="color-box bg-secondary me-1"></div>
-                                                                        <small class="text-muted">Otros: @zona.Otros</small>
-                                                                    </div>
-                                                                }
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        }
+                                <!-- Las gráficas se cargarán dinámicamente con AJAX -->
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
                                     </div>
-                                }
-                                else
-                                {
-                                    <div class="text-center py-4">
-                                        <span class="text-muted fst-italic">No hay datos disponibles para mostrar.</span>
-                                    </div>
-                                }
+                                    <p class="text-muted mt-2">Cargando gráficas...</p>
+                                </div>
                             </div>
 
                             <div class="row g-3" id="contenedorGraficasTipos" style="display: none;">
@@ -783,7 +765,7 @@
                                 <div class="col-12 mt-4">
                                     <div class="card border-0 shadow-sm">
                                         <div class="card-header bg-light">
-                                            <h5 class="mb-0 text-dark">Tabla de avance</h5>
+                                            <h5 class="mb-0 text-dark">Tabla de avance de la zona</h5>
                                         </div>
                                         <div class="card-body p-0">
                                             <div class="table-responsive">
@@ -1037,7 +1019,7 @@
                     <!-- Tarjeta de tablas de avance por tipo de equipo -->
                     <div class="card shadow-sm tabla-avance-card">
                         <div class="card-header tablas-avance-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="fas fa-table me-2"></i>Avance por tipo de equipo a nivel zona</h5>
+                            <h5 class="mb-0"><i class="fas fa-table me-2"></i>Avance de mantenimientos de todas las zonas</h5>
                             <div class="d-flex align-items-center">
                                 <span class="badge bg-secondary me-2" id="infoFiltroTablas">Mes actual</span>
 @*                                 <button class="btn btn-sm btn-outline-primary" onclick="exportarTablasAExcel()">
@@ -1223,7 +1205,7 @@
             let chartCfematicos = null;
             let chartEquiposAC = null;
             let chartEquiposComputo = null;
-            let chartImpresoras = null; // Nueva variable para impresoras
+            let chartImpresoras = null;
 
             function mostrarAlerta(mensaje, tipo, contenedor = '#mensajeGraficas') {
                 $(contenedor).empty();
@@ -1246,7 +1228,6 @@
             }
 
             // =============== FUNCIONES PARA TABLAS DE AVANCE ===============
-            // Función para cargar las tablas de avance
             function cargarTablasAvance(fechaInicio, fechaFin) {
                 $('#contenedorTablasAvance tbody td').html('<i class="fas fa-spinner fa-spin me-1"></i>Cargando...');
 
@@ -1278,7 +1259,6 @@
                 });
             }
 
-            // Función para actualizar las tablas con los datos recibidos
             function actualizarTablas(datos) {
                 // Actualizar tabla CFEMÁTICOS
                 actualizarTablaIndividual('#tabla-cfematicos-detalle', '#tabla-cfematicos-totales', datos.tablaCFE, datos.totales.cfematicos);
@@ -1293,7 +1273,6 @@
                 actualizarTablaIndividual('#tabla-impresoras-detalle', '#tabla-impresoras-totales', datos.tablaImpresoras, datos.totales.impresoras);
             }
 
-            // Función para actualizar una tabla individual
             function actualizarTablaIndividual(selectorBody, selectorFooter, datos, totales) {
                 const tbody = $(selectorBody);
                 tbody.empty();
@@ -1337,7 +1316,6 @@
                 `);
             }
 
-            // Función para actualizar la información del filtro en las tablas
             function actualizarInfoFiltroTablas(fechaInicio, fechaFin) {
                 if (fechaInicio && fechaFin) {
                     const inicio = new Date(fechaInicio);
@@ -1349,7 +1327,6 @@
                 }
             }
 
-            // Función para exportar las tablas a Excel
             function exportarTablasAExcel() {
                 const fechaInicio = $('#filtroFechaInicio').val();
                 const fechaFin = $('#filtroFechaFin').val();
@@ -1567,8 +1544,8 @@
 
                 if (fechaInicio && fechaFin) {
                     try {
-                        const inicio = new Date(fechaInicio + 'T00:00:00');
-                        const fin = new Date(fechaFin + 'T00:00:00');
+                        const inicio = new Date(fechaInicio);
+                        const fin = new Date(fechaFin);
                         if (inicio > fin) {
                             $('#infoFiltroGraficas').text('La fecha de inicio no puede ser mayor a la fecha fin.');
                             return;
@@ -1593,83 +1570,286 @@
                 }
             }
 
-            function cargarGraficasConFiltroCompleto(fechaInicio, fechaFin, zonaSeleccionada) {
-                const btn = $('#btnFiltrarGraficas');
-                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>');
+        function cargarGraficasConFiltroCompleto(fechaInicio, fechaFin, zonaSeleccionada) {
+            const btn = $('#btnFiltrarGraficas');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>');
 
-                // Limpiar mensajes anteriores
-                $('#mensajeGraficas').empty();
+            // Limpiar mensajes anteriores
+            $('#mensajeGraficas').empty();
 
-                const url = '@Url.Action("ObtenerDatosGraficasFiltroCompleto", "Dashboard")';
-                const data = {
-                    fechaInicio: fechaInicio,
-                    fechaFin: fechaFin,
-                    zonaSeleccionada: zonaSeleccionada,
-                    tipoEquipo: "TODOS"
-                };
+            // Obtener valores actuales de los filtros si no se pasan como parámetros
+            const fechaInicioVal = fechaInicio || $('#filtroFechaInicio').val();
+            const fechaFinVal = fechaFin || $('#filtroFechaFin').val();
+            const zonaSeleccionadaVal = zonaSeleccionada || $('#filtroZona').val();
 
-                $.ajax({
-                    url: url,
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(data),
-                    success: function(response) {
-                        if (response.success) {
-                            if (zonaSeleccionada === 'TODAS') {
-                                // Mostrar gráficas por zona
-                                $('#contenedorGraficasTipos').hide();
-                                $('#contenedorGraficasZonas').show();
-                                actualizarGraficas(response.datosGraficas, response.tipo);
-                            } else {
-                                // Mostrar gráficas por tipo de equipo
-                                $('#contenedorGraficasZonas').hide();
-                                $('#contenedorGraficasTipos').show();
+            console.log("Filtros aplicados - Inicio:", fechaInicioVal, "Fin:", fechaFinVal, "Zona:", zonaSeleccionadaVal);
 
-                                // Agregar animación escalonada a las tarjetas de tipo de equipo
-                                $('#contenedorGraficasTipos .tipo-equipo-card').each(function(index) {
-                                    $(this).css({
-                                        'opacity': '0',
-                                        'transform': 'translateY(20px)',
-                                        'animation-delay': (index * 0.1) + 's'
-                                    });
-                                });
-
-                                setTimeout(() => {
-                                    actualizarGraficasPorTipoEquipo(response.datosGraficas, zonaSeleccionada);
-                                }, 300);
-                            }
-                        } else {
-                            mostrarAlerta(response.message || 'Error al cargar las gráficas.', 'danger', '#mensajeGraficas');
-                        }
-                    },
-                    error: function(xhr) {
-                        const errorMsg = xhr.responseJSON?.message || 'Error de conexión al cargar las gráficas.';
-                        mostrarAlerta(errorMsg, 'danger', '#mensajeGraficas');
-                    },
-                    complete: function() {
-                        btn.prop('disabled', false).html('<i class="fas fa-search me-1"></i>');
-                    }
-                });
+            if (!fechaInicioVal || !fechaFinVal) {
+                mostrarAlerta('Por favor, selecciona el rango de fechas.', 'warning', '#mensajeGraficas');
+                btn.prop('disabled', false).html('<i class="fas fa-search me-1"></i>');
+                return;
             }
+
+            if (new Date(fechaInicioVal) > new Date(fechaFinVal)) {
+                mostrarAlerta('La fecha de inicio no puede ser mayor a la fecha fin.', 'warning', '#mensajeGraficas');
+                btn.prop('disabled', false).html('<i class="fas fa-search me-1"></i>');
+                return;
+            }
+
+            const url = '@Url.Action("ObtenerDatosGraficasFiltroCompleto", "Dashboard")';
+            const data = {
+                fechaInicio: fechaInicioVal,
+                fechaFin: fechaFinVal,
+                zonaSeleccionada: zonaSeleccionadaVal,
+                tipoEquipo: "TODOS"
+            };
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(response) {
+                    console.log("Respuesta del servidor:", response);
+                    if (response.success) {
+                        if (zonaSeleccionadaVal === 'TODAS') {
+                            // Mostrar gráficas por zona - SIN funcionalidad de modal
+                            $('#contenedorGraficasTipos').hide();
+                            $('#contenedorGraficasZonas').show();
+                            renderizarGraficasZonas(response.datosGraficas);
+
+                            // Desactivar clics en gráficas por zona
+                            $('.chart-container canvas').css('cursor', 'default');
+                        } else {
+                            // Mostrar gráficas por tipo de equipo - CON funcionalidad de modal
+                            $('#contenedorGraficasZonas').hide();
+                            $('#contenedorGraficasTipos').show();
+
+                            // Agregar animación escalonada a las tarjetas de tipo de equipo
+                            $('#contenedorGraficasTipos .tipo-equipo-card').each(function(index) {
+                                $(this).css({
+                                    'opacity': '0',
+                                    'transform': 'translateY(20px)',
+                                    'animation-delay': (index * 0.1) + 's'
+                                });
+                            });
+
+                            // Activar clics en gráficas por tipo de equipo
+                            $('.chart-container canvas').css('cursor', 'pointer');
+
+                            setTimeout(() => {
+                                actualizarGraficasPorTipoEquipo(response.datosGraficas, zonaSeleccionadaVal);
+                            }, 300);
+                        }
+                        // Actualizar la información del filtro
+                        actualizarInfoFiltroGraficas();
+                    } else {
+                        mostrarAlerta(response.message || 'Error al cargar las gráficas.', 'danger', '#mensajeGraficas');
+                    }
+                },
+                error: function(xhr) {
+                    const errorMsg = xhr.responseJSON?.message || 'Error de conexión al cargar las gráficas.';
+                    mostrarAlerta(errorMsg, 'danger', '#mensajeGraficas');
+                    console.error("Error en AJAX:", xhr);
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html('<i class="fas fa-search me-1"></i>');
+                }
+            });
+        }
+
+            // Función para renderizar gráficas por zona
+        function renderizarGraficasZonas(datosGraficas) {
+            console.log("Renderizando gráficas por zona, cantidad:", datosGraficas.length);
+
+            const contenedor = $('#contenedorGraficasZonas');
+
+            if (!datosGraficas || datosGraficas.length === 0) {
+                contenedor.html('<div class="text-center py-4"><span class="text-muted fst-italic">No hay datos disponibles para mostrar.</span></div>');
+                return;
+            }
+
+            // Filtrar zonas que tienen datos
+            const zonasConDatos = datosGraficas.filter(z => z.tieneDatos);
+
+            if (zonasConDatos.length === 0) {
+                contenedor.html('<div class="text-center py-4"><span class="text-muted fst-italic">No hay datos disponibles con los filtros seleccionados.</span></div>');
+                return;
+            }
+
+            // Crear HTML para las gráficas
+            let html = '<div class="row g-3" id="contenedorGraficas">';
+
+            zonasConDatos.forEach((zona, index) => {
+                html += `
+                    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 card-fade-in" style="animation-delay: ${index * 0.1}s">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light py-2">
+                                <h6 class="mb-0 text-center text-dark" style="font-size: 0.85rem; font-weight: normal;">${zona.nombreZona}</h6>
+                            </div>
+                            <div class="card-body p-2 d-flex flex-column">
+                                <div class="chart-container flex-grow-1 position-relative">
+                                    <canvas id="chart-${zona.zona}"></canvas>
+                                    <div class="no-data-message" style="display: none;">
+                                        <div class="no-data-icon">
+                                            <i class="fas fa-inbox"></i>
+                                        </div>
+                                        <div>No hay mantenimientos en esta zona</div>
+                                    </div>
+                                </div>
+                                <div class="legend-container mt-2">
+                                    <div class="d-flex justify-content-center flex-wrap gap-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-box bg-success me-1"></div>
+                                            <small class="text-muted">Terminados: ${zona.terminados}</small>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-box bg-warning me-1"></div>
+                                            <small class="text-muted">Pendientes: ${zona.pendientes}</small>
+                                        </div>
+                                        ${zona.otros > 0 ? `
+                                        <div class="d-flex align-items-center">
+                                            <div class="color-box bg-secondary me-1"></div>
+                                            <small class="text-muted">Otros: ${zona.otros}</small>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            contenedor.html(html);
+
+            // Crear las gráficas después de agregar el HTML
+            setTimeout(() => {
+                crearGraficasZonas(zonasConDatos);
+            }, 100);
+        }
+
+        // Función para crear gráficas por zona (modo "TODAS" - no debe tener modal)
+        function crearGraficasZonas(zonas) {
+            console.log("Creando gráficas para zonas:", zonas.length);
+
+            zonas.forEach((zona, index) => {
+                setTimeout(() => {
+                    const canvasId = `chart-${zona.zona}`;
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) {
+                        console.error(`Canvas no encontrado: ${canvasId}`);
+                        return;
+                    }
+
+                    // Destruir gráfica existente si existe
+                    const chartExistente = Chart.getChart(canvas);
+                    if (chartExistente) {
+                        chartExistente.destroy();
+                    }
+
+                    const total = zona.terminados + zona.pendientes + (zona.otros || 0);
+
+                    // Obtener el contenedor del gráfico
+                    const chartContainer = $(canvas).closest('.chart-container');
+
+                    if (total === 0) {
+                        // Ocultar canvas y mostrar mensaje
+                        $(canvas).hide();
+                        chartContainer.addClass('empty');
+
+                        // Verificar si ya existe el mensaje
+                        let noDataMessage = chartContainer.find('.no-data-message');
+                        if (noDataMessage.length === 0) {
+                            noDataMessage = $(`
+                                <div class="no-data-message">
+                                    <div class="no-data-icon">
+                                        <i class="fas fa-inbox"></i>
+                                    </div>
+                                    <div>No hay mantenimientos en esta zona</div>
+                                </div>
+                            `);
+                            chartContainer.append(noDataMessage);
+                        } else {
+                            noDataMessage.show();
+                        }
+
+                        // Remover cualquier evento de clic anterior
+                        $(canvas).off('click');
+
+                        return;
+                    }
+
+                    // Si hay datos, mostrar canvas y ocultar mensaje
+                    $(canvas).show();
+                    chartContainer.removeClass('empty');
+                    chartContainer.find('.no-data-message').hide();
+
+                    const data = {
+                        labels: ['Terminados', 'Pendientes', 'Otros'],
+                        datasets: [{
+                            data: [zona.terminados, zona.pendientes, zona.otros || 0],
+                            backgroundColor: ['#28a745', '#ffc107', '#6c757d'],
+                            borderWidth: 0,
+                            hoverOffset: 8
+                        }]
+                    };
+
+                    const config = {
+                        type: 'pie',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.raw || 0;
+                                            const percentage = Math.round((value / total) * 100);
+                                            return `${label}: ${value} (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeOutQuart',
+                                animateScale: true,
+                                animateRotate: true
+                            }
+                            // NOTA: Sin evento onClick para gráficas en modo "TODAS"
+                        }
+                    };
+
+                    new Chart(canvas, config);
+                    $(canvas).addClass('chart-fade-in');
+
+                }, index * 200);
+            });
+        }
 
             function actualizarGraficasPorTipoEquipo(datosGraficas, zonaSeleccionada) {
                 // Destruir gráficas existentes
                 if (chartCfematicos) chartCfematicos.destroy();
                 if (chartEquiposAC) chartEquiposAC.destroy();
                 if (chartEquiposComputo) chartEquiposComputo.destroy();
-                if (chartImpresoras) chartImpresoras.destroy(); // Nueva línea
+                if (chartImpresoras) chartImpresoras.destroy();
 
                 // Procesar datos para cada tipo de equipo
                 const datosCfematicos = datosGraficas.find(d => d.tipoEquipo === 'CFEMÁTICOS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
                 const datosEquiposAC = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_AC') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
                 const datosEquiposComputo = datosGraficas.find(d => d.tipoEquipo === 'EQUIPOS_COMPUTO') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
-                const datosImpresoras = datosGraficas.find(d => d.tipoEquipo === 'IMPRESORAS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 }; // Nueva línea
+                const datosImpresoras = datosGraficas.find(d => d.tipoEquipo === 'IMPRESORAS') || { programados: 0, terminados: 0, pendientes: 0, otros: 0 };
 
                 // Actualizar estadísticas de las tarjetas
                 actualizarEstadisticas('cfematicos', datosCfematicos);
                 actualizarEstadisticas('equipos-ac', datosEquiposAC);
                 actualizarEstadisticas('equipos-computo', datosEquiposComputo);
-                actualizarEstadisticas('impresoras', datosImpresoras); // Nueva línea
+                actualizarEstadisticas('impresoras', datosImpresoras);
 
                 // Actualizar tabla de resumen
                 actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo, datosImpresoras);
@@ -1688,11 +1868,10 @@
                 }, 500);
 
                 setTimeout(() => {
-                    chartImpresoras = crearGraficaPastel('chart-impresoras', datosImpresoras, ['#28a745', '#ffc107', '#6c757d'], 'IMPRESORAS', zonaSeleccionada); // Nueva línea
+                    chartImpresoras = crearGraficaPastel('chart-impresoras', datosImpresoras, ['#28a745', '#ffc107', '#6c757d'], 'IMPRESORAS', zonaSeleccionada);
                 }, 700);
             }
 
-            // Nueva función para actualizar la tabla de resumen
             function actualizarTablaResumen(datosCfematicos, datosEquiposAC, datosEquiposComputo, datosImpresoras) {
                 // CFEMÁTICOS
                 const cfematicosProgramados = datosCfematicos.programados || 0;
@@ -1727,7 +1906,7 @@
                 $('#tabla-equipos-computo-pendientes').text(equiposComputoPendientes);
                 $('#tabla-equipos-computo-porcentaje').text(equiposComputoPorcentaje + '%');
 
-                // NUEVO: IMPRESORAS
+                // IMPRESORAS
                 const impresorasProgramados = datosImpresoras.programados || 0;
                 const impresorasTerminados = datosImpresoras.terminados || 0;
                 const impresorasPendientes = datosImpresoras.pendientes || 0;
@@ -1738,7 +1917,7 @@
                 $('#tabla-impresoras-pendientes').text(impresorasPendientes);
                 $('#tabla-impresoras-porcentaje').text(impresorasPorcentaje + '%');
 
-                // TOTALES (modificado para incluir impresoras)
+                // TOTALES
                 const totalProgramados = cfematicosProgramados + equiposACProgramados + equiposComputoProgramados + impresorasProgramados;
                 const totalTerminados = cfematicosTerminados + equiposACTerminados + equiposComputoTerminados + impresorasTerminados;
                 const totalPendientes = cfematicosPendientes + equiposACPendientes + equiposComputoPendientes + impresorasPendientes;
@@ -1759,95 +1938,130 @@
                 $(`#${prefijo}-pendientes`).text(pendientes);
             }
 
-            function crearGraficaPastel(canvasId, datos, colores, tipoEquipo, zonaSeleccionada) {
-                const ctx = document.getElementById(canvasId);
-                const chartExistente = Chart.getChart(ctx);
-                if (chartExistente) {
-                    chartExistente.destroy();
-                }
-
-                // Aplicar animación al canvas
-                $(ctx).addClass('chart-fade-in');
-
-                const data = {
-                    labels: ['Terminados', 'Pendientes', 'Otros'],
-                    datasets: [{
-                        data: [datos.terminados || 0, datos.pendientes || 0, datos.otros || 0],
-                        backgroundColor: colores,
-                        borderWidth: 0,
-                        hoverOffset: 8
-                    }]
-                };
-
-                const config = {
-                    type: 'pie',
-                    data: data,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.raw || 0;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                        return `${label}: ${value} (${percentage}%)`;
-                                    }
-                                }
-                            }
-                        },
-                        animation: {
-                            duration: 1000,
-                            easing: 'easeOutQuart',
-                            animateScale: true,
-                            animateRotate: true
-                        },
-                        // NUEVO: Evento para hacer clic en los segmentos (SOLO PARA GRÁFICAS DE TIPO DE EQUIPO)
-                        onClick: (evt, elements, chart) => {
-                            if (elements.length > 0) {
-                                const segmentIndex = elements[0].index;
-                                const estado = chart.data.labels[segmentIndex];
-                                const cantidad = chart.data.datasets[0].data[segmentIndex];
-
-                                // Obtener el nombre de la zona desde el dropdown
-                                const zonaSeleccionada = $('#filtroZona').val();
-                                let nombreZona = zonaSeleccionada;
-                                if (zonaSeleccionada !== 'TODAS') {
-                                    const option = $(`#filtroZona option[value="${zonaSeleccionada}"]`);
-                                    if (option.length > 0) {
-                                        nombreZona = option.text();
-                                    }
-                                } else {
-                                    nombreZona = 'TODAS LAS ZONAS';
-                                }
-
-                                // Mostrar modal con los registros
-                                mostrarRegistrosModal({
-                                    tipo: "tiposEquipo",
-                                    clave: tipoEquipo,
-                                    nombre: tipoEquipo,
-                                    estado: estado,
-                                    cantidad: cantidad,
-                                    fechaInicio: $('#filtroFechaInicio').val(),
-                                    fechaFin: $('#filtroFechaFin').val(),
-                                    zonaSeleccionada: zonaSeleccionada,
-                                    nombreZona: nombreZona, // Agregar el nombre de la zona
-                                    tipoEquipo: "TODOS"
-                                });
-                            }
-                        }
-                    }
-                };
-
-                return new Chart(ctx, config);
+        function crearGraficaPastel(canvasId, datos, colores, tipoEquipo, zonaSeleccionada) {
+            const ctx = document.getElementById(canvasId);
+            const chartExistente = Chart.getChart(ctx);
+            if (chartExistente) {
+                chartExistente.destroy();
             }
 
-            // NUEVA FUNCIÓN: Mostrar modal con registros
+            // Obtener el contenedor del gráfico
+            const chartContainer = $(ctx).closest('.chart-container');
+
+            // Verificar si hay datos
+            const totalDatos = (datos.terminados || 0) + (datos.pendientes || 0) + (datos.otros || 0);
+
+            if (totalDatos === 0) {
+                // Ocultar canvas y mostrar mensaje
+                $(ctx).hide();
+                chartContainer.addClass('empty');
+
+                // Verificar si ya existe el mensaje
+                let noDataMessage = chartContainer.find('.no-data-message');
+                if (noDataMessage.length === 0) {
+                    noDataMessage = $(`
+                        <div class="no-data-message">
+                            <div class="no-data-icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <div>No hay mantenimientos para este tipo de equipo</div>
+                        </div>
+                    `);
+                    chartContainer.append(noDataMessage);
+                } else {
+                    noDataMessage.show();
+                }
+
+                // Remover cualquier evento de clic anterior
+                $(ctx).off('click');
+
+                return null;
+            }
+
+            // Si hay datos, mostrar canvas y ocultar mensaje
+            $(ctx).show();
+            chartContainer.removeClass('empty');
+            chartContainer.find('.no-data-message').hide();
+
+            // Aplicar animación al canvas
+            $(ctx).addClass('chart-fade-in');
+
+            const data = {
+                labels: ['Terminados', 'Pendientes', 'Otros'],
+                datasets: [{
+                    data: [datos.terminados || 0, datos.pendientes || 0, datos.otros || 0],
+                    backgroundColor: colores,
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            };
+
+            const config = {
+                type: 'pie',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart',
+                        animateScale: true,
+                        animateRotate: true
+                    },
+                    onClick: (evt, elements, chart) => {
+                        if (elements.length > 0) {
+                            const segmentIndex = elements[0].index;
+                            const estado = chart.data.labels[segmentIndex];
+                            const cantidad = chart.data.datasets[0].data[segmentIndex];
+
+                            const zonaSeleccionada = $('#filtroZona').val();
+                            let nombreZona = zonaSeleccionada;
+                            if (zonaSeleccionada !== 'TODAS') {
+                                const option = $(`#filtroZona option[value="${zonaSeleccionada}"]`);
+                                if (option.length > 0) {
+                                    nombreZona = option.text();
+                                }
+                            } else {
+                                nombreZona = 'TODAS LAS ZONAS';
+                            }
+
+                            mostrarRegistrosModal({
+                                tipo: "tiposEquipo",
+                                clave: tipoEquipo,
+                                nombre: tipoEquipo,
+                                estado: estado,
+                                cantidad: cantidad,
+                                fechaInicio: $('#filtroFechaInicio').val(),
+                                fechaFin: $('#filtroFechaFin').val(),
+                                zonaSeleccionada: zonaSeleccionada,
+                                nombreZona: nombreZona,
+                                tipoEquipo: "TODOS"
+                            });
+                        }
+                    }
+                }
+            };
+
+            return new Chart(ctx, config);
+        }
+
+            // Función para mostrar modal con registros
             function mostrarRegistrosModal(datos) {
                 const modal = new bootstrap.Modal(document.getElementById('registrosModal'));
                 const tituloModal = document.getElementById('registrosModalLabel');
@@ -1856,11 +2070,9 @@
                 const sinRegistros = document.getElementById('modalSinRegistros');
                 const cargando = document.getElementById('modalCargando');
 
-                // Obtener el nombre de la zona desde el dropdown
                 const zonaSeleccionada = datos.zonaSeleccionada;
                 let nombreZona = zonaSeleccionada;
 
-                // Buscar el nombre de la zona en el dropdown
                 if (zonaSeleccionada !== 'TODAS') {
                     const option = $(`#filtroZona option[value="${zonaSeleccionada}"]`);
                     if (option.length > 0) {
@@ -1870,19 +2082,15 @@
                     nombreZona = 'TODAS LAS ZONAS';
                 }
 
-                // Configurar título y subtítulo del modal
                 tituloModal.textContent = `ZONA ${nombreZona}`;
                 subtituloModal.textContent = `${datos.estado}: ${datos.cantidad} mantenimientos`;
 
-                // Mostrar estado de carga
                 cargando.style.display = 'block';
                 sinRegistros.style.display = 'none';
                 cuerpoTabla.innerHTML = '';
 
-                // Mostrar modal
                 modal.show();
 
-                // Obtener registros del servidor
                 $.ajax({
                     url: '@Url.Action("ObtenerRegistrosPorEstado", "Dashboard")',
                     type: 'POST',
@@ -1900,7 +2108,6 @@
                         cargando.style.display = 'none';
 
                         if (response.success && response.registros && response.registros.length > 0) {
-                            // Construir tabla con registros
                             let html = '';
                             response.registros.forEach(registro => {
                                 html += `
@@ -1946,150 +2153,6 @@
                 return 'bg-secondary';
             }
 
-            // --- FUNCIONES ORIGINALES PARA GRÁFICAS POR ZONA ---
-            function actualizarGraficas(datosGraficas, tipo) {
-                // Destruir gráficas existentes
-                $('canvas[id^="chart-"]').each(function() {
-                    const chart = Chart.getChart(this);
-                    if (chart) {
-                        chart.destroy();
-                    }
-                });
-
-                // Limpiar contenedor de gráficas
-                const contenedorGraficas = $('#contenedorGraficas');
-                contenedorGraficas.empty();
-
-                // Filtrar solo elementos con datos
-                const datosConGraficas = datosGraficas.filter(item => item.tieneDatos);
-
-                // Crear nuevas gráficas según el tipo
-                if (datosConGraficas.length === 0) {
-                    contenedorGraficas.html(`
-                        <div class="col-12">
-                            <div class="text-center py-4">
-                                <span class="text-muted fst-italic">No hay datos disponibles para mostrar con los filtros seleccionados.</span>
-                            </div>
-                        </div>
-                    `);
-                    return;
-                }
-
-                datosConGraficas.forEach((item, index) => {
-                    const id = tipo === 'agencias' ? item.agencia : item.zona;
-                    const nombre = tipo === 'agencias' ? item.nombreAgencia : item.nombreZona;
-
-                    const graficaHtml = `
-                        <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 card-fade-in" style="animation-delay: ${index * 0.1}s">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header bg-light py-2">
-                                    <h6 class="mb-0 text-center text-dark" style="font-size: 0.85rem; font-weight: normal;">${nombre}</h6>
-                                </div>
-                                <div class="card-body p-2 d-flex flex-column">
-                                    <div class="chart-container flex-grow-1 position-relative">
-                                        <canvas id="chart-${id}"
-                                                data-item='${JSON.stringify(item)}'
-                                                data-tiene-datos="true"
-                                                data-tipo="${tipo}"></canvas>
-                                    </div>
-                                    <div class="legend-container mt-2">
-                                        <div class="d-flex justify-content-center flex-wrap gap-2">
-                                            <div class="d-flex align-items-center">
-                                                <div class="color-box bg-success me-1"></div>
-                                                <small class="text-muted">Terminados: ${item.terminados}</small>
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="color-box bg-warning me-1"></div>
-                                                <small class="text-muted">Pendientes: ${item.pendientes}</small>
-                                            </div>
-                                            ${item.otros > 0 ? `
-                                            <div class="d-flex align-items-center">
-                                                <div class="color-box bg-secondary me-1"></div>
-                                                <small class="text-muted">Otros: ${item.otros}</small>
-                                            </div>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    contenedorGraficas.append(graficaHtml);
-                });
-
-                // Re-inicializar gráficas después de un pequeño delay para permitir la animación CSS
-                setTimeout(inicializarGraficas, 300);
-            }
-
-            function inicializarGraficas() {
-                $('canvas[id^="chart-"]').each(function(index) {
-                    const canvas = $(this)[0];
-                    const item = $(this).data('item');
-                    const tieneDatos = $(this).data('tiene-datos');
-                    const tipo = $(this).data('tipo');
-
-                    if (!tieneDatos || !item) {
-                        return;
-                    }
-
-                    const total = item.terminados + item.pendientes + item.otros;
-                    const data = {
-                        labels: ['Terminados', 'Pendientes', 'Otros'],
-                        datasets: [{
-                            data: [item.terminados, item.pendientes, item.otros],
-                            backgroundColor: [
-                                '#28a745', // Verde
-                                '#ffc107', // Amarillo
-                                '#6c757d'  // Gris
-                            ],
-                            borderWidth: 0,
-                            hoverOffset: 8
-                        }]
-                    };
-
-                    const config = {
-                        type: 'pie',
-                        data: data,
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            const label = context.label || '';
-                                            const value = context.raw || 0;
-                                            const percentage = Math.round((value / total) * 100);
-                                            return `${label}: ${value} (${percentage}%)`;
-                                        }
-                                    }
-                                }
-                            },
-                            animation: {
-                                duration: 1000,
-                                easing: 'easeOutQuart',
-                                animateScale: true,
-                                animateRotate: true
-                            }
-                        }
-                    };
-
-                    const chartExistente = Chart.getChart(canvas);
-                    if (chartExistente) {
-                        chartExistente.destroy();
-                    }
-
-                    setTimeout(() => {
-                        new Chart(canvas, config);
-                        $(canvas).addClass('chart-fade-in');
-                    }, index * 200);
-                });
-            }
-
             function establecerValoresPorDefecto() {
                 const ahora = new Date();
                 const primerDiaMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
@@ -2099,12 +2162,10 @@
 
                 $('#diaSemanaProgramado').val('Friday');
 
-                // Establecer valores por defecto más razonables
                 $('#horaProgramadaHoras1').val('01');
                 $('#horaProgramadaMinutos1').val('00');
                 $('#horaProgramadaPeriodo1').val('PM');
 
-                // Segundo horario vacío por defecto
                 $('#horaProgramadaHoras2').val('');
                 $('#horaProgramadaMinutos2').val('00');
                 $('#horaProgramadaPeriodo2').val('PM');
@@ -2124,7 +2185,6 @@
                 } else {
                     contenedor.slideDown();
                     iconoFlecha.removeClass('fa-chevron-down').addClass('fa-chevron-up');
-                    // Cargar usuarios si es la primera vez
                     if ($('#listaUsuarios').children().length === 1) {
                         cargarUsuariosAdministradores();
                     }
@@ -2164,7 +2224,6 @@
                     return;
                 }
 
-                // Si no se seleccionaron usuarios, usar los que tienen reportes activados por defecto
                 if (usuariosSeleccionados.length === 0) {
                     if (!confirm('No has seleccionado usuarios específicos. ¿Deseas enviar el reporte a todos los administradores que tienen habilitados los reportes?')) {
                         return;
@@ -2196,7 +2255,7 @@
                 });
             });
 
-            // Botón Programar Semanal (actualizado para múltiples horarios)
+            // Botón Programar Semanal
             $('#btnProgramarEnvio').click(function() {
                 const btn = $(this);
                 const diaSemana = $('#diaSemanaProgramado').val();
@@ -2207,7 +2266,6 @@
                     return;
                 }
 
-                // Validar formato de horas
                 for (let hora of horasProgramadas) {
                     if (!/^\d{2}:\d{2}$/.test(hora)) {
                         mostrarAlerta('El formato de hora debe ser HH:mm (ej. 09:30).', 'warning', '#mensajeProgramacion');
@@ -2289,19 +2347,10 @@
                 const fechaFin = $('#filtroFechaFin').val();
                 const zonaSeleccionada = $('#filtroZona').val();
 
-                if (!fechaInicio || !fechaFin) {
-                    mostrarAlerta('Por favor, selecciona el rango de fechas.', 'warning', '#mensajeGraficas');
-                    return;
-                }
-
-                if (new Date(fechaInicio) > new Date(fechaFin)) {
-                    mostrarAlerta('La fecha de inicio no puede ser mayor a la fecha fin.', 'warning', '#mensajeGraficas');
-                    return;
-                }
+                console.log("Botón Filtrar clickeado - Fecha inicio:", fechaInicio, "Fecha fin:", fechaFin, "Zona:", zonaSeleccionada);
 
                 cargarGraficasConFiltroCompleto(fechaInicio, fechaFin, zonaSeleccionada);
 
-                // También actualizar las tablas con el mismo filtro
                 setTimeout(() => {
                     cargarTablasAvance(fechaInicio, fechaFin);
                 }, 500);
@@ -2312,21 +2361,20 @@
             cargarConfiguracionActual();
             establecerFechasPorDefectoGraficas();
 
-            // Inicializar gráficas con un delay para permitir animaciones
-            setTimeout(inicializarGraficas, 800);
+            // Cargar gráficas iniciales con AJAX
+            setTimeout(() => {
+                cargarGraficasConFiltroCompleto(
+                    $('#filtroFechaInicio').val(),
+                    $('#filtroFechaFin').val(),
+                    $('#filtroZona').val()
+                );
 
-            // Cargar gráficas iniciales
-            cargarGraficasConFiltroCompleto(
-                $('#filtroFechaInicio').val(),
-                $('#filtroFechaFin').val(),
-                $('#filtroZona').val()
-            );
-
-            // Cargar tablas de avance al iniciar
-            cargarTablasAvance(
-                $('#filtroFechaInicio').val(),
-                $('#filtroFechaFin').val()
-            );
+                // Cargar tablas de avance al iniciar
+                cargarTablasAvance(
+                    $('#filtroFechaInicio').val(),
+                    $('#filtroFechaFin').val()
+                );
+            }, 100);
         });
     </script>
 }
